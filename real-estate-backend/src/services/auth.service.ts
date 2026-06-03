@@ -1,55 +1,90 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
+import { User } from '../entities/user.entity';
 import { LoginDto, RegisterDto } from '../dtos/auth.dto';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async login(tenantId: string, loginDto: LoginDto) {
-    if (loginDto.email === 'admin@platform.com') {
-      const payload = {
-        sub: 'super-admin-uuid-1',
-        email: loginDto.email,
-        role: 'SUPER_ADMIN',
-        tenantId: '00000000-0000-0000-0000-000000000000',
-      };
-      return this.generateTokens(payload);
+    const user = await this.userRepo.findOne({
+      where: { email: loginDto.email },
+      relations: ['builder'],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
     }
 
-    if (loginDto.email.endsWith('@builder.com')) {
-      const payload = {
-        sub: 'builder-admin-uuid-2',
-        email: loginDto.email,
-        role: 'BUILDER_ADMIN',
-        tenantId: tenantId,
-      };
-      return this.generateTokens(payload);
+    // SCRAM/Bcrypt validation
+    const isPasswordValid = bcrypt.compareSync(loginDto.password, user.passwordHash);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('This account has been suspended');
     }
 
     const payload = {
-      sub: 'builder-staff-uuid-3',
-      email: loginDto.email,
-      role: 'BUILDER_STAFF',
-      tenantId: tenantId,
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId || '00000000-0000-0000-0000-000000000000',
     };
-    return this.generateTokens(payload);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        tenantId: user.tenantId,
+      },
+      ...this.generateTokens(payload),
+    };
   }
 
   async register(tenantId: string, registerDto: RegisterDto) {
+    const existing = await this.userRepo.findOne({ where: { email: registerDto.email } });
+    if (existing) {
+      throw new BadRequestException('Email is already registered');
+    }
+
+    const newUser = new User();
+    newUser.email = registerDto.email;
+    newUser.passwordHash = bcrypt.hashSync(registerDto.password, 10);
+    newUser.firstName = registerDto.firstName;
+    newUser.lastName = registerDto.lastName;
+    newUser.role = 'BUILDER_STAFF';
+    newUser.tenantId = tenantId === '00000000-0000-0000-0000-000000000000' ? undefined : tenantId;
+
+    const savedUser = await this.userRepo.save(newUser);
+
     const payload = {
-      sub: 'new-user-uuid',
-      email: registerDto.email,
-      role: 'BUILDER_STAFF',
-      tenantId: tenantId,
+      sub: savedUser.id,
+      email: savedUser.email,
+      role: savedUser.role,
+      tenantId: savedUser.tenantId || '00000000-0000-0000-0000-000000000000',
     };
+
     return {
       user: {
-        id: payload.sub,
-        email: registerDto.email,
-        firstName: registerDto.firstName,
-        lastName: registerDto.lastName,
-        tenantId: tenantId,
+        id: savedUser.id,
+        email: savedUser.email,
+        firstName: savedUser.firstName,
+        lastName: savedUser.lastName,
+        role: savedUser.role,
+        tenantId: savedUser.tenantId,
       },
       ...this.generateTokens(payload),
     };
@@ -58,11 +93,17 @@ export class AuthService {
   async refresh(refreshToken: string) {
     try {
       const payload = this.jwtService.verify(refreshToken);
+      const user = await this.userRepo.findOne({ where: { id: payload.sub } });
+      
+      if (!user || !user.isActive) {
+        throw new UnauthorizedException('Invalid or inactive user session');
+      }
+
       const newPayload = {
-        sub: payload.sub,
-        email: payload.email,
-        role: payload.role,
-        tenantId: payload.tenantId,
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenantId || '00000000-0000-0000-0000-000000000000',
       };
       return this.generateTokens(newPayload);
     } catch {
@@ -71,12 +112,12 @@ export class AuthService {
   }
 
   private generateTokens(payload: any) {
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '7h' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
     return {
       accessToken,
       refreshToken,
-      expiresIn: 900,
+      expiresIn: 25200, // 7 hours in seconds
     };
   }
 }

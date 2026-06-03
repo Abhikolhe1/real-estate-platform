@@ -230,6 +230,77 @@ export default function AIFloorPlanGeneratorPage() {
     }
   };
 
+  // Generate and download a 2D engineering CAD DXF file
+  const downloadCADFile = () => {
+    if (!activeFP || !activeFP.layoutData) return;
+    const layout = activeFP.layoutData;
+
+    let dxf = `  0
+SECTION
+  2
+ENTITIES
+`;
+
+    // 1. Export Rooms (Exterior Walls & Inner Partitions)
+    layout.rooms.forEach((room) => {
+      const x1 = room.x;
+      const y1 = room.z;
+      const x2 = room.x + room.width;
+      const y2 = room.z + room.depth;
+
+      // Add 4 Wall Lines
+      // North Wall
+      dxf += `  0\nLINE\n  8\nWalls_Exterior\n 10\n${x1}\n 20\n${y1}\n 30\n0.0\n 11\n${x2}\n 21\n${y1}\n 31\n0.0\n`;
+      // South Wall
+      dxf += `  0\nLINE\n  8\nWalls_Exterior\n 10\n${x1}\n 20\n${y2}\n 30\n0.0\n 11\n${x2}\n 21\n${y2}\n 31\n0.0\n`;
+      // West Wall
+      dxf += `  0\nLINE\n  8\nWalls_Exterior\n 10\n${x1}\n 20\n${y1}\n 30\n0.0\n 11\n${x1}\n 21\n${y2}\n 31\n0.0\n`;
+      // East Wall
+      dxf += `  0\nLINE\n  8\nWalls_Exterior\n 10\n${x2}\n 20\n${y1}\n 30\n0.0\n 11\n${x2}\n 21\n${y2}\n 31\n0.0\n`;
+
+      // Room Center Points for Labels
+      const cx = room.x + room.width / 2;
+      const cy = room.z + room.depth / 2;
+      
+      // Room Name Label
+      dxf += `  0\nTEXT\n  8\nRoom_Labels\n 10\n${cx - 1.0}\n 20\n${cy}\n 30\n0.0\n 40\n0.25\n  1\n${room.name}\n`;
+      // Room Dimensions Label
+      dxf += `  0\nTEXT\n  8\nRoom_Labels\n 10\n${cx - 0.5}\n 20\n${cy - 0.3}\n 30\n0.0\n 40\n0.18\n  1\n${room.width.toFixed(1)}m x ${room.depth.toFixed(1)}m\n`;
+    });
+
+    // 2. Export Furniture Layouts
+    layout.furniture.forEach((f) => {
+      const fx = f.x;
+      const fy = f.z;
+      const size = 0.8;
+      const x1 = fx - size / 2;
+      const y1 = fy - size / 2;
+      const x2 = fx + size / 2;
+      const y2 = fy + size / 2;
+
+      // Box Boundary
+      dxf += `  0\nLINE\n  8\nFurniture_Layout\n 10\n${x1}\n 20\n${y1}\n 30\n0.0\n 11\n${x2}\n 21\n${y1}\n 31\n0.0\n`;
+      dxf += `  0\nLINE\n  8\nFurniture_Layout\n 10\n${x1}\n 20\n${y2}\n 30\n0.0\n 11\n${x2}\n 21\n${y2}\n 31\n0.0\n`;
+      dxf += `  0\nLINE\n  8\nFurniture_Layout\n 10\n${x1}\n 20\n${y1}\n 30\n0.0\n 11\n${x1}\n 21\n${y2}\n 31\n0.0\n`;
+      dxf += `  0\nLINE\n  8\nFurniture_Layout\n 10\n${x2}\n 20\n${y1}\n 30\n0.0\n 11\n${x2}\n 21\n${y2}\n 31\n0.0\n`;
+
+      // Furniture Text tag
+      dxf += `  0\nTEXT\n  8\nFurniture_Labels\n 10\n${x1}\n 20\n${fy}\n 30\n0.0\n 40\n0.12\n  1\n${f.type.toUpperCase()}\n`;
+    });
+
+    dxf += `  0\nENDSEC\n  0\nEOF\n`;
+
+    const blob = new Blob([dxf], { type: 'application/dxf' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${activeFP.name.toLowerCase().replace(/\s+/g, '_')}_cad_draft.dxf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // Three.js Render Logic
   useEffect(() => {
     if (!activeFP || !activeFP.layoutData || !canvasRef.current) return;
@@ -642,6 +713,9 @@ export default function AIFloorPlanGeneratorPage() {
               onClick={() => { setActiveFP(null); setSelectedRoomId(null); setSelectedFurnId(null); }}
             >
               ← Back to Gallery
+            </PremiumButton>
+            <PremiumButton variant="outline" onClick={downloadCADFile}>
+              💾 Export 2D CAD (DXF)
             </PremiumButton>
             <PremiumButton variant="primary" onClick={saveLayout} disabled={isSaving}>
               {isSaving ? 'Saving Layout...' : 'Save 3D Improvements'}

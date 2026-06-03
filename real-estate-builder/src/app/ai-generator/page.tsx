@@ -684,8 +684,8 @@ export default function AIFloorPlanGeneratorPage() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-gray-500 block mb-1">Upload 2D Blueprint (PNG / JPG)</label>
-                <div className="border-2 border-dashed border-gray-200 hover:border-gray-950 rounded-2xl p-6 transition duration-300 cursor-pointer flex flex-col items-center justify-center gap-2">
+                <span className="text-xs font-bold text-gray-500 block mb-1">Upload 2D Blueprint (PNG / JPG)</span>
+                <label className="border-2 border-dashed border-gray-200 hover:border-gray-950 rounded-2xl p-6 transition duration-300 cursor-pointer flex flex-col items-center justify-center gap-2">
                   <span className="text-2xl">🖼️</span>
                   <span className="text-xs text-gray-400 font-semibold">Drag & drop or click to upload file</span>
                   <input 
@@ -695,7 +695,7 @@ export default function AIFloorPlanGeneratorPage() {
                     className="hidden" 
                   />
                   {uploadFile && <p className="text-[10px] text-emerald-600 font-bold mt-1">Selected: {uploadFile.name}</p>}
-                </div>
+                </label>
               </div>
 
               {isUploading && (

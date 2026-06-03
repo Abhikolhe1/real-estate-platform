@@ -2,8 +2,12 @@
 
 export const paths = {
   home: '/',
-  projects: '/projects',
+  about: '/about',
+  gallery: '/gallery',
   amenities: '/amenities',
-  walkthrough: '/walkthrough',
+  location: '/location',
+  inventory: '/inventory',
+  virtualTour: '/virtual-tour',
+  explorer: '/explorer',
   contact: '/contact',
 };

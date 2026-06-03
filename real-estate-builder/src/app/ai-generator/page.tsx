@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import PremiumButton from '@/components/premium-button';
+import type * as THREE from 'three';
 
 interface FloorPlan {
   id: string;

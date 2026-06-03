@@ -8,5 +8,6 @@ export const paths = {
     website: '/website',
     leads: '/leads',
     media: '/media',
+    aiGenerator: '/ai-generator',
   },
 };

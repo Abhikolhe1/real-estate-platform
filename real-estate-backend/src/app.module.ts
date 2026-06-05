@@ -11,12 +11,21 @@ import { LeadsController } from './controllers/leads.controller';
 import { InventoryController } from './controllers/inventory.controller';
 import { PagesController } from './controllers/pages.controller';
 import { FloorPlanController } from './controllers/floorplan.controller';
+import { ThemesController } from './controllers/themes.controller';
+import { MediaController } from './controllers/media.controller';
 import { UsersController } from './controllers/users.controller';
+import { NavigationController } from './controllers/navigation.controller';
+import { ComponentsController } from './controllers/components.controller';
 
 // Services
 import { AuthService } from './services/auth.service';
 import { ProjectsService } from './services/projects.service';
+import { ThemesService } from './services/themes.service';
+import { MediaService } from './services/media.service';
 import { UsersService } from './services/users.service';
+import { PagesService } from './services/pages.service';
+import { NavigationService } from './services/navigation.service';
+import { ComponentsService } from './services/components.service';
 
 // Entities
 import { Builder } from './entities/builder.entity';
@@ -30,7 +39,15 @@ import { Page } from './entities/page.entity';
 import { FloorPlan } from './entities/floorplan.entity';
 import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
+import { Theme } from './entities/theme.entity';
+import { Media } from './entities/media.entity';
 import { AuditLog } from './entities/audit-log.entity';
+import { WebsiteSection } from './entities/website-section.entity';
+import { Component } from './entities/component.entity';
+import { NavigationMenu } from './entities/navigation-menu.entity';
+import { NavigationItem } from './entities/navigation-item.entity';
+import { AnimationPreset } from './entities/animation-preset.entity';
+import { PageRevision } from './entities/page-revision.entity';
 
 // Interceptor
 import { TenantInterceptor } from './interceptors/tenant.interceptor';
@@ -50,10 +67,10 @@ import { AuditService } from './services/audit.service';
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL || 'postgresql://aether_db_user:aether_db_password_99@localhost:5432/realestate_saas?schema=public',
-      entities: [Builder, User, Project, Tower, Floor, Flat, Lead, Page, FloorPlan, Role, Permission, AuditLog],
+      entities: [Builder, User, Project, Tower, Floor, Flat, Lead, Page, FloorPlan, Role, Permission, Theme, Media, AuditLog, WebsiteSection, Component, NavigationMenu, NavigationItem, AnimationPreset, PageRevision],
       synchronize: true, // Automatically synchronize schema
     }),
-    TypeOrmModule.forFeature([Builder, User, Project, Tower, Floor, Flat, Lead, Page, FloorPlan, Role, Permission, AuditLog]),
+    TypeOrmModule.forFeature([Builder, User, Project, Tower, Floor, Flat, Lead, Page, FloorPlan, Role, Permission, Theme, Media, AuditLog, WebsiteSection, Component, NavigationMenu, NavigationItem, AnimationPreset, PageRevision]),
   ],
   controllers: [
     AuthController,
@@ -63,13 +80,22 @@ import { AuditService } from './services/audit.service';
     InventoryController,
     PagesController,
     FloorPlanController,
+    ThemesController,
+    MediaController,
     UsersController,
+    NavigationController,
+    ComponentsController,
   ],
   providers: [
     AuthService,
     ProjectsService,
     AuditService,
+    ThemesService,
+    MediaService,
     UsersService,
+    PagesService,
+    NavigationService,
+    ComponentsService,
     // Dynamic global multi-tenant injector
     {
       provide: APP_INTERCEPTOR,

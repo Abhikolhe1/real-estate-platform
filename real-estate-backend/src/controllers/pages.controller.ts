@@ -1,90 +1,162 @@
-import { Controller, Get, Post, Put, Body, Param, Query } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Page } from '../entities/page.entity';
-import { Builder } from '../entities/builder.entity';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { PagesService } from '../services/pages.service';
 import { TenantId } from '../interceptors/tenant.decorator';
+import { JwtAuthGuard } from '../guards/auth.guard';
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../guards/roles.decorator';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Pages')
 @Controller('pages')
 export class PagesController {
-  constructor(
-    @InjectRepository(Page)
-    private readonly pageRepo: Repository<Page>,
-    @InjectRepository(Builder)
-    private readonly builderRepo: Repository<Builder>,
-  ) {}
+  constructor(private readonly pagesService: PagesService) {}
 
-  // Get all pages
+  // List all pages
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'BUILDER_ADMIN', 'BUILDER_STAFF', 'SALES_USER')
   @Get()
   async getPages(@TenantId() tenantId: string) {
-    return this.pageRepo.find({ where: { tenantId } });
+    return this.pagesService.getPages(tenantId);
   }
 
-  // Create page layout
-  @Post()
-  async createPage(@TenantId() tenantId: string, @Body() body: { slug: string; title: string; sections?: any[] }) {
-    const page = new Page();
-    page.tenantId = tenantId;
-    page.slug = body.slug || 'home';
-    page.title = body.title || 'Landing Page';
-    page.sections = body.sections || [];
-    page.isActive = true;
-    return this.pageRepo.save(page);
+  // Get page by ID
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'BUILDER_ADMIN', 'BUILDER_STAFF', 'SALES_USER')
+  @Get(':id')
+  async getPageById(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.pagesService.getPageById(tenantId, id);
   }
 
-  // Get page layout dynamically by slug (Support both tenantId header and query builderSlug)
+  // Get page layout dynamically by slug (Public endpoint, no auth guard)
   @Get('by-slug/:slug')
   async getPageBySlug(
     @TenantId() headerTenantId: string,
     @Param('slug') slug: string,
     @Query('builderSlug') builderSlug?: string,
   ) {
-    let finalTenantId = headerTenantId;
-
-    if (builderSlug && (!finalTenantId || finalTenantId === '00000000-0000-0000-0000-000000000000')) {
-      const builder = await this.builderRepo.findOne({ where: { slug: builderSlug } });
-      if (builder) {
-        finalTenantId = builder.id;
-      }
-    }
-
-    const page = await this.pageRepo.findOne({ where: { slug, tenantId: finalTenantId } });
-    if (!page) {
-      // Return default systemic boilerplate layout so the client page never crashes!
-      return {
-        slug: 'home',
-        title: 'Boilerplate Layout',
-        sections: [
-          { id: 'hero', name: 'Cinematic Hero', isActive: true, content: { title: 'The Peak of Luxury Living', subtitle: 'Branded Luxury Penthouses' } },
-          { id: 'concept', name: 'Luxury Concept', isActive: true },
-          { id: 'gallery', name: 'Cinematic Gallery', isActive: true },
-          { id: 'amenities', name: 'Amenities', isActive: true },
-          { id: 'location', name: 'Location Map', isActive: true },
-          { id: 'contact', name: 'Booking Form', isActive: true },
-        ],
-      };
-    }
-
-    return page;
+    return this.pagesService.getPageBySlug(headerTenantId, slug, builderSlug);
   }
 
-  // Save published visual editor sections list
-  @Put('by-slug/:slug')
-  async publishPage(
+  // Create page
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'BUILDER_ADMIN')
+  @Post()
+  async createPage(
     @TenantId() tenantId: string,
-    @Param('slug') slug: string,
-    @Body() body: { sections: any[] },
+    @Body() body: { title: string; slug: string; status?: string; seoTitle?: string; seoDescription?: string; template?: string },
   ) {
-    let page = await this.pageRepo.findOne({ where: { slug, tenantId } });
-    if (!page) {
-      page = new Page();
-      page.tenantId = tenantId;
-      page.slug = slug;
-      page.title = `${slug.toUpperCase()} Layout`;
-    }
+    return this.pagesService.createPage(tenantId, body);
+  }
 
-    page.sections = body.sections;
-    const saved = await this.pageRepo.save(page);
-    return { success: true, page: saved };
+  // Update page details
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'BUILDER_ADMIN')
+  @Put(':id')
+  async updatePage(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() body: { title?: string; slug?: string; status?: string; seoTitle?: string; seoDescription?: string },
+  ) {
+    return this.pagesService.updatePage(tenantId, id, body);
+  }
+
+  // Delete page
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'BUILDER_ADMIN')
+  @Delete(':id')
+  async deletePage(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.pagesService.deletePage(tenantId, id);
+  }
+
+  // Duplicate page
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'BUILDER_ADMIN')
+  @Post(':id/duplicate')
+  async duplicatePage(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.pagesService.duplicatePage(tenantId, id);
+  }
+
+  // Add Section to Page
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'BUILDER_ADMIN', 'BUILDER_STAFF')
+  @Post(':pageId/sections')
+  async addSection(
+    @TenantId() tenantId: string,
+    @Param('pageId') pageId: string,
+    @Body() body: { type: string; orderNo?: number; configJson?: any },
+  ) {
+    return this.pagesService.addSection(tenantId, pageId, body);
+  }
+
+  // Update Section in Page
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'BUILDER_ADMIN', 'BUILDER_STAFF')
+  @Put(':pageId/sections/:sectionId')
+  async updateSection(
+    @TenantId() tenantId: string,
+    @Param('pageId') pageId: string,
+    @Param('sectionId') sectionId: string,
+    @Body() body: { type?: string; orderNo?: number; configJson?: any },
+  ) {
+    return this.pagesService.updateSection(tenantId, pageId, sectionId, body);
+  }
+
+  // Delete Section from Page
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'BUILDER_ADMIN', 'BUILDER_STAFF')
+  @Delete(':pageId/sections/:sectionId')
+  async deleteSection(
+    @TenantId() tenantId: string,
+    @Param('pageId') pageId: string,
+    @Param('sectionId') sectionId: string,
+  ) {
+    return this.pagesService.deleteSection(tenantId, pageId, sectionId);
+  }
+
+  // Reorder Sections list
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'BUILDER_ADMIN', 'BUILDER_STAFF')
+  @Post(':pageId/sections/reorder')
+  async reorderSections(
+    @TenantId() tenantId: string,
+    @Param('pageId') pageId: string,
+    @Body() body: { sectionIds: string[] },
+  ) {
+    return this.pagesService.reorderSections(tenantId, pageId, body.sectionIds);
+  }
+
+  // Get all revisions of a page
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'BUILDER_ADMIN', 'BUILDER_STAFF', 'SALES_USER')
+  @Get(':pageId/revisions')
+  async getPageRevisions(
+    @TenantId() tenantId: string,
+    @Param('pageId') pageId: string,
+  ) {
+    return this.pagesService.getRevisions(tenantId, pageId);
+  }
+
+  // Restore page to a specific revision
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'BUILDER_ADMIN')
+  @Post(':pageId/revisions/:revisionId/restore')
+  async restorePageRevision(
+    @TenantId() tenantId: string,
+    @Param('pageId') pageId: string,
+    @Param('revisionId') revisionId: string,
+  ) {
+    return this.pagesService.restoreRevision(tenantId, pageId, revisionId);
   }
 }

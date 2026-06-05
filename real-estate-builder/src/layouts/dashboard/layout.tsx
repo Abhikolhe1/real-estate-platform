@@ -60,6 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { label: 'Towers', path: paths.dashboard.towers, icon: '🏢', exact: false },
         { label: 'Floors', path: paths.dashboard.floors, icon: '🏠', exact: false },
         { label: 'Flats Inventory', path: paths.dashboard.flats, icon: '🛏️', exact: false },
+        { label: '3D Walkthroughs', path: paths.dashboard.walkthroughs, icon: '🕶️', exact: false },
       ],
     },
     {

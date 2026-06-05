@@ -16,6 +16,7 @@ import { MediaController } from './controllers/media.controller';
 import { UsersController } from './controllers/users.controller';
 import { NavigationController } from './controllers/navigation.controller';
 import { ComponentsController } from './controllers/components.controller';
+import { TwinsController } from './controllers/twins.controller';
 
 // Services
 import { AuthService } from './services/auth.service';
@@ -26,6 +27,7 @@ import { UsersService } from './services/users.service';
 import { PagesService } from './services/pages.service';
 import { NavigationService } from './services/navigation.service';
 import { ComponentsService } from './services/components.service';
+import { TwinsService } from './services/twins.service';
 
 // Entities
 import { Builder } from './entities/builder.entity';
@@ -48,6 +50,10 @@ import { NavigationMenu } from './entities/navigation-menu.entity';
 import { NavigationItem } from './entities/navigation-item.entity';
 import { AnimationPreset } from './entities/animation-preset.entity';
 import { PageRevision } from './entities/page-revision.entity';
+import { DigitalTwinModel } from './entities/digital-twin-model.entity';
+import { CameraPoint } from './entities/camera-point.entity';
+import { Hotspot } from './entities/hotspot.entity';
+import { TourRoute } from './entities/tour-route.entity';
 
 // Interceptor
 import { TenantInterceptor } from './interceptors/tenant.interceptor';
@@ -67,10 +73,10 @@ import { AuditService } from './services/audit.service';
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL || 'postgresql://aether_db_user:aether_db_password_99@localhost:5432/realestate_saas?schema=public',
-      entities: [Builder, User, Project, Tower, Floor, Flat, Lead, Page, FloorPlan, Role, Permission, Theme, Media, AuditLog, WebsiteSection, Component, NavigationMenu, NavigationItem, AnimationPreset, PageRevision],
+      entities: [Builder, User, Project, Tower, Floor, Flat, Lead, Page, FloorPlan, Role, Permission, Theme, Media, AuditLog, WebsiteSection, Component, NavigationMenu, NavigationItem, AnimationPreset, PageRevision, DigitalTwinModel, CameraPoint, Hotspot, TourRoute],
       synchronize: true, // Automatically synchronize schema
     }),
-    TypeOrmModule.forFeature([Builder, User, Project, Tower, Floor, Flat, Lead, Page, FloorPlan, Role, Permission, Theme, Media, AuditLog, WebsiteSection, Component, NavigationMenu, NavigationItem, AnimationPreset, PageRevision]),
+    TypeOrmModule.forFeature([Builder, User, Project, Tower, Floor, Flat, Lead, Page, FloorPlan, Role, Permission, Theme, Media, AuditLog, WebsiteSection, Component, NavigationMenu, NavigationItem, AnimationPreset, PageRevision, DigitalTwinModel, CameraPoint, Hotspot, TourRoute]),
   ],
   controllers: [
     AuthController,
@@ -85,6 +91,7 @@ import { AuditService } from './services/audit.service';
     UsersController,
     NavigationController,
     ComponentsController,
+    TwinsController,
   ],
   providers: [
     AuthService,
@@ -96,6 +103,7 @@ import { AuditService } from './services/audit.service';
     PagesService,
     NavigationService,
     ComponentsService,
+    TwinsService,
     // Dynamic global multi-tenant injector
     {
       provide: APP_INTERCEPTOR,

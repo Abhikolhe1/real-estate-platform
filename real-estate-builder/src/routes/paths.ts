@@ -13,5 +13,6 @@ export const paths = {
     analytics: '/analytics',
     team: '/team',
     aiGenerator: '/ai-generator',
+    walkthroughs: '/walkthroughs',
   },
 };

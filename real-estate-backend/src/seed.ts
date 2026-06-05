@@ -17,6 +17,10 @@ import { Component } from './entities/component.entity';
 import { NavigationMenu } from './entities/navigation-menu.entity';
 import { NavigationItem } from './entities/navigation-item.entity';
 import { AnimationPreset } from './entities/animation-preset.entity';
+import { DigitalTwinModel } from './entities/digital-twin-model.entity';
+import { CameraPoint } from './entities/camera-point.entity';
+import { Hotspot } from './entities/hotspot.entity';
+import { TourRoute } from './entities/tour-route.entity';
 import * as bcrypt from 'bcryptjs';
 
 async function bootstrap() {
@@ -40,10 +44,14 @@ async function bootstrap() {
   const menuRepo = dataSource.getRepository(NavigationMenu);
   const itemRepo = dataSource.getRepository(NavigationItem);
   const presetRepo = dataSource.getRepository(AnimationPreset);
+  const modelRepo = dataSource.getRepository(DigitalTwinModel);
+  const pointRepo = dataSource.getRepository(CameraPoint);
+  const hotspotRepo = dataSource.getRepository(Hotspot);
+  const tourRepo = dataSource.getRepository(TourRoute);
 
   // Clear existing tables in correct order using a cascading truncate raw query
   console.log('Cleaning old records...');
-  await dataSource.query('TRUNCATE TABLE pages, leads, flats, floors, towers, projects, users, builders, role_permissions, user_roles, roles, permissions, themes, media, audit_logs, website_sections, components, navigation_menus, navigation_items, animation_presets CASCADE;');
+  await dataSource.query('TRUNCATE TABLE pages, leads, flats, floors, towers, projects, users, builders, role_permissions, user_roles, roles, permissions, themes, media, audit_logs, website_sections, components, navigation_menus, navigation_items, animation_presets, digital_twin_models, camera_points, hotspots, tour_routes CASCADE;');
 
   console.log('Seeding Permissions...');
   const permissionsList = [
@@ -734,6 +742,137 @@ async function bootstrap() {
       await sectionRepo.save(section);
     }
   }
+
+  console.log('Seeding Digital Twin Models, Camera Points, Hotspots, and Tour Routes...');
+  // 1. Seed Exterior Twin Model
+  const exteriorTwin = new DigitalTwinModel();
+  exteriorTwin.tenantId = savedAethelgard.id;
+  exteriorTwin.projectId = savedAethelgardProj.id;
+  exteriorTwin.name = 'Aethelgard Sky Tower Exterior';
+  exteriorTwin.modelUrl = '/building.glb';
+  exteriorTwin.modelType = 'exterior';
+  exteriorTwin.fileSize = 257516;
+  exteriorTwin.status = 'active';
+  const savedExtModel = await modelRepo.save(exteriorTwin);
+
+  // 2. Seed Interior Walkthrough Model
+  const interiorWalkthrough = new DigitalTwinModel();
+  interiorWalkthrough.tenantId = savedAethelgard.id;
+  interiorWalkthrough.projectId = savedAethelgardProj.id;
+  interiorWalkthrough.name = 'Luxury Corridor & Suites';
+  interiorWalkthrough.modelUrl = '/floor_walkthrough.glb';
+  interiorWalkthrough.modelType = 'interior';
+  interiorWalkthrough.fileSize = 267956;
+  interiorWalkthrough.status = 'active';
+  const savedIntModel = await modelRepo.save(interiorWalkthrough);
+
+  // 3. Seed Camera Points for Walkthrough Model
+  const cameraPointsData = [
+    { name: 'Lobby Entrance', posX: 0, posY: 1.6, posZ: 4.0, targetX: 0, targetY: 1.6, targetZ: 4.05 },
+    { name: 'Corridor Center', posX: 0, posY: 1.6, posZ: 2.0, targetX: 0, targetY: 1.6, targetZ: 2.05 },
+    { name: 'Flat A Living Room', posX: -5.5, posY: 1.6, posZ: 4.0, targetX: -5.55, targetY: 1.6, targetZ: 4.0 },
+    { name: 'Flat B Living Room', posX: 5.5, posY: 1.6, posZ: 4.0, targetX: 5.55, targetY: 1.6, targetZ: 4.0 },
+    { name: 'Flat C Master Suite', posX: 0, posY: 1.6, posZ: 7.5, targetX: 0, targetY: 1.6, targetZ: 7.55 }
+  ];
+  for (const pt of cameraPointsData) {
+    const point = new CameraPoint();
+    point.tenantId = savedAethelgard.id;
+    point.modelId = savedIntModel.id;
+    point.name = pt.name;
+    point.posX = pt.posX;
+    point.posY = pt.posY;
+    point.posZ = pt.posZ;
+    point.targetX = pt.targetX;
+    point.targetY = pt.targetY;
+    point.targetZ = pt.targetZ;
+    await pointRepo.save(point);
+  }
+
+  // 4. Seed Hotspots
+  // Exterior hotspots
+  const extHotspot1 = new Hotspot();
+  extHotspot1.tenantId = savedAethelgard.id;
+  extHotspot1.modelId = savedExtModel.id;
+  extHotspot1.name = 'Penthouse Zone';
+  extHotspot1.type = 'info';
+  extHotspot1.posX = 0;
+  extHotspot1.posY = 26.5;
+  extHotspot1.posZ = 3.5;
+  extHotspot1.contentJson = {
+    title: 'Signature Sky Penthouses',
+    description: 'Ultra-exclusive residential units on the top floors featuring private infinity pools, panoramic terraces, and double-height living spaces.'
+  };
+  await hotspotRepo.save(extHotspot1);
+
+  const extHotspot2 = new Hotspot();
+  extHotspot2.tenantId = savedAethelgard.id;
+  extHotspot2.modelId = savedExtModel.id;
+  extHotspot2.name = 'Rooftop Amenities';
+  extHotspot2.type = 'brochure';
+  extHotspot2.posX = -1.5;
+  extHotspot2.posY = 13.2;
+  extHotspot2.posZ = -4.0;
+  extHotspot2.contentJson = {
+    title: 'Amenities Oasis & Club',
+    description: 'Equipped with a wellness center, glass-walled gym, heated infinity pool, and sky lounge. Explore the brochure layout.',
+    linkUrl: '/amenities'
+  };
+  await hotspotRepo.save(extHotspot2);
+
+  // Interior hotspots
+  const intHotspot1 = new Hotspot();
+  intHotspot1.tenantId = savedAethelgard.id;
+  intHotspot1.modelId = savedIntModel.id;
+  intHotspot1.name = 'Flat A Pricing';
+  intHotspot1.type = 'pricing';
+  intHotspot1.posX = -5.0;
+  intHotspot1.posY = 1.5;
+  intHotspot1.posZ = 3.5;
+  intHotspot1.contentJson = {
+    title: 'Suite A - East Wing Luxury',
+    description: 'An elegantly proportioned 2BHK flat featuring open view balconies and modular kitchen integrations.',
+    price: 30000000,
+    flatNumber: '101'
+  };
+  await hotspotRepo.save(intHotspot1);
+
+  const intHotspot2 = new Hotspot();
+  intHotspot2.tenantId = savedAethelgard.id;
+  intHotspot2.modelId = savedIntModel.id;
+  intHotspot2.name = 'Tour Guide Video';
+  intHotspot2.type = 'video';
+  intHotspot2.posX = 1.5;
+  intHotspot2.posY = 1.6;
+  intHotspot2.posZ = 3.0;
+  intHotspot2.contentJson = {
+    title: 'Reception Lobby Walkthrough',
+    description: 'View the cinematic guided description detailing the architectural highlights of our designer reception lobby.',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-luxury-home-with-swimming-pool-and-palm-trees-43224-large.mp4'
+  };
+  await hotspotRepo.save(intHotspot2);
+
+  const intHotspot3 = new Hotspot();
+  intHotspot3.tenantId = savedAethelgard.id;
+  intHotspot3.modelId = savedIntModel.id;
+  intHotspot3.name = 'Book Site Visit CTA';
+  intHotspot3.type = 'cta';
+  intHotspot3.posX = 0;
+  intHotspot3.posY = 1.6;
+  intHotspot3.posZ = 8.0;
+  intHotspot3.contentJson = {
+    title: 'Schedule Private Showing',
+    description: 'Ready to visit our model apartments in person? Connect directly with a dedicated Relationship Manager.',
+    buttonText: 'Request Site Visit'
+  };
+  await hotspotRepo.save(intHotspot3);
+
+  // 5. Seed Tour Route
+  const tourRoute = new TourRoute();
+  tourRoute.tenantId = savedAethelgard.id;
+  tourRoute.modelId = savedIntModel.id;
+  tourRoute.routeName = 'Standard Guided Walkthrough';
+  tourRoute.routeJson = cameraPointsData;
+  await tourRepo.save(tourRoute);
 
   console.log('--- DB SEEDING COMPLETED SUCCESS ---');
   await app.close();

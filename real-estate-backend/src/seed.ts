@@ -9,10 +9,12 @@ import { Floor } from './entities/floor.entity';
 import { Flat } from './entities/flat.entity';
 import { Lead } from './entities/lead.entity';
 import { Page } from './entities/page.entity';
+import { Role } from './entities/role.entity';
+import { Permission } from './entities/permission.entity';
 import * as bcrypt from 'bcryptjs';
 
 async function bootstrap() {
-  console.log('--- DB SEEDING STARTED ---');
+  console.log('--- DB SEEDING STARTED (PHASE 1) ---');
   const app = await NestFactory.createApplicationContext(AppModule);
   const dataSource = app.get(DataSource);
 
@@ -24,10 +26,92 @@ async function bootstrap() {
   const flatRepo = dataSource.getRepository(Flat);
   const leadRepo = dataSource.getRepository(Lead);
   const pageRepo = dataSource.getRepository(Page);
+  const permRepo = dataSource.getRepository(Permission);
+  const roleRepo = dataSource.getRepository(Role);
 
   // Clear existing tables in correct order using a cascading truncate raw query
   console.log('Cleaning old records...');
-  await dataSource.query('TRUNCATE TABLE pages, leads, flats, floors, towers, projects, users, builders CASCADE;');
+  await dataSource.query('TRUNCATE TABLE pages, leads, flats, floors, towers, projects, users, builders, role_permissions, user_roles, roles, permissions CASCADE;');
+
+  console.log('Seeding Permissions...');
+  const permissionsList = [
+    { name: 'create_builder', module: 'builders' },
+    { name: 'edit_builder', module: 'builders' },
+    { name: 'suspend_builder', module: 'builders' },
+    { name: 'delete_builder', module: 'builders' },
+    { name: 'manage_plans', module: 'plans' },
+    { name: 'manage_revenue', module: 'revenue' },
+    { name: 'view_analytics', module: 'analytics' },
+    
+    { name: 'manage_projects', module: 'projects' },
+    { name: 'manage_users', module: 'users' },
+    { name: 'manage_website', module: 'website' },
+    { name: 'manage_leads', module: 'leads' },
+    { name: 'manage_themes', module: 'themes' },
+    
+    { name: 'manage_inventory', module: 'inventory' },
+    { name: 'manage_content', module: 'content' },
+    { name: 'manage_media', module: 'media' },
+    
+    { name: 'view_leads', module: 'leads' },
+    { name: 'add_lead_notes', module: 'leads' },
+    { name: 'update_lead_status', module: 'leads' },
+  ];
+
+  const dbPermissions: Record<string, Permission> = {};
+  for (const p of permissionsList) {
+    const perm = new Permission();
+    perm.name = p.name;
+    perm.module = p.module;
+    dbPermissions[p.name] = await permRepo.save(perm);
+  }
+
+  console.log('Seeding Roles...');
+  const superAdminRole = new Role();
+  superAdminRole.name = 'SUPER_ADMIN';
+  superAdminRole.description = 'Platform Super Administrator';
+  superAdminRole.permissions = [
+    dbPermissions['create_builder'],
+    dbPermissions['edit_builder'],
+    dbPermissions['suspend_builder'],
+    dbPermissions['delete_builder'],
+    dbPermissions['manage_plans'],
+    dbPermissions['manage_revenue'],
+    dbPermissions['view_analytics'],
+  ];
+  await roleRepo.save(superAdminRole);
+
+  const builderAdminRole = new Role();
+  builderAdminRole.name = 'BUILDER_ADMIN';
+  builderAdminRole.description = 'Builder Administrator';
+  builderAdminRole.permissions = [
+    dbPermissions['manage_projects'],
+    dbPermissions['manage_users'],
+    dbPermissions['manage_website'],
+    dbPermissions['manage_leads'],
+    dbPermissions['manage_themes'],
+  ];
+  await roleRepo.save(builderAdminRole);
+
+  const builderStaffRole = new Role();
+  builderStaffRole.name = 'BUILDER_STAFF';
+  builderStaffRole.description = 'Builder Staff Member';
+  builderStaffRole.permissions = [
+    dbPermissions['manage_inventory'],
+    dbPermissions['manage_content'],
+    dbPermissions['manage_media'],
+  ];
+  await roleRepo.save(builderStaffRole);
+
+  const salesUserRole = new Role();
+  salesUserRole.name = 'SALES_USER';
+  salesUserRole.description = 'Builder Sales Agent';
+  salesUserRole.permissions = [
+    dbPermissions['view_leads'],
+    dbPermissions['add_lead_notes'],
+    dbPermissions['update_lead_status'],
+  ];
+  await roleRepo.save(salesUserRole);
 
   console.log('Seeding Builders...');
   // 1. Aethelgard Builder
@@ -35,6 +119,11 @@ async function bootstrap() {
   aethelgard.id = 'b0d39e2a-1cbe-4c28-bbbe-e6e788e99aa2';
   aethelgard.name = 'Aethelgard Luxury Residences';
   aethelgard.slug = 'aethelgard';
+  aethelgard.email = 'info@aethelgard.com';
+  aethelgard.phone = '+91 9999999999';
+  aethelgard.logo = '/assets/aethelgard_logo.png';
+  aethelgard.status = 'ACTIVE';
+  aethelgard.planId = 'growth';
   aethelgard.themeSettings = {
     logo: 'AETHELGARD',
     primaryColor: '#d4af37',
@@ -49,6 +138,11 @@ async function bootstrap() {
   const omniestate = new Builder();
   omniestate.name = 'OmniEstate Developers';
   omniestate.slug = 'omniestate';
+  omniestate.email = 'contact@omniestate.com';
+  omniestate.phone = '+91 8888888888';
+  omniestate.logo = '/assets/omniestate_logo.png';
+  omniestate.status = 'ACTIVE';
+  omniestate.planId = 'free';
   omniestate.themeSettings = {
     logo: 'OMNIESTATE',
     primaryColor: '#3b82f6',
@@ -69,6 +163,7 @@ async function bootstrap() {
   superAdmin.firstName = 'Super';
   superAdmin.lastName = 'Admin';
   superAdmin.role = 'SUPER_ADMIN';
+  superAdmin.roles = [superAdminRole];
   superAdmin.tenantId = undefined;
   await userRepo.save(superAdmin);
 
@@ -79,6 +174,7 @@ async function bootstrap() {
   aethelgardAdmin.firstName = 'Aethelgard';
   aethelgardAdmin.lastName = 'Admin';
   aethelgardAdmin.role = 'BUILDER_ADMIN';
+  aethelgardAdmin.roles = [builderAdminRole];
   aethelgardAdmin.tenantId = savedAethelgard.id;
   aethelgardAdmin.builder = savedAethelgard;
   await userRepo.save(aethelgardAdmin);
@@ -90,6 +186,7 @@ async function bootstrap() {
   omniestateAdmin.firstName = 'OmniEstate';
   omniestateAdmin.lastName = 'Admin';
   omniestateAdmin.role = 'BUILDER_ADMIN';
+  omniestateAdmin.roles = [builderAdminRole];
   omniestateAdmin.tenantId = savedOmniestate.id;
   omniestateAdmin.builder = savedOmniestate;
   await userRepo.save(omniestateAdmin);
@@ -162,7 +259,7 @@ async function bootstrap() {
   lead1.phone = '+91 9876543210';
   lead1.projectId = savedAethelgardProj.id;
   lead1.project = savedAethelgardProj;
-  lead1.status = 'WARM';
+  lead1.status = 'NEW';
   lead1.notes = 'Interested in the 3BHK flat on Floor 2. Needs a callback tomorrow.';
   await leadRepo.save(lead1);
 
@@ -173,27 +270,11 @@ async function bootstrap() {
   lead2.phone = '+91 9123456789';
   lead2.projectId = savedAethelgardProj.id;
   lead2.project = savedAethelgardProj;
-  lead2.status = 'HOT';
+  lead2.status = 'CONTACTED';
   lead2.notes = 'Visited the sky virtual tour. Ready to book the Sapphire Penthouse.';
   await leadRepo.save(lead2);
 
-  console.log('Seeding Website Layout Sections...');
-  const page = new Page();
-  page.tenantId = savedAethelgard.id;
-  page.slug = 'home';
-  page.title = 'Aethelgard Luxury Home Page';
-  page.isActive = true;
-  page.sections = [
-    { id: 'hero', name: 'Cinematic Hero', isActive: true, content: { title: 'The Peak of Luxury Living', subtitle: 'Aethelgard Sky Penthouses' } },
-    { id: 'concept', name: 'Luxury Concept', isActive: true },
-    { id: 'gallery', name: 'Cinematic Gallery', isActive: true },
-    { id: 'amenities', name: 'Amenities', isActive: true },
-    { id: 'location', name: 'Location Map', isActive: true },
-    { id: 'contact', name: 'Booking Form', isActive: true },
-  ];
-  await pageRepo.save(page);
-
-  console.log('--- DB SEEDING COMPLETED SUCCESS ---');
+  console.log('--- DB SEEDING COMPLETED SUCCESS (PHASE 1) ---');
   await app.close();
 }
 

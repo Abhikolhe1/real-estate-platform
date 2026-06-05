@@ -2,11 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { paths } from '@/routes/paths';
+import { useAuthStore } from '@/store/authStore';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+
   const [builderInfo, setBuilderInfo] = useState({
     name: 'Aethelgard Residences',
     email: 'admin@aethelgard.com',
@@ -15,10 +21,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   });
 
   useEffect(() => {
+    if (!token || !user?.tenantId) return;
+
     // Dynamically fetch builder theme from backend API
     fetch('http://localhost:3001/builders/theme', {
       headers: {
-        'x-tenant-id': 'b0d39e2a-1cbe-4c28-bbbe-e6e788e99aa2', // Seeded Aethelgard builder id placeholder
+        'x-tenant-id': user.tenantId,
+        'Authorization': `Bearer ${token}`,
       },
     })
       .then((res) => res.json())
@@ -26,14 +35,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (data && data.logo) {
           setBuilderInfo({
             name: data.logo === 'AETHELGARD' ? 'Aethelgard Residences' : 'OmniEstate Developers',
-            email: data.logo === 'AETHELGARD' ? 'admin@aethelgard.com' : 'admin@omniestate.com',
+            email: user.email,
             logo: data.logo,
             primaryColor: data.primaryColor || '#d4af37',
           });
         }
       })
       .catch(() => {});
-  }, []);
+  }, [token, user]);
 
   const navItems = [
     { label: 'Dashboard', path: paths.dashboard.root, icon: '📊' },
@@ -44,6 +53,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: 'CRM Leads', path: paths.dashboard.leads, icon: '👥' },
     { label: 'Media Assets', path: paths.dashboard.media, icon: '📁' },
   ];
+
+  if (user?.role === 'BUILDER_ADMIN') {
+    navItems.push({ label: 'Team Members', path: '/team', icon: '👥' });
+  }
+
 
   return (
     <div className="flex min-h-screen bg-gray-50 text-gray-900 font-sans">
@@ -81,17 +95,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
         </div>
 
-        <div className="border-t border-gray-100 pt-4 flex items-center gap-3 pl-2">
-          <div 
-            className="w-10 h-10 rounded-xl text-white flex items-center justify-center font-bold text-sm shadow-sm transition-all duration-300"
-            style={{ backgroundColor: builderInfo.primaryColor }}
+        <div className="border-t border-gray-100 pt-4 flex flex-col gap-3 pl-2">
+          <div className="flex items-center gap-3">
+            <div 
+              className="w-10 h-10 rounded-xl text-white flex items-center justify-center font-bold text-sm shadow-sm transition-all duration-300"
+              style={{ backgroundColor: builderInfo.primaryColor }}
+            >
+              {builderInfo.logo.substring(0, 2)}
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-800 tracking-tight">{builderInfo.name}</p>
+              <p className="text-[10px] text-gray-400 font-medium mt-0.5">{builderInfo.email}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              clearAuth();
+              router.push('/login');
+            }}
+            className="w-full text-left text-xs font-bold text-red-500 hover:text-red-600 transition-colors mt-2"
           >
-            {builderInfo.logo.substring(0, 2)}
-          </div>
-          <div>
-            <p className="text-xs font-bold text-gray-800 tracking-tight">{builderInfo.name}</p>
-            <p className="text-[10px] text-gray-400 font-medium mt-0.5">{builderInfo.email}</p>
-          </div>
+            🚪 Sign Out
+          </button>
         </div>
       </aside>
 

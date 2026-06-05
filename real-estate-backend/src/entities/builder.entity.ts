@@ -16,6 +16,21 @@ export class Builder {
   @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
   customDomain?: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  email?: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  phone?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  logo?: string;
+
+  @Column({ type: 'varchar', length: 50, default: 'ACTIVE' })
+  status!: string; // ACTIVE, SUSPENDED, DELETED
+
+  @Column({ type: 'varchar', length: 50, default: 'free' })
+  planId!: string; // free, growth, enterprise
+
   @Column({ type: 'jsonb', default: '{}' })
   themeSettings!: Record<string, any>;
 
@@ -34,3 +49,4 @@ export class Builder {
   @UpdateDateColumn({ type: 'timestamp with time zone' })
   updatedAt!: Date;
 }
+

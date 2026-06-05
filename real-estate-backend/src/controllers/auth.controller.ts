@@ -1,6 +1,6 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
-import { LoginDto, RegisterDto, RefreshTokenDto } from '../dtos/auth.dto';
+import { LoginDto, RegisterDto, RefreshTokenDto, RegisterBuilderDto } from '../dtos/auth.dto';
 import { TenantId } from '../interceptors/tenant.decorator';
 
 @Controller('auth')
@@ -25,6 +25,14 @@ export class AuthController {
     return this.authService.register(tenantId, registerDto);
   }
 
+  @Post('register-builder')
+  @HttpCode(HttpStatus.CREATED)
+  async registerBuilder(
+    @Body() registerBuilderDto: RegisterBuilderDto,
+  ) {
+    return this.authService.registerBuilder(registerBuilderDto);
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
@@ -37,3 +45,4 @@ export class AuthController {
     return { success: true, message: 'Session terminated' };
   }
 }
+

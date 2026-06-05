@@ -1,6 +1,5 @@
 import './globals.css';
-import DashboardLayout from '@/layouts/dashboard/layout';
-import React from 'react';
+import React, { Suspense } from 'react';
 
 export const metadata = {
   title: 'Aether Builder Dashboard | Premium Property SaaS Management',
@@ -14,9 +13,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <DashboardLayout>{children}</DashboardLayout>
+      <body className="bg-gray-50 text-gray-900 font-sans antialiased">
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-screen bg-gray-950 text-slate-100">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
+              <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">Loading Workspace Layout...</p>
+            </div>
+          </div>
+        }>
+          {children}
+        </Suspense>
       </body>
     </html>
   );
 }
+

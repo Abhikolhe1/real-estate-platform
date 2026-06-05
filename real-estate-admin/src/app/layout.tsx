@@ -1,5 +1,4 @@
 import './globals.css';
-import DashboardLayout from '@/layouts/dashboard/layout';
 import React, { Suspense } from 'react';
 
 export const metadata = {
@@ -14,18 +13,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className="bg-slate-950 text-slate-100 font-sans antialiased">
         <Suspense fallback={
           <div className="flex items-center justify-center min-h-screen bg-slate-950 text-slate-100">
             <div className="flex flex-col items-center gap-3">
               <div className="w-8 h-8 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
-              <p className="text-xs font-bold text-slate-500 tracking-wider uppercase">Loading Dashboard Layout...</p>
+              <p className="text-xs font-bold text-slate-500 tracking-wider uppercase">Loading Platform...</p>
             </div>
           </div>
         }>
-          <DashboardLayout>{children}</DashboardLayout>
+          {children}
         </Suspense>
       </body>
     </html>
   );
 }
+

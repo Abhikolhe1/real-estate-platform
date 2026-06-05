@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { gsap } from 'gsap';
+import { useAuthStore } from '@/store/authStore';
 
 interface Builder {
   id: string;
@@ -23,7 +24,10 @@ interface Builder {
 
 function SuperAdminPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const activeTab = searchParams.get('tab') || 'overview';
+  const token = useAuthStore((state) => state.token);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
   
   const [builders, setBuilders] = useState<Builder[]>([]);
   const [stats, setStats] = useState({
@@ -54,16 +58,25 @@ function SuperAdminPageContent() {
   const tabContentRef = useRef<HTMLDivElement>(null);
 
   const fetchPlatformData = async () => {
+    if (!token) return;
     try {
       // 1. Fetch builders
-      const buildersRes = await fetch('http://localhost:3001/builders');
+      const buildersRes = await fetch('http://localhost:3001/builders', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (buildersRes.ok) {
         const data = await buildersRes.json();
         setBuilders(data);
+      } else if (buildersRes.status === 401) {
+        clearAuth();
+        router.push('/login');
+        return;
       }
 
       // 2. Fetch aggregated stats
-      const statsRes = await fetch('http://localhost:3001/builders/stats/summary');
+      const statsRes = await fetch('http://localhost:3001/builders/stats/summary', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
@@ -78,7 +91,7 @@ function SuperAdminPageContent() {
 
   useEffect(() => {
     fetchPlatformData();
-  }, []);
+  }, [token]);
 
   // Trigger performant entry GSAP animations on tab change
   useEffect(() => {
@@ -93,13 +106,16 @@ function SuperAdminPageContent() {
 
   const handleAddBuilder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nameInput) return;
+    if (!nameInput || !token) return;
     setIsSubmitting(true);
 
     try {
       const res = await fetch('http://localhost:3001/builders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           name: nameInput,
           slug: slugInput || nameInput.toLowerCase().replace(/\s+/g, '-'),
@@ -134,13 +150,16 @@ function SuperAdminPageContent() {
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedBuilder) return;
+    if (!selectedBuilder || !token) return;
     setIsSubmitting(true);
 
     try {
       const res = await fetch(`http://localhost:3001/builders/${selectedBuilder.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           name: nameInput,
           slug: slugInput,
@@ -165,10 +184,14 @@ function SuperAdminPageContent() {
   };
 
   const handleToggleActive = async (builder: Builder) => {
+    if (!token) return;
     try {
       const res = await fetch(`http://localhost:3001/builders/${builder.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ isActive: !builder.isActive }),
       });
       if (res.ok) {
@@ -180,6 +203,7 @@ function SuperAdminPageContent() {
   };
 
   const handleDeleteBuilder = async (builderId: string) => {
+    if (!token) return;
     const doubleCheck = confirm(
       'CAUTION: Deleting this builder developer account will immediately cascade and permanently destroy all towers, inventory, leads, layouts, and users connected to this tenant. Do you want to proceed?'
     );
@@ -188,6 +212,7 @@ function SuperAdminPageContent() {
     try {
       const res = await fetch(`http://localhost:3001/builders/${builderId}`, {
         method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         await fetchPlatformData();
@@ -287,7 +312,7 @@ function SuperAdminPageContent() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-950/60 border-b border-slate-900 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                    <th className="py-4 px-6">Company Detail</th>
+                     <th className="py-4 px-6">Company Detail</th>
                     <th className="py-4 px-6">Domain Settings</th>
                     <th className="py-4 px-6">Pricing Tier</th>
                     <th className="py-4 px-6">Status</th>

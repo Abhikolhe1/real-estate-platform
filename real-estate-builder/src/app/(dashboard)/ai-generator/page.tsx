@@ -20,6 +20,142 @@ interface FloorPlan {
   project?: { name: string };
 }
 
+// Top-level Three.js helper to construct furniture mesh groupings
+const buildFurnitureMesh = (THREE: any, type: string, color: string) => {
+  const furnGroup = new THREE.Group();
+
+  if (type === 'sofa') {
+    // Main base
+    const baseGeo = new THREE.BoxGeometry(1.8, 0.4, 0.8);
+    const baseMat = new THREE.MeshStandardMaterial({ color, roughness: 0.7 });
+    const base = new THREE.Mesh(baseGeo, baseMat);
+    base.position.y = 0.2;
+    furnGroup.add(base);
+
+    // Backrest
+    const backGeo = new THREE.BoxGeometry(1.8, 0.6, 0.2);
+    const back = new THREE.Mesh(backGeo, baseMat);
+    back.position.set(0, 0.5, -0.3);
+    furnGroup.add(back);
+
+    // Armrests
+    const armGeo = new THREE.BoxGeometry(0.2, 0.5, 0.8);
+    const armL = new THREE.Mesh(armGeo, baseMat);
+    armL.position.set(-0.9, 0.45, 0);
+    const armR = armL.clone();
+    armR.position.x = 0.9;
+    furnGroup.add(armL, armR);
+  } else if (type === 'bed') {
+    // Mattress base
+    const baseGeo = new THREE.BoxGeometry(1.6, 0.4, 2.0);
+    const baseMat = new THREE.MeshStandardMaterial({ color: '#f5f5f5', roughness: 0.9 });
+    const base = new THREE.Mesh(baseGeo, baseMat);
+    base.position.y = 0.2;
+    furnGroup.add(base);
+
+    // Headboard
+    const headGeo = new THREE.BoxGeometry(1.6, 0.9, 0.15);
+    const headMat = new THREE.MeshStandardMaterial({ color: '#554d48', roughness: 0.6 });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.set(0, 0.45, -1.0);
+    furnGroup.add(head);
+
+    // Pillow
+    const pillowGeo = new THREE.BoxGeometry(1.2, 0.1, 0.4);
+    const pillowMat = new THREE.MeshStandardMaterial({ color: '#ffffff' });
+    const pillow = new THREE.Mesh(pillowGeo, pillowMat);
+    pillow.position.set(0, 0.45, -0.7);
+    furnGroup.add(pillow);
+  } else if (type === 'table') {
+    // Top plate
+    const topGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.08, 16);
+    const woodMat = new THREE.MeshStandardMaterial({ color: '#8b5a2b', roughness: 0.4 });
+    const top = new THREE.Mesh(topGeo, woodMat);
+    top.position.y = 0.76;
+    furnGroup.add(top);
+
+    // Leg
+    const legGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.72, 8);
+    const metalMat = new THREE.MeshStandardMaterial({ color: '#222222', roughness: 0.5 });
+    const leg = new THREE.Mesh(legGeo, metalMat);
+    leg.position.y = 0.36;
+    furnGroup.add(leg);
+  } else if (type === 'plant') {
+    // Pot
+    const potGeo = new THREE.CylinderGeometry(0.3, 0.25, 0.5, 8);
+    const potMat = new THREE.MeshStandardMaterial({ color: '#a0522d' });
+    const pot = new THREE.Mesh(potGeo, potMat);
+    pot.position.y = 0.25;
+    furnGroup.add(pot);
+
+    // Foliage
+    const leafGeo = new THREE.SphereGeometry(0.45, 8, 8);
+    const leafMat = new THREE.MeshStandardMaterial({ color: '#2e8b57', roughness: 0.9 });
+    const foliage = new THREE.Mesh(leafGeo, leafMat);
+    foliage.position.y = 0.7;
+    furnGroup.add(foliage);
+  } else {
+    // Generic placeholder box
+    const boxGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+    const boxMat = new THREE.MeshStandardMaterial({ color: '#999999' });
+    const box = new THREE.Mesh(boxGeo, boxMat);
+    box.position.y = 0.4;
+    furnGroup.add(box);
+  }
+
+  return furnGroup;
+};
+
+const getFileCategory = (filename: string): string => {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  if (['dwg', 'dxf'].includes(ext || '')) return 'cad';
+  if (['ifc'].includes(ext || '')) return 'bim';
+  if (['pdf'].includes(ext || '')) return 'pdf';
+  if (['glb', 'gltf', 'obj', 'fbx'].includes(ext || '')) return '3d';
+  return 'images';
+};
+
+const renderFilePreview = (imageUrl?: string, name?: string) => {
+  if (!imageUrl) return <span className="text-3xl">📐</span>;
+  
+  const isDoc = imageUrl.startsWith('docs/');
+  const ext = imageUrl.split('.').pop()?.toLowerCase();
+  
+  if (isDoc || ['dwg', 'dxf', 'ifc', 'pdf', 'glb', 'gltf', 'obj', 'fbx'].includes(ext || '')) {
+    let icon = '📐';
+    let typeLabel = 'CAD Drawing';
+    let bgGradient = 'from-blue-500 to-indigo-600';
+    
+    if (ext === 'pdf') {
+      icon = '📕';
+      typeLabel = 'PDF Blueprint';
+      bgGradient = 'from-rose-500 to-red-600';
+    } else if (ext === 'ifc') {
+      icon = '🏢';
+      typeLabel = 'BIM IFC Model';
+      bgGradient = 'from-emerald-500 to-teal-600';
+    } else if (['glb', 'gltf', 'obj', 'fbx'].includes(ext || '')) {
+      icon = '📦';
+      typeLabel = '3D Model File';
+      bgGradient = 'from-amber-500 to-orange-600';
+    } else if (['dwg', 'dxf'].includes(ext || '')) {
+      icon = '📐';
+      typeLabel = 'AutoCAD File';
+      bgGradient = 'from-sky-500 to-blue-600';
+    }
+    
+    return (
+      <div className={`w-full h-full bg-gradient-to-br ${bgGradient} flex flex-col items-center justify-center p-4 text-white relative`}>
+        <span className="text-4xl filter drop-shadow-md mb-2">{icon}</span>
+        <span className="text-[10px] font-black uppercase tracking-wider bg-black/20 px-2 py-0.5 rounded-full mb-1">{typeLabel}</span>
+        <span className="text-[10px] font-medium text-white/85 truncate max-w-full px-2 text-center">{imageUrl.split('/').pop()}</span>
+      </div>
+    );
+  }
+  
+  return <img src={imageUrl} alt={name} className="w-full h-full object-cover opacity-80" />;
+};
+
 export default function AIFloorPlanGeneratorPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([]);
@@ -114,6 +250,7 @@ export default function AIFloorPlanGeneratorPage() {
           body: JSON.stringify({
             name: uploadName,
             projectId: selectedProjId,
+            imageUrl: uploadFile ? `docs/${getFileCategory(uploadFile.name)}/${uploadFile.name}` : undefined,
           }),
         });
         const data = await res.json();
@@ -140,7 +277,8 @@ export default function AIFloorPlanGeneratorPage() {
     setAnalysisProgress(0);
     setAnalysisLogs([]);
 
-    const steps = [
+    const ext = activeFP.imageUrl?.split('.').pop()?.toLowerCase();
+    let steps = [
       { log: 'Initializing computer vision blueprint processor...', progress: 10 },
       { log: 'Tracing primary exterior concrete walls...', progress: 30 },
       { log: 'Identifying doorway thresholds and window structures...', progress: 50 },
@@ -148,6 +286,26 @@ export default function AIFloorPlanGeneratorPage() {
       { log: 'Calculating total bedroom, bathroom, and kitchen configurations...', progress: 90 },
       { log: 'AI extraction completed. Formulating valuation estimate...', progress: 100 },
     ];
+
+    if (['dwg', 'dxf', 'pdf'].includes(ext || '')) {
+      steps = [
+        { log: 'Initializing vector blueprint CAD parser...', progress: 10 },
+        { log: 'Tracing vector layers, polyline segments, and room walls...', progress: 30 },
+        { log: 'Resolving layered architectural entities (doors, windows, portals)...', progress: 50 },
+        { log: 'Differentiating flat unit boundary areas from metadata layout...', progress: 70 },
+        { log: 'Extracting dimensions and building scale from CAD coordinates...', progress: 90 },
+        { log: 'CAD processing completed. Compiling 3D extrusion data...', progress: 100 },
+      ];
+    } else if (['ifc', 'glb', 'gltf', 'obj', 'fbx'].includes(ext || '')) {
+      steps = [
+        { log: 'Loading 3D BIM model data structure and mesh hierarchies...', progress: 10 },
+        { log: 'Parsing building storeys, spaces, and structural wall objects...', progress: 30 },
+        { log: 'Extracting floor plan boundaries directly from 3D coordinates...', progress: 50 },
+        { log: 'Mapping furniture placeholders and room attributes from model...', progress: 70 },
+        { log: 'Optimizing 3D mesh vertices for the WebGL extrusion engine...', progress: 90 },
+        { log: '3D/BIM import completed. Formulating valuation estimate...', progress: 100 },
+      ];
+    }
 
     let currentStep = 0;
     const interval = setInterval(() => {
@@ -368,116 +526,39 @@ ENTITIES
         const wNGeo = new THREE.BoxGeometry(room.width, wallH, wallT);
         const wN = new THREE.Mesh(wNGeo, createWallMaterial(room.color));
         wN.position.set(room.x + room.width / 2, wallH / 2, room.z);
+        wN.userData = { type: 'wall', roomId: room.id };
         scene.add(wN);
+        roomMeshes.push(wN);
 
         // South wall
         const wSGeo = new THREE.BoxGeometry(room.width, wallH, wallT);
         const wS = new THREE.Mesh(wSGeo, createWallMaterial(room.color));
         wS.position.set(room.x + room.width / 2, wallH / 2, room.z + room.depth);
+        wS.userData = { type: 'wall', roomId: room.id };
         scene.add(wS);
+        roomMeshes.push(wS);
 
         // West wall
         const wWGeo = new THREE.BoxGeometry(wallT, wallH, room.depth);
         const wW = new THREE.Mesh(wWGeo, createWallMaterial(room.color));
         wW.position.set(room.x, wallH / 2, room.z + room.depth / 2);
+        wW.userData = { type: 'wall', roomId: room.id };
         scene.add(wW);
+        roomMeshes.push(wW);
 
         // East wall
         const wEGeo = new THREE.BoxGeometry(wallT, wallH, room.depth);
         const wE = new THREE.Mesh(wEGeo, createWallMaterial(room.color));
         wE.position.set(room.x + room.width, wallH / 2, room.z + room.depth / 2);
+        wE.userData = { type: 'wall', roomId: room.id };
         scene.add(wE);
+        roomMeshes.push(wE);
       });
 
       // Draw Furniture
-      const buildFurnitureMesh = (type: string, color: string) => {
-        const furnGroup = new THREE.Group();
-
-        if (type === 'sofa') {
-          // Main base
-          const baseGeo = new THREE.BoxGeometry(1.8, 0.4, 0.8);
-          const baseMat = new THREE.MeshStandardMaterial({ color, roughness: 0.7 });
-          const base = new THREE.Mesh(baseGeo, baseMat);
-          base.position.y = 0.2;
-          furnGroup.add(base);
-
-          // Backrest
-          const backGeo = new THREE.BoxGeometry(1.8, 0.6, 0.2);
-          const back = new THREE.Mesh(backGeo, baseMat);
-          back.position.set(0, 0.5, -0.3);
-          furnGroup.add(back);
-
-          // Armrests
-          const armGeo = new THREE.BoxGeometry(0.2, 0.5, 0.8);
-          const armL = new THREE.Mesh(armGeo, baseMat);
-          armL.position.set(-0.9, 0.45, 0);
-          const armR = armL.clone();
-          armR.position.x = 0.9;
-          furnGroup.add(armL, armR);
-        } else if (type === 'bed') {
-          // Mattress base
-          const baseGeo = new THREE.BoxGeometry(1.6, 0.4, 2.0);
-          const baseMat = new THREE.MeshStandardMaterial({ color: '#f5f5f5', roughness: 0.9 });
-          const base = new THREE.Mesh(baseGeo, baseMat);
-          base.position.y = 0.2;
-          furnGroup.add(base);
-
-          // Headboard
-          const headGeo = new THREE.BoxGeometry(1.6, 0.9, 0.15);
-          const headMat = new THREE.MeshStandardMaterial({ color: '#554d48', roughness: 0.6 });
-          const head = new THREE.Mesh(headGeo, headMat);
-          head.position.set(0, 0.45, -1.0);
-          furnGroup.add(head);
-
-          // Pillow
-          const pillowGeo = new THREE.BoxGeometry(1.2, 0.1, 0.4);
-          const pillowMat = new THREE.MeshStandardMaterial({ color: '#ffffff' });
-          const pillow = new THREE.Mesh(pillowGeo, pillowMat);
-          pillow.position.set(0, 0.45, -0.7);
-          furnGroup.add(pillow);
-        } else if (type === 'table') {
-          // Top plate
-          const topGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.08, 16);
-          const woodMat = new THREE.MeshStandardMaterial({ color: '#8b5a2b', roughness: 0.4 });
-          const top = new THREE.Mesh(topGeo, woodMat);
-          top.position.y = 0.76;
-          furnGroup.add(top);
-
-          // Leg
-          const legGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.72, 8);
-          const metalMat = new THREE.MeshStandardMaterial({ color: '#222222', roughness: 0.5 });
-          const leg = new THREE.Mesh(legGeo, metalMat);
-          leg.position.y = 0.36;
-          furnGroup.add(leg);
-        } else if (type === 'plant') {
-          // Pot
-          const potGeo = new THREE.CylinderGeometry(0.3, 0.25, 0.5, 8);
-          const potMat = new THREE.MeshStandardMaterial({ color: '#a0522d' });
-          const pot = new THREE.Mesh(potGeo, potMat);
-          pot.position.y = 0.25;
-          furnGroup.add(pot);
-
-          // Foliage
-          const leafGeo = new THREE.SphereGeometry(0.45, 8, 8);
-          const leafMat = new THREE.MeshStandardMaterial({ color: '#2e8b57', roughness: 0.9 });
-          const foliage = new THREE.Mesh(leafGeo, leafMat);
-          foliage.position.y = 0.7;
-          furnGroup.add(foliage);
-        } else {
-          // Generic placeholder box
-          const boxGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-          const boxMat = new THREE.MeshStandardMaterial({ color: '#999999' });
-          const box = new THREE.Mesh(boxGeo, boxMat);
-          box.position.y = 0.4;
-          furnGroup.add(box);
-        }
-
-        return furnGroup;
-      };
-
       layout.furniture.forEach((item) => {
         const color = item.type === 'sofa' ? '#2f4f4f' : '#6b8e23';
-        const mesh = buildFurnitureMesh(item.type, color);
+        const mesh = buildFurnitureMesh(THREE, item.type, color);
         mesh.position.set(item.x, 0, item.z);
         mesh.rotation.y = (item.rotation * Math.PI) / 180;
         (mesh as any).userData = { type: 'furniture', id: item.id };
@@ -532,24 +613,35 @@ ENTITIES
         raycaster.setFromCamera(mouse, camera);
 
         const intersects = raycaster.intersectObjects(scene.children, true);
-        if (intersects.length > 0) {
-          // Find root interactive mesh/group
-          let target: THREE.Object3D | null = intersects[0].object;
+        
+        let foundInteractive = false;
+        for (let i = 0; i < intersects.length; i++) {
+          let target: THREE.Object3D | null = intersects[i].object;
+          
+          // Traverse up parent hierarchy to find registered interactive userData elements
           while (target && target !== scene) {
             if ((target as any).userData && (target as any).userData.type) {
               const uData = (target as any).userData;
               if (uData.type === 'furniture') {
                 setSelectedFurnId(uData.id);
                 setSelectedRoomId(null);
+                foundInteractive = true;
                 return;
               } else if (uData.type === 'room') {
                 setSelectedRoomId(uData.id);
                 setSelectedFurnId(null);
+                foundInteractive = true;
                 return;
               }
             }
             target = target.parent;
           }
+        }
+
+        // Clicked on canvas background / empty space: clear selection
+        if (!foundInteractive) {
+          setSelectedFurnId(null);
+          setSelectedRoomId(null);
         }
       };
 
@@ -624,6 +716,7 @@ ENTITIES
 
       // Store references
       threeRef.current = {
+        THREE, // Store the library reference!
         scene,
         camera,
         renderer,
@@ -647,6 +740,60 @@ ENTITIES
       };
     });
   }, [activeFP?.id, viewMode]);
+
+  // Synchronize room colors and furniture mesh positions when layoutData updates in React state
+  useEffect(() => {
+    if (!threeRef.current || !activeFP || !activeFP.layoutData) return;
+    const { scene, roomMeshes, furnitureMeshes, THREE } = threeRef.current;
+    if (!scene || !THREE) return;
+
+    const layout = activeFP.layoutData;
+
+    // 1. Sync Room Floor/Wall Colors
+    layout.rooms.forEach((room) => {
+      const meshes = roomMeshes.filter(
+        (m: any) => m.userData && (m.userData.id === room.id || m.userData.roomId === room.id)
+      );
+      meshes.forEach((mesh: any) => {
+        if (mesh.material) {
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach((mat: any) => mat.color.set(room.color));
+          } else {
+            mesh.material.color.set(room.color);
+          }
+        }
+      });
+    });
+
+    // 2. Sync Furniture Meshes (move existing or spawn new ones)
+    layout.furniture.forEach((item) => {
+      const mesh = furnitureMeshes.find((m: any) => m.userData && m.userData.id === item.id);
+      if (mesh) {
+        // Move & rotate existing mesh
+        mesh.position.set(item.x, 0, item.z);
+        mesh.rotation.y = (item.rotation * Math.PI) / 180;
+      } else {
+        // Spawn new furniture mesh dynamically
+        const color = item.type === 'sofa' ? '#2f4f4f' : '#6b8e23';
+        const newMesh = buildFurnitureMesh(THREE, item.type, color);
+        newMesh.position.set(item.x, 0, item.z);
+        newMesh.rotation.y = (item.rotation * Math.PI) / 180;
+        newMesh.userData = { type: 'furniture', id: item.id };
+        scene.add(newMesh);
+        furnitureMeshes.push(newMesh);
+      }
+    });
+
+    // 3. Remove furniture meshes that are no longer in the layoutData state
+    for (let i = furnitureMeshes.length - 1; i >= 0; i--) {
+      const mesh = furnitureMeshes[i];
+      const exists = layout.furniture.some((item) => item.id === mesh.userData.id);
+      if (!exists) {
+        scene.remove(mesh);
+        furnitureMeshes.splice(i, 1);
+      }
+    }
+  }, [activeFP?.layoutData]);
 
   // Add furniture mesh handler
   const handleAddFurniture = (type: string) => {
@@ -759,17 +906,27 @@ ENTITIES
               </div>
 
               <div>
-                <span className="text-xs font-bold text-gray-500 block mb-1">Upload 2D Blueprint (PNG / JPG)</span>
+                <span className="text-xs font-bold text-gray-500 block mb-1">Upload Blueprint / CAD / 3D Model</span>
                 <label className="border-2 border-dashed border-gray-200 hover:border-gray-950 rounded-2xl p-6 transition duration-300 cursor-pointer flex flex-col items-center justify-center gap-2">
-                  <span className="text-2xl">🖼️</span>
-                  <span className="text-xs text-gray-400 font-semibold">Drag & drop or click to upload file</span>
+                  <span className="text-2xl">📐</span>
+                  <span className="text-xs text-gray-400 font-semibold text-center">Drag & drop or click to upload</span>
+                  <span className="text-[9px] text-gray-400 text-center font-normal leading-normal px-2">
+                    Supports DWG, DXF, PDF, IFC, GLB, GLTF, FBX, OBJ, PNG, JPG
+                  </span>
                   <input 
                     type="file" 
-                    accept="image/*" 
-                    onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                    accept="image/*,application/pdf,.dwg,.dxf,.ifc,.glb,.gltf,.obj,.fbx" 
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setUploadFile(file);
+                      if (file && !uploadName) {
+                        const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                        setUploadName(nameWithoutExt);
+                      }
+                    }}
                     className="hidden" 
                   />
-                  {uploadFile && <p className="text-[10px] text-emerald-600 font-bold mt-1">Selected: {uploadFile.name}</p>}
+                  {uploadFile && <p className="text-[10px] text-emerald-600 font-bold mt-1 text-center truncate max-w-full">Selected: {uploadFile.name}</p>}
                 </label>
               </div>
 
@@ -802,7 +959,7 @@ ENTITIES
                     className="border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition cursor-pointer flex flex-col bg-gray-50/30"
                   >
                     <div className="h-32 bg-gray-200 relative overflow-hidden flex items-center justify-center">
-                      <img src={fp.imageUrl} alt={fp.name} className="w-full h-full object-cover opacity-80" />
+                      {renderFilePreview(fp.imageUrl, fp.name)}
                       <span className={`absolute top-3 right-3 text-[9px] font-black px-2 py-0.5 rounded-full ${
                         fp.status === 'GENERATED' ? 'bg-emerald-100 text-emerald-800' :
                         fp.status === 'PAID' ? 'bg-blue-100 text-blue-800' :
@@ -850,7 +1007,7 @@ ENTITIES
           {activeFP.status === 'PENDING_ANALYSIS' && (
             <div className="flex flex-col items-center justify-center py-12 max-w-xl mx-auto text-center gap-6">
               <div className="relative w-full h-64 border border-gray-150 rounded-2xl overflow-hidden flex items-center justify-center bg-gray-50">
-                <img src={activeFP.imageUrl} alt={activeFP.name} className="max-h-full object-contain" />
+                {renderFilePreview(activeFP.imageUrl, activeFP.name)}
                 {isAnalyzing && (
                   <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex flex-col justify-between p-6">
                     <div className="w-full bg-white/20 h-1 rounded-full overflow-hidden">

@@ -19,6 +19,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     logo: 'AETHELGARD',
     primaryColor: '#d4af37',
   });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (!token || !user?.tenantId) return;
@@ -44,85 +45,145 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .catch(() => {});
   }, [token, user]);
 
-  const navItems = [
-    { label: 'Dashboard', path: paths.dashboard.root, icon: '📊' },
-    { label: 'Projects & Towers', path: paths.dashboard.projects, icon: '🏢' },
-    { label: 'Flats Inventory', path: paths.dashboard.flats, icon: '🛏️' },
-    { label: 'AI 3D Floor Plans', path: paths.dashboard.aiGenerator, icon: '📐' },
-    { label: 'Website CMS', path: paths.dashboard.website, icon: '🖥️' },
-    { label: 'CRM Leads', path: paths.dashboard.leads, icon: '👥' },
-    { label: 'Media Assets', path: paths.dashboard.media, icon: '📁' },
+  const navGroups = [
+    {
+      label: 'Overview',
+      items: [
+        { label: 'Dashboard', path: paths.dashboard.root, icon: '📊', exact: true },
+        { label: 'Analytics', path: paths.dashboard.analytics, icon: '📈', exact: false },
+      ],
+    },
+    {
+      label: 'Property Management',
+      items: [
+        { label: 'Projects', path: paths.dashboard.projects, icon: '🏗️', exact: false },
+        { label: 'Towers', path: paths.dashboard.towers, icon: '🏢', exact: false },
+        { label: 'Floors', path: paths.dashboard.floors, icon: '🏠', exact: false },
+        { label: 'Flats Inventory', path: paths.dashboard.flats, icon: '🛏️', exact: false },
+      ],
+    },
+    {
+      label: 'Sales & CRM',
+      items: [
+        { label: 'CRM Leads', path: paths.dashboard.leads, icon: '🤝', exact: false },
+        { label: 'Team Members', path: paths.dashboard.team, icon: '👥', exact: false },
+      ],
+    },
+    {
+      label: 'Content & Assets',
+      items: [
+        { label: 'Media Library', path: paths.dashboard.media, icon: '📁', exact: false },
+        { label: 'Website CMS', path: paths.dashboard.website, icon: '🖥️', exact: false },
+        { label: 'AI Floor Plans', path: paths.dashboard.aiGenerator, icon: '📐', exact: false },
+      ],
+    },
   ];
 
-  if (user?.role === 'BUILDER_ADMIN') {
-    navItems.push({ label: 'Team Members', path: '/team', icon: '👥' });
-  }
-
+  const isActive = (itemPath: string, exact: boolean) => {
+    if (exact) return pathname === itemPath;
+    return pathname.startsWith(itemPath) && itemPath !== '/';
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50 text-gray-900 font-sans">
       {/* Dynamic Builder Sidebar */}
-      <aside className="w-[280px] bg-white border-r border-gray-200 p-6 flex flex-col justify-between fixed h-full z-30">
-        <div>
-          <div className="mb-8 pl-4">
-            <span 
-              className="text-xl font-extrabold tracking-wider transition-colors duration-300"
-              style={{ color: builderInfo.primaryColor }}
-            >
-              {builderInfo.logo}
-            </span>
-            <span className="text-[9px] block text-gray-400 font-bold uppercase tracking-widest mt-1">BUILDER ENGINE</span>
-          </div>
-
-          <nav className="flex flex-col gap-1.5">
-            {navItems.map((item) => {
-              const isActive = pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                    isActive
-                      ? 'bg-gray-900 text-white shadow-sm'
-                      : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  <span className="text-lg">{item.icon}</span>
-                  <span className="text-sm">{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        <div className="border-t border-gray-100 pt-4 flex flex-col gap-3 pl-2">
-          <div className="flex items-center gap-3">
-            <div 
-              className="w-10 h-10 rounded-xl text-white flex items-center justify-center font-bold text-sm shadow-sm transition-all duration-300"
+      <aside className={`${sidebarCollapsed ? 'w-[72px]' : 'w-[260px]'} bg-white border-r border-gray-100 flex flex-col justify-between fixed h-full z-30 transition-all duration-300 overflow-hidden`}>
+        <div className="flex flex-col h-full">
+          {/* Brand Header */}
+          <div className={`flex items-center gap-3 px-4 py-5 border-b border-gray-100 ${sidebarCollapsed ? 'justify-center' : ''}`}>
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-xs flex-shrink-0 shadow-sm"
               style={{ backgroundColor: builderInfo.primaryColor }}
             >
               {builderInfo.logo.substring(0, 2)}
             </div>
-            <div>
-              <p className="text-xs font-bold text-gray-800 tracking-tight">{builderInfo.name}</p>
-              <p className="text-[10px] text-gray-400 font-medium mt-0.5">{builderInfo.email}</p>
+            {!sidebarCollapsed && (
+              <div className="overflow-hidden">
+                <p className="text-xs font-extrabold text-gray-900 tracking-tight truncate leading-tight">
+                  {builderInfo.name}
+                </p>
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
+                  Builder Engine
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Scrollable Navigation */}
+          <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
+            {navGroups.map((group) => (
+              <div key={group.label}>
+                {!sidebarCollapsed && (
+                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-2 px-3">
+                    {group.label}
+                  </p>
+                )}
+                <div className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const active = isActive(item.path, item.exact);
+                    return (
+                      <Link
+                        key={item.path}
+                        href={item.path}
+                        title={sidebarCollapsed ? item.label : undefined}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-all duration-200 group ${
+                          active
+                            ? 'bg-gray-900 text-white shadow-sm'
+                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                        } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                      >
+                        <span className="text-base flex-shrink-0">{item.icon}</span>
+                        {!sidebarCollapsed && (
+                          <span className="text-[13px] truncate">{item.label}</span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
+
+          {/* Bottom User Info + Collapse Toggle */}
+          <div className="border-t border-gray-100 p-3 space-y-3">
+            {!sidebarCollapsed && (
+              <div className="flex items-center gap-3 px-2 py-2">
+                <div
+                  className="w-8 h-8 rounded-lg text-white flex items-center justify-center font-bold text-xs flex-shrink-0"
+                  style={{ backgroundColor: builderInfo.primaryColor }}
+                >
+                  {(user?.firstName || builderInfo.logo).substring(0, 2).toUpperCase()}
+                </div>
+                <div className="overflow-hidden">
+                  <p className="text-xs font-bold text-gray-800 truncate">{user?.firstName || 'Builder Admin'}</p>
+                  <p className="text-[10px] text-gray-400 truncate">{user?.email || builderInfo.email}</p>
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="flex-1 text-center py-2 rounded-lg text-xs font-bold text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+                title="Toggle sidebar"
+              >
+                {sidebarCollapsed ? '→' : '←'}
+              </button>
+              {!sidebarCollapsed && (
+                <button
+                  onClick={() => { clearAuth(); router.push('/login'); }}
+                  className="flex-1 text-center py-2 rounded-lg text-xs font-bold text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                >
+                  Sign Out
+                </button>
+              )}
             </div>
           </div>
-          <button
-            onClick={() => {
-              clearAuth();
-              router.push('/login');
-            }}
-            className="w-full text-left text-xs font-bold text-red-500 hover:text-red-600 transition-colors mt-2"
-          >
-            🚪 Sign Out
-          </button>
         </div>
       </aside>
 
       {/* Main Panel Offset */}
-      <div className="flex-1 pl-[280px] min-h-screen">
-        <main className="p-10 max-w-7xl mx-auto">
+      <div className={`flex-1 ${sidebarCollapsed ? 'pl-[72px]' : 'pl-[260px]'} min-h-screen transition-all duration-300`}>
+        <main className="p-8 max-w-7xl mx-auto">
           {children}
         </main>
       </div>

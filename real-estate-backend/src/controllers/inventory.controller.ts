@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Put, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tower } from '../entities/tower.entity';
 import { Floor } from '../entities/floor.entity';
 import { Flat } from '../entities/flat.entity';
+import { Lead } from '../entities/lead.entity';
 import { TenantId } from '../interceptors/tenant.decorator';
 
 @Controller('inventory')
@@ -15,6 +16,8 @@ export class InventoryController {
     private readonly floorRepo: Repository<Floor>,
     @InjectRepository(Flat)
     private readonly flatRepo: Repository<Flat>,
+    @InjectRepository(Lead)
+    private readonly leadRepo: Repository<Lead>,
   ) {}
 
   // Get Towers
@@ -116,5 +119,176 @@ export class InventoryController {
 
     const saved = await this.flatRepo.save(flat);
     return { success: true, flat: saved };
+  }
+
+  // ===================== FLOORS CRUD =====================
+
+  // Get floors for a specific tower
+  @Get('floors')
+  async getFloors(@TenantId() tenantId: string, @Query('towerId') towerId?: string) {
+    const query: any = { tenantId };
+    if (towerId) query.towerId = towerId;
+    return this.floorRepo.find({
+      where: query,
+      relations: ['flats'],
+      order: { floorNumber: 'ASC' },
+    });
+  }
+
+  // Create individual floor under a tower
+  @Post('floors')
+  async createFloor(
+    @TenantId() tenantId: string,
+    @Body() body: { towerId: string; floorNumber: number; description?: string; flatsCount?: number },
+  ) {
+    const floor = new Floor();
+    floor.tenantId = tenantId;
+    floor.towerId = body.towerId;
+    floor.floorNumber = body.floorNumber;
+    floor.description = body.description || `Floor level ${body.floorNumber}`;
+    const savedFloor = await this.floorRepo.save(floor);
+
+    // Auto-seed flats if flatsCount specified
+    const seededFlats: Flat[] = [];
+    if (body.flatsCount && body.flatsCount > 0) {
+      for (let unit = 1; unit <= body.flatsCount; unit++) {
+        const flat = new Flat();
+        flat.tenantId = tenantId;
+        flat.floorId = savedFloor.id;
+        flat.flatNumber = `${body.floorNumber}0${unit}`;
+        flat.status = 'AVAILABLE';
+        flat.sizeSqFt = 1200 + unit * 200;
+        flat.price = 12000000 + unit * 3000000;
+        flat.type = '2BHK';
+        const savedFlat = await this.flatRepo.save(flat);
+        seededFlats.push(savedFlat);
+      }
+    }
+
+    return { success: true, floor: savedFloor, flatsSeeded: seededFlats.length };
+  }
+
+  // Update floor description
+  @Put('floors/:id')
+  async updateFloor(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() body: { description?: string; floorNumber?: number },
+  ) {
+    const floor = await this.floorRepo.findOne({ where: { id, tenantId } });
+    if (!floor) return { success: false, message: 'Floor not found' };
+    if (body.description !== undefined) floor.description = body.description;
+    if (body.floorNumber !== undefined) floor.floorNumber = body.floorNumber;
+    const saved = await this.floorRepo.save(floor);
+    return { success: true, floor: saved };
+  }
+
+  // Delete floor (cascade deletes flats)
+  @Delete('floors/:id')
+  async deleteFloor(@TenantId() tenantId: string, @Param('id') id: string) {
+    const floor = await this.floorRepo.findOne({ where: { id, tenantId } });
+    if (!floor) return { success: false, message: 'Floor not found' };
+    await this.floorRepo.remove(floor);
+    return { success: true };
+  }
+
+  // ===================== TOWERS UPDATE/DELETE =====================
+
+  // Update Tower
+  @Put('towers/:id')
+  async updateTower(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() body: { name?: string; description?: string },
+  ) {
+    const tower = await this.towerRepo.findOne({ where: { id, tenantId } });
+    if (!tower) return { success: false, message: 'Tower not found' };
+    if (body.name) tower.name = body.name;
+    if (body.description !== undefined) tower.description = body.description;
+    const saved = await this.towerRepo.save(tower);
+    return { success: true, tower: saved };
+  }
+
+  // Delete Tower (cascade deletes floors + flats)
+  @Delete('towers/:id')
+  async deleteTower(@TenantId() tenantId: string, @Param('id') id: string) {
+    const tower = await this.towerRepo.findOne({ where: { id, tenantId } });
+    if (!tower) return { success: false, message: 'Tower not found' };
+    await this.towerRepo.remove(tower);
+    return { success: true };
+  }
+
+  // ===================== ADD FLAT =====================
+
+  // Create individual flat under a floor
+  @Post('flats')
+  async createFlat(
+    @TenantId() tenantId: string,
+    @Body() body: {
+      floorId: string;
+      flatNumber: string;
+      type?: '1BHK' | '2BHK' | '3BHK' | 'PENTHOUSE';
+      sizeSqFt?: number;
+      price?: number;
+      orientation?: string;
+      description?: string;
+    },
+  ) {
+    const flat = new Flat();
+    flat.tenantId = tenantId;
+    flat.floorId = body.floorId;
+    flat.flatNumber = body.flatNumber;
+    flat.status = 'AVAILABLE';
+    flat.type = body.type || '2BHK';
+    flat.sizeSqFt = body.sizeSqFt || 1200;
+    flat.price = body.price || 12000000;
+    if (body.orientation) flat.orientation = body.orientation;
+    if (body.description) flat.description = body.description;
+    const saved = await this.flatRepo.save(flat);
+    return { success: true, flat: saved };
+  }
+
+  // Delete flat unit
+  @Delete('flats/:id')
+  async deleteFlat(@TenantId() tenantId: string, @Param('id') id: string) {
+    const flat = await this.flatRepo.findOne({ where: { id, tenantId } });
+    if (!flat) return { success: false, message: 'Flat not found' };
+    await this.flatRepo.remove(flat);
+    return { success: true };
+  }
+
+  // ===================== DASHBOARD ANALYTICS =====================
+
+  // Builder dashboard stats summary
+  @Get('stats')
+  async getDashboardStats(@TenantId() tenantId: string) {
+    const [totalFlats, bookedFlats, heldFlats, totalTowers, totalLeads, hotLeads] = await Promise.all([
+      this.flatRepo.count({ where: { tenantId } }),
+      this.flatRepo.count({ where: { tenantId, status: 'BOOKED' } }),
+      this.flatRepo.count({ where: { tenantId, status: 'HOLD' } }),
+      this.towerRepo.count({ where: { tenantId } }),
+      this.leadRepo.count({ where: { tenantId } }),
+      this.leadRepo.count({ where: { tenantId, status: 'HOT' } }),
+    ]);
+
+    const availableFlats = totalFlats - bookedFlats - heldFlats;
+    const inventoryAllocationPct = totalFlats > 0 ? Math.round(((bookedFlats + heldFlats) / totalFlats) * 100) : 0;
+
+    // Estimate revenue from booked flats (using avg price calculation)
+    const bookedFlatsData = await this.flatRepo.find({ where: { tenantId, status: 'BOOKED' } });
+    const totalRevenue = bookedFlatsData.reduce((sum, f) => sum + Number(f.price), 0);
+
+    return {
+      totalFlats,
+      availableFlats,
+      bookedFlats,
+      heldFlats,
+      totalTowers,
+      inventoryAllocationPct,
+      totalLeads,
+      hotLeads,
+      estimatedRevenue: totalRevenue,
+      walkthroughVisits: 1840 + Math.floor(Math.random() * 200), // Placeholder until analytics engine
+    };
   }
 }

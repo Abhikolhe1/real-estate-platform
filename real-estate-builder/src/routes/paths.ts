@@ -14,5 +14,6 @@ export const paths = {
     team: '/team',
     aiGenerator: '/ai-generator',
     walkthroughs: '/walkthroughs',
+    sdk: '/sdk',
   },
 };

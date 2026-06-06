@@ -51,7 +51,7 @@ async function bootstrap() {
 
   // Clear existing tables in correct order using a cascading truncate raw query
   console.log('Cleaning old records...');
-  await dataSource.query('TRUNCATE TABLE pages, leads, flats, floors, towers, projects, users, builders, role_permissions, user_roles, roles, permissions, themes, media, audit_logs, website_sections, components, navigation_menus, navigation_items, animation_presets, digital_twin_models, camera_points, hotspots, tour_routes CASCADE;');
+  await dataSource.query('TRUNCATE TABLE pages, leads, flats, floors, towers, projects, users, builders, role_permissions, user_roles, roles, permissions, themes, media, audit_logs, website_sections, components, navigation_menus, navigation_items, animation_presets, digital_twin_models, camera_points, hotspots, tour_routes, sdk_keys, embed_configs, analytics_events CASCADE;');
 
   console.log('Seeding Permissions...');
   const permissionsList = [

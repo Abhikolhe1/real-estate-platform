@@ -8,6 +8,7 @@ import {
   UploadedFile,
   Req,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -49,13 +50,29 @@ export class MediaController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads',
+        destination: 'c:/xampp/htdocs/real-estate-platform/shared-uploads',
         filename: (req, file, callback) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
+          const ext = extname(file.originalname).toLowerCase();
           callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
         },
       }),
+      limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB absolute max
+      },
+      fileFilter: (req, file, callback) => {
+        const allowedExtensions = ['.dwg', '.dxf', '.glb', '.png', '.jpg', '.jpeg', '.pdf'];
+        const ext = extname(file.originalname).toLowerCase();
+        if (!allowedExtensions.includes(ext)) {
+          return callback(
+            new BadRequestException(
+              `Invalid file extension. Allowed extensions are: dwg, dxf, glb, png, jpg, jpeg, pdf`,
+            ),
+            false,
+          );
+        }
+        callback(null, true);
+      },
     }),
   )
   async uploadFile(
@@ -63,6 +80,22 @@ export class MediaController {
     @UploadedFile() file: Express.Multer.File,
     @Req() request: Request,
   ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded or file exceeded size limit.');
+    }
+
+    // Specific limit validation: Images must be under 5MB
+    const ext = extname(file.originalname).toLowerCase();
+    const isImage = ['.png', '.jpg', '.jpeg'].includes(ext);
+    if (isImage && file.size > 5 * 1024 * 1024) {
+      // Delete uploaded file if it exceeds constraint
+      const fs = require('fs');
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+      throw new BadRequestException('Image files must not exceed 5MB in size.');
+    }
+
     const hostUrl = `${request.protocol}://${request.get('host')}`;
     return this.mediaService.createMedia(tenantId, file, hostUrl);
   }

@@ -17,6 +17,9 @@ import { UsersController } from './controllers/users.controller';
 import { NavigationController } from './controllers/navigation.controller';
 import { ComponentsController } from './controllers/components.controller';
 import { TwinsController } from './controllers/twins.controller';
+import { SdkController } from './controllers/sdk.controller';
+import { BillingController } from './controllers/billing.controller';
+import { EnterpriseController } from './controllers/enterprise.controller';
 
 // Services
 import { AuthService } from './services/auth.service';
@@ -28,6 +31,9 @@ import { PagesService } from './services/pages.service';
 import { NavigationService } from './services/navigation.service';
 import { ComponentsService } from './services/components.service';
 import { TwinsService } from './services/twins.service';
+import { SdkService } from './services/sdk.service';
+import { BillingService } from './services/billing.service';
+import { EnterpriseService } from './services/enterprise.service';
 
 // Entities
 import { Builder } from './entities/builder.entity';
@@ -54,6 +60,16 @@ import { DigitalTwinModel } from './entities/digital-twin-model.entity';
 import { CameraPoint } from './entities/camera-point.entity';
 import { Hotspot } from './entities/hotspot.entity';
 import { TourRoute } from './entities/tour-route.entity';
+import { SdkKey } from './entities/sdk-key.entity';
+import { EmbedConfig } from './entities/embed-config.entity';
+import { AnalyticsEvent } from './entities/analytics-event.entity';
+import { Subscription } from './entities/subscription.entity';
+import { Invoice } from './entities/invoice.entity';
+import { SsoProvider } from './entities/sso-provider.entity';
+import { Translation } from './entities/translation.entity';
+import { Currency } from './entities/currency.entity';
+import { GeneratedStructure } from './entities/generated-structure.entity';
+import { StructuralAperture } from './entities/structural-aperture.entity';
 
 // Interceptor
 import { TenantInterceptor } from './interceptors/tenant.interceptor';
@@ -73,10 +89,24 @@ import { AuditService } from './services/audit.service';
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL || 'postgresql://aether_db_user:aether_db_password_99@localhost:5432/realestate_saas?schema=public',
-      entities: [Builder, User, Project, Tower, Floor, Flat, Lead, Page, FloorPlan, Role, Permission, Theme, Media, AuditLog, WebsiteSection, Component, NavigationMenu, NavigationItem, AnimationPreset, PageRevision, DigitalTwinModel, CameraPoint, Hotspot, TourRoute],
+      entities: [
+        Builder, User, Project, Tower, Floor, Flat, Lead, Page, FloorPlan, 
+        Role, Permission, Theme, Media, AuditLog, WebsiteSection, Component, 
+        NavigationMenu, NavigationItem, AnimationPreset, PageRevision, 
+        DigitalTwinModel, CameraPoint, Hotspot, TourRoute, SdkKey, EmbedConfig, 
+        AnalyticsEvent, Subscription, Invoice, SsoProvider, Translation, Currency,
+        GeneratedStructure, StructuralAperture
+      ],
       synchronize: true, // Automatically synchronize schema
     }),
-    TypeOrmModule.forFeature([Builder, User, Project, Tower, Floor, Flat, Lead, Page, FloorPlan, Role, Permission, Theme, Media, AuditLog, WebsiteSection, Component, NavigationMenu, NavigationItem, AnimationPreset, PageRevision, DigitalTwinModel, CameraPoint, Hotspot, TourRoute]),
+    TypeOrmModule.forFeature([
+      Builder, User, Project, Tower, Floor, Flat, Lead, Page, FloorPlan, 
+      Role, Permission, Theme, Media, AuditLog, WebsiteSection, Component, 
+      NavigationMenu, NavigationItem, AnimationPreset, PageRevision, 
+      DigitalTwinModel, CameraPoint, Hotspot, TourRoute, SdkKey, EmbedConfig, 
+      AnalyticsEvent, Subscription, Invoice, SsoProvider, Translation, Currency,
+      GeneratedStructure, StructuralAperture
+    ]),
   ],
   controllers: [
     AuthController,
@@ -92,6 +122,9 @@ import { AuditService } from './services/audit.service';
     NavigationController,
     ComponentsController,
     TwinsController,
+    SdkController,
+    BillingController,
+    EnterpriseController,
   ],
   providers: [
     AuthService,
@@ -104,6 +137,9 @@ import { AuditService } from './services/audit.service';
     NavigationService,
     ComponentsService,
     TwinsService,
+    SdkService,
+    BillingService,
+    EnterpriseService,
     // Dynamic global multi-tenant injector
     {
       provide: APP_INTERCEPTOR,

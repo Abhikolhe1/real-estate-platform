@@ -11,7 +11,7 @@ import * as fs from 'fs';
 
 async function bootstrap() {
   // Ensure uploads directory exists
-  const uploadsDir = join(process.cwd(), 'uploads');
+  const uploadsDir = 'c:/xampp/htdocs/real-estate-platform/shared-uploads';
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }

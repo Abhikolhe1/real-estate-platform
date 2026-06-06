@@ -134,6 +134,10 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
 
   const btnRadius = buttonStyle === 'pill' ? 'rounded-full' : buttonStyle === 'rounded' ? 'rounded-xl' : 'rounded-none';
 
+  if (pathname && pathname.startsWith('/embed/')) {
+    return <div className="bg-[#0c0f16] text-stone-100 min-h-screen w-full overflow-hidden">{children}</div>;
+  }
+
   return (
     <div 
       className="bg-background text-on-surface min-h-screen relative font-body selection:bg-primary/30"

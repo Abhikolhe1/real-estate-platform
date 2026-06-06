@@ -106,6 +106,52 @@ const buildFurnitureMesh = (THREE: any, type: string, color: string) => {
   return furnGroup;
 };
 
+const snapFurnitureToWall = (x: number, z: number, layout: any) => {
+  let snapX = x;
+  let snapZ = z;
+  let snapRotation = null;
+  let minDistance = Infinity;
+
+  (layout.walls || []).forEach((w: any) => {
+    const px = w.startX;
+    const pz = w.startZ;
+    const dx = w.endX - px;
+    const dz = w.endZ - pz;
+    const wallLenSq = dx * dx + dz * dz;
+
+    if (wallLenSq === 0) return;
+
+    let t = ((x - px) * dx + (z - pz) * dz) / wallLenSq;
+    t = Math.max(0, Math.min(1, t));
+
+    const closestX = px + t * dx;
+    const closestZ = pz + t * dz;
+
+    const distSq = (x - closestX) * (x - closestX) + (z - closestZ) * (z - closestZ);
+    const dist = Math.sqrt(distSq);
+
+    if (dist < minDistance) {
+      minDistance = dist;
+      if (dist < 0.8) {
+        const wallAngle = Math.atan2(dz, dx);
+        const normalAngle = wallAngle + Math.PI / 2;
+        const offset = 0.45; 
+        
+        const side = (x - px) * -dz + (z - pz) * dx;
+        const sign = side >= 0 ? 1 : -1;
+
+        snapX = closestX + sign * Math.sin(wallAngle) * offset;
+        snapZ = closestZ - sign * Math.cos(wallAngle) * offset;
+
+        const degrees = Math.round((normalAngle * 180) / Math.PI) % 360;
+        snapRotation = degrees < 0 ? degrees + 360 : degrees;
+      }
+    }
+  });
+
+  return { x: snapX, z: snapZ, rotation: snapRotation };
+};
+
 const getFileCategory = (filename: string): string => {
   const ext = filename.split('.').pop()?.toLowerCase();
   if (['dwg', 'dxf'].includes(ext || '')) return 'cad';
@@ -185,6 +231,7 @@ export default function AIFloorPlanGeneratorPage() {
   const [viewMode, setViewMode] = useState<'2D' | '3D' | 'WALK'>('3D');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedFurnId, setSelectedFurnId] = useState<string | null>(null);
+  const [selectedWallId, setSelectedWallId] = useState<string | null>(null);
   const [paintColor, setPaintColor] = useState('#f5efe6');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -501,14 +548,8 @@ ENTITIES
       const roomMeshes: any[] = [];
       const furnitureMeshes: any[] = [];
 
-      // Materials helper
-      const createWallMaterial = (colorStr: string) => {
-        return new THREE.MeshStandardMaterial({ color: colorStr, roughness: 0.5 });
-      };
-
-      // Draw Rooms & Walls
+      // Draw Rooms Floor Plates
       layout.rooms.forEach((room) => {
-        // Floor Plane
         const floorGeo = new THREE.BoxGeometry(room.width, 0.05, room.depth);
         const floorMat = new THREE.MeshStandardMaterial({ color: room.color, roughness: 0.8 });
         const floorMesh = new THREE.Mesh(floorGeo, floorMat);
@@ -517,42 +558,109 @@ ENTITIES
         (floorMesh as any).userData = { type: 'room', id: room.id };
         scene.add(floorMesh);
         roomMeshes.push(floorMesh);
+      });
 
-        // Walls (north, south, east, west)
-        const wallH = 2.0;
-        const wallT = 0.12; // thickness
+      // Draw Walls procedurally with Apertures carved out
+      (layout.walls || []).forEach((w) => {
+        const startX = w.startX;
+        const startZ = w.startZ;
+        const endX = w.endX;
+        const endZ = w.endZ;
+        const thickness = w.thickness || 0.12;
+        const height = w.height || 2.0;
 
-        // North wall
-        const wNGeo = new THREE.BoxGeometry(room.width, wallH, wallT);
-        const wN = new THREE.Mesh(wNGeo, createWallMaterial(room.color));
-        wN.position.set(room.x + room.width / 2, wallH / 2, room.z);
-        wN.userData = { type: 'wall', roomId: room.id };
-        scene.add(wN);
-        roomMeshes.push(wN);
+        const dx = endX - startX;
+        const dz = endZ - startZ;
+        const length = Math.sqrt(dx * dx + dz * dz);
+        const angle = Math.atan2(dz, dx);
 
-        // South wall
-        const wSGeo = new THREE.BoxGeometry(room.width, wallH, wallT);
-        const wS = new THREE.Mesh(wSGeo, createWallMaterial(room.color));
-        wS.position.set(room.x + room.width / 2, wallH / 2, room.z + room.depth);
-        wS.userData = { type: 'wall', roomId: room.id };
-        scene.add(wS);
-        roomMeshes.push(wS);
+        const wallApertures = (layout.apertures || []).filter((ap) => ap.wallId === w.id);
 
-        // West wall
-        const wWGeo = new THREE.BoxGeometry(wallT, wallH, room.depth);
-        const wW = new THREE.Mesh(wWGeo, createWallMaterial(room.color));
-        wW.position.set(room.x, wallH / 2, room.z + room.depth / 2);
-        wW.userData = { type: 'wall', roomId: room.id };
-        scene.add(wW);
-        roomMeshes.push(wW);
+        const createWallSegment = (len: number, h: number, elevation: number, offsetAlongWall: number) => {
+          const segGeo = new THREE.BoxGeometry(len, h, thickness);
+          const segMat = new THREE.MeshStandardMaterial({ color: '#d1d5db', roughness: 0.7 });
+          const segMesh = new THREE.Mesh(segGeo, segMat);
+          
+          const ux = dx / length;
+          const uz = dz / length;
+          const px = startX + ux * offsetAlongWall;
+          const pz = startZ + uz * offsetAlongWall;
+          
+          segMesh.position.set(px, elevation + h / 2, pz);
+          segMesh.rotation.y = -angle;
+          segMesh.castShadow = true;
+          segMesh.receiveShadow = true;
+          segMesh.userData = { type: 'wall', id: w.id };
+          scene.add(segMesh);
+          roomMeshes.push(segMesh);
+        };
 
-        // East wall
-        const wEGeo = new THREE.BoxGeometry(wallT, wallH, room.depth);
-        const wE = new THREE.Mesh(wEGeo, createWallMaterial(room.color));
-        wE.position.set(room.x + room.width, wallH / 2, room.z + room.depth / 2);
-        wE.userData = { type: 'wall', roomId: room.id };
-        scene.add(wE);
-        roomMeshes.push(wE);
+        if (wallApertures.length === 0) {
+          createWallSegment(length, height, 0, length / 2);
+        } else {
+          const sortedAps = [...wallApertures].sort((a, b) => a.startOffset - b.startOffset);
+          let currentOffset = 0;
+          const ux = dx / length;
+          const uz = dz / length;
+
+          sortedAps.forEach((ap) => {
+            // Part before aperture
+            if (ap.startOffset > currentOffset) {
+              const segLen = ap.startOffset - currentOffset;
+              createWallSegment(segLen, height, 0, currentOffset + segLen / 2);
+            }
+
+            // Bottom block below window
+            if (ap.elevation > 0) {
+              createWallSegment(ap.width, ap.elevation, 0, ap.startOffset + ap.width / 2);
+            }
+
+            // Top block above window/door
+            const topElevation = ap.elevation + ap.height;
+            if (height > topElevation) {
+              const topH = height - topElevation;
+              createWallSegment(ap.width, topH, topElevation, ap.startOffset + ap.width / 2);
+            }
+
+            // Render visual window glass / door frame inside the cutout!
+            const apMidOffset = ap.startOffset + ap.width / 2;
+            const px = startX + ux * apMidOffset;
+            const pz = startZ + uz * apMidOffset;
+
+            if (ap.type === 'window') {
+              const glassGeo = new THREE.BoxGeometry(ap.width - 0.05, ap.height - 0.05, thickness * 0.4);
+              const glassMat = new THREE.MeshStandardMaterial({
+                color: 0x00f5d4,
+                transparent: true,
+                opacity: 0.4,
+                roughness: 0.1
+              });
+              const glassMesh = new THREE.Mesh(glassGeo, glassMat);
+              glassMesh.position.set(px, ap.elevation + ap.height / 2, pz);
+              glassMesh.rotation.y = -angle;
+              glassMesh.userData = { type: 'wall', id: w.id };
+              scene.add(glassMesh);
+              roomMeshes.push(glassMesh);
+            } else if (ap.type === 'door') {
+              const doorPanelGeo = new THREE.BoxGeometry(ap.width - 0.05, ap.height - 0.05, thickness * 0.8);
+              const doorPanelMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.6 });
+              const doorPanelMesh = new THREE.Mesh(doorPanelGeo, doorPanelMat);
+              doorPanelMesh.position.set(px, ap.elevation + ap.height / 2, pz);
+              doorPanelMesh.rotation.y = -angle;
+              doorPanelMesh.userData = { type: 'wall', id: w.id };
+              scene.add(doorPanelMesh);
+              roomMeshes.push(doorPanelMesh);
+            }
+
+            currentOffset = ap.startOffset + ap.width;
+          });
+
+          // Last segment
+          if (length > currentOffset) {
+            const segLen = length - currentOffset;
+            createWallSegment(segLen, height, 0, currentOffset + segLen / 2);
+          }
+        }
       });
 
       // Draw Furniture
@@ -602,7 +710,7 @@ ENTITIES
         prevMouseX = e.clientX;
         prevMouseY = e.clientY;
 
-        // Perform Raycasting to select room or furniture
+        // Perform Raycasting to select room or furniture or wall
         const rect = renderer.domElement.getBoundingClientRect();
         const mouse = new THREE.Vector2(
           ((e.clientX - rect.left) / rect.width) * 2 - 1,
@@ -618,17 +726,24 @@ ENTITIES
         for (let i = 0; i < intersects.length; i++) {
           let target: THREE.Object3D | null = intersects[i].object;
           
-          // Traverse up parent hierarchy to find registered interactive userData elements
           while (target && target !== scene) {
             if ((target as any).userData && (target as any).userData.type) {
               const uData = (target as any).userData;
               if (uData.type === 'furniture') {
                 setSelectedFurnId(uData.id);
                 setSelectedRoomId(null);
+                setSelectedWallId(null);
                 foundInteractive = true;
                 return;
               } else if (uData.type === 'room') {
                 setSelectedRoomId(uData.id);
+                setSelectedFurnId(null);
+                setSelectedWallId(null);
+                foundInteractive = true;
+                return;
+              } else if (uData.type === 'wall') {
+                setSelectedWallId(uData.id);
+                setSelectedRoomId(null);
                 setSelectedFurnId(null);
                 foundInteractive = true;
                 return;
@@ -642,6 +757,7 @@ ENTITIES
         if (!foundInteractive) {
           setSelectedFurnId(null);
           setSelectedRoomId(null);
+          setSelectedWallId(null);
         }
       };
 
@@ -739,7 +855,7 @@ ENTITIES
         }
       };
     });
-  }, [activeFP?.id, viewMode]);
+  }, [activeFP?.id, viewMode, activeFP?.layoutData?.apertures]);
 
   // Synchronize room colors and furniture mesh positions when layoutData updates in React state
   useEffect(() => {
@@ -823,6 +939,20 @@ ENTITIES
     const idx = layout.furniture.findIndex((f) => f.id === selectedFurnId);
     if (idx !== -1) {
       layout.furniture[idx][field] = val;
+
+      if (field === 'x' || field === 'z') {
+        const snapped = snapFurnitureToWall(
+          layout.furniture[idx].x,
+          layout.furniture[idx].z,
+          layout
+        );
+        layout.furniture[idx].x = snapped.x;
+        layout.furniture[idx].z = snapped.z;
+        if (snapped.rotation !== null) {
+          layout.furniture[idx].rotation = snapped.rotation;
+        }
+      }
+
       setActiveFP({ ...activeFP, layoutData: layout });
     }
   };
@@ -1216,6 +1346,110 @@ ENTITIES
                     </div>
                   ) : (
                     <p className="text-[10px] text-gray-400 italic">Click a room floor on the canvas to inspect & paint.</p>
+                  )}
+                </div>
+
+                {/* Wall & Aperture Designer */}
+                <div className="border-t border-gray-150 pt-4 flex flex-col gap-3">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Wall & Apertures</span>
+                  {selectedWallId ? (
+                    <div className="flex flex-col gap-3 bg-white p-4 border border-gray-100 rounded-2xl">
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs font-bold text-gray-700">
+                          Selected Wall: <span className="text-gray-900 font-black">{selectedWallId}</span>
+                        </p>
+                        <button onClick={() => setSelectedWallId(null)} className="text-[10px] font-bold text-gray-400 hover:text-gray-600">
+                          Clear
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5 my-2">
+                        <span className="text-[9px] text-gray-400 font-bold uppercase">Carved Apertures</span>
+                        {(activeFP.layoutData?.apertures || []).filter((ap) => ap.wallId === selectedWallId).length === 0 ? (
+                          <p className="text-[10px] text-gray-400 italic">No windows or doors carved yet.</p>
+                        ) : (
+                          (activeFP.layoutData?.apertures || []).filter((ap) => ap.wallId === selectedWallId).map((ap) => (
+                            <div key={ap.id} className="flex justify-between items-center bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100 text-[10px] font-semibold text-gray-700">
+                              <span className="capitalize">{ap.type} (w: {ap.width}m, h: {ap.height}m)</span>
+                              <button
+                                onClick={() => {
+                                  if (!activeFP || !activeFP.layoutData) return;
+                                  const layout = { ...activeFP.layoutData };
+                                  layout.apertures = layout.apertures.filter((a) => a.id !== ap.id);
+                                  setActiveFP({ ...activeFP, layoutData: layout });
+                                }}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <PremiumButton
+                          variant="outline"
+                          onClick={() => {
+                            if (!activeFP || !activeFP.layoutData) return;
+                            const layout = { ...activeFP.layoutData };
+                            if (!layout.apertures) layout.apertures = [];
+                            
+                            const w = layout.walls.find((wl) => wl.id === selectedWallId);
+                            let offset = 1.0;
+                            if (w) {
+                              const len = Math.sqrt((w.endX - w.startX) ** 2 + (w.endZ - w.startZ) ** 2);
+                              offset = Math.max(0.2, len / 2 - 0.75);
+                            }
+
+                            layout.apertures.push({
+                              id: `ap-${Date.now()}`,
+                              wallId: selectedWallId,
+                              type: 'window',
+                              startOffset: Number(offset.toFixed(1)),
+                              width: 1.5,
+                              height: 1.2,
+                              elevation: 0.9
+                            });
+                            setActiveFP({ ...activeFP, layoutData: layout });
+                          }}
+                          className="py-2 text-[10px] font-bold text-center"
+                        >
+                          ➕ Window
+                        </PremiumButton>
+                        <PremiumButton
+                          variant="outline"
+                          onClick={() => {
+                            if (!activeFP || !activeFP.layoutData) return;
+                            const layout = { ...activeFP.layoutData };
+                            if (!layout.apertures) layout.apertures = [];
+
+                            const w = layout.walls.find((wl) => wl.id === selectedWallId);
+                            let offset = 1.0;
+                            if (w) {
+                              const len = Math.sqrt((w.endX - w.startX) ** 2 + (w.endZ - w.startZ) ** 2);
+                              offset = Math.max(0.2, len / 2 - 0.45);
+                            }
+
+                            layout.apertures.push({
+                              id: `ap-${Date.now()}`,
+                              wallId: selectedWallId,
+                              type: 'door',
+                              startOffset: Number(offset.toFixed(1)),
+                              width: 0.9,
+                              height: 2.1,
+                              elevation: 0.0
+                            });
+                            setActiveFP({ ...activeFP, layoutData: layout });
+                          }}
+                          className="py-2 text-[10px] font-bold text-center"
+                        >
+                          ➕ Door
+                        </PremiumButton>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-gray-400 italic">Click any wall segment on the canvas to select & add apertures.</p>
                   )}
                 </div>
 

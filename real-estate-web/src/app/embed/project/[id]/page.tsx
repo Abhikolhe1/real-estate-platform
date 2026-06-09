@@ -24,6 +24,7 @@ function EmbedContent({ projectId }: { projectId: string }) {
   const [models, setModels] = useState<any[]>([]);
   const [hotspots, setHotspots] = useState<any[]>([]);
   const [tours, setTours] = useState<any[]>([]);
+  const [floorPlans, setFloorPlans] = useState<any[]>([]);
 
   // Navigation states
   const [viewMode, setViewMode] = useState<'building' | 'walkthrough'>(initialMode);
@@ -59,6 +60,8 @@ function EmbedContent({ projectId }: { projectId: string }) {
 
         const resolvedTours = resData.data.flatMap((item: any) => item.tours);
         setTours(resolvedTours);
+
+        setFloorPlans(resData.floorPlans || []);
 
         setLoading(false);
       })
@@ -139,7 +142,9 @@ function EmbedContent({ projectId }: { projectId: string }) {
       {/* Primary Canvas Viewport */}
       <BuildingViewer
         activeFloor={activeFloor}
+        setActiveFloor={setActiveFloor}
         viewMode={viewMode}
+        setViewMode={setViewMode}
         activeRoom={activeRoom}
         setActiveRoom={setActiveRoom}
         isEmbedded={true}
@@ -149,6 +154,7 @@ function EmbedContent({ projectId }: { projectId: string }) {
         initialTenantId={tenantId}
         projectId={projectId}
         sdkKey={sdkKey || ''}
+        layoutData={floorPlans[0]?.layoutData}
       />
 
       {/* Floating Instructions prompt */}

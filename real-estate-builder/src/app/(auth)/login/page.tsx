@@ -100,7 +100,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-stone-950 font-bold text-xs rounded-xl tracking-wider uppercase transition-all duration-300 active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-amber-500/10"
+            className="w-full py-4 bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 hover:brightness-110 text-[#131313] font-bold text-[10px] rounded-xl tracking-[0.2em] uppercase transition-all duration-300 active:scale-[0.98] disabled:opacity-50 shadow-xl shadow-amber-500/10 flex items-center justify-center gap-2"
           >
             {loading ? 'Authenticating Workspace...' : 'Access Workspace'}
           </button>

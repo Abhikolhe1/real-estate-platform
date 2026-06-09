@@ -211,9 +211,9 @@ export default function DynamicPageRenderer({ slug }: { slug: string }) {
   const btnStyleClass = (variant: 'primary' | 'outline') => {
     const radius = theme.buttonStyle === 'pill' ? 'rounded-full' : theme.buttonStyle === 'rounded' ? 'rounded-xl' : 'rounded-none';
     if (variant === 'primary') {
-      return `px-7 py-3.5 bg-[var(--primary-color)] text-neutral-950 font-bold text-xs tracking-wider uppercase ${radius} hover:opacity-90 transition-all shadow-md`;
+      return `px-8 py-4 bg-[var(--primary-color)] text-neutral-950 font-bold text-[10px] tracking-[0.2em] uppercase ${radius} hover:opacity-90 transition-all shadow-xl active:scale-[0.98] flex items-center justify-center gap-2`;
     }
-    return `px-7 py-3.5 bg-transparent text-stone-200 border border-stone-200/40 font-bold text-xs tracking-wider uppercase ${radius} hover:bg-white/5 hover:border-stone-200 transition-all`;
+    return `px-8 py-4 bg-transparent text-stone-200 border border-stone-200/40 font-bold text-[10px] tracking-[0.2em] uppercase ${radius} hover:bg-white/5 hover:border-stone-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2`;
   };
 
   const cardStyleClass = () => {
@@ -477,7 +477,7 @@ export default function DynamicPageRenderer({ slug }: { slug: string }) {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full py-3.5 mt-2 bg-[var(--primary-color)] hover:opacity-90 text-neutral-950 font-bold text-xs rounded-xl tracking-wider uppercase transition-all duration-300 disabled:opacity-50"
+                    className="w-full py-4 mt-2 bg-[var(--primary-color)] hover:opacity-90 text-neutral-950 font-bold text-[10px] tracking-[0.2em] rounded-xl uppercase transition-all duration-300 active:scale-[0.98] disabled:opacity-50 shadow-xl"
                   >
                     {submitting ? 'Submitting...' : config.buttonText || 'Submit Inquiry'}
                   </button>

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { gsap } from 'gsap';
 import { useAuthStore } from '@/store/authStore';
+import { Icon } from '@iconify/react';
 
 interface Builder {
   id: string;
@@ -259,9 +260,10 @@ function SuperAdminPageContent() {
             </div>
             <button 
               onClick={() => setShowAddModal(true)}
-              className="px-4.5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-500 shadow-lg shadow-indigo-600/10 transition-all duration-300 active:scale-95"
+              className="px-6 py-3 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-500 shadow-xl shadow-indigo-600/20 transition-all duration-300 active:scale-95 flex items-center gap-2"
             >
-              + Create Tenant Account
+              <span className="text-base">+</span>
+              Create Tenant Account
             </button>
           </header>
 
@@ -429,15 +431,17 @@ function SuperAdminPageContent() {
                       <td className="py-4.5 px-6 text-right space-x-2">
                         <button 
                           onClick={() => handleEditOpen(builder)}
-                          className="px-2.5 py-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 font-bold text-[10px] transition-colors"
+                          className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 font-bold text-[10px] transition-all active:scale-95 flex items-center justify-center gap-1.5"
                         >
-                          ✏️ Edit
+                          <Icon icon="solar:pen-bold" className="text-sm" />
+                          Edit
                         </button>
                         <button 
                           onClick={() => handleDeleteBuilder(builder.id)}
-                          className="px-2.5 py-1.5 rounded bg-slate-900 hover:bg-red-950/30 text-slate-400 hover:text-red-400 border border-slate-800 font-bold text-[10px] transition-colors"
+                          className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-red-950/30 text-slate-400 hover:text-red-400 border border-slate-800 font-bold text-[10px] transition-all active:scale-95 flex items-center justify-center gap-1.5"
                         >
-                          🗑️ Delete
+                          <Icon icon="solar:trash-bin-trash-bold" className="text-sm" />
+                          Delete
                         </button>
                       </td>
                     </tr>

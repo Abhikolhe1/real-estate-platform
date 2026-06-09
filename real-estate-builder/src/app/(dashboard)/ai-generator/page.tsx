@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PremiumButton from '@/components/premium-button';
 import type * as THREE from 'three';
+import { Icon } from '@iconify/react';
 
 interface FloorPlan {
   id: string;
@@ -13,10 +14,7 @@ interface FloorPlan {
   priceEstimate: number;
   isPaid: boolean;
   status: 'PENDING_ANALYSIS' | 'ANALYZED' | 'PAID' | 'GENERATED';
-  layoutData?: {
-    rooms: Array<{ id: string; name: string; x: number; z: number; width: number; depth: number; color: string }>;
-    furniture: Array<{ id: string; type: string; roomId: string; x: number; z: number; rotation: number }>;
-  };
+  layoutData?: any;
   project?: { name: string };
 }
 
@@ -214,6 +212,30 @@ export default function AIFloorPlanGeneratorPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Configurable floors states
+  const [numFloors, setNumFloors] = useState(3);
+  const [uploadModality, setUploadModality] = useState<'single' | 'separate'>('single');
+  const [floorsConfig, setFloorsConfig] = useState<any[]>([
+    { floorNumber: 1, type: '2BHK', fileName: '' },
+    { floorNumber: 2, type: '2BHK', fileName: '' },
+    { floorNumber: 3, type: '2BHK', fileName: '' }
+  ]);
+
+  // Sync floorsConfig array length with numFloors input
+  useEffect(() => {
+    setFloorsConfig((prev) => {
+      const next = [...prev];
+      if (next.length < numFloors) {
+        for (let i = next.length + 1; i <= numFloors; i++) {
+          next.push({ floorNumber: i, type: '2BHK', fileName: '' });
+        }
+      } else if (next.length > numFloors) {
+        next.splice(numFloors);
+      }
+      return next;
+    });
+  }, [numFloors]);
+
   // Active workflow floor plan
   const [activeFP, setActiveFP] = useState<FloorPlan | null>(null);
   const [analysisLogs, setAnalysisLogs] = useState<string[]>([]);
@@ -228,12 +250,67 @@ export default function AIFloorPlanGeneratorPage() {
   const [isPaying, setIsPaying] = useState(false);
 
   // Editor states
-  const [viewMode, setViewMode] = useState<'2D' | '3D' | 'WALK'>('3D');
+  const [viewMode, setViewMode] = useState<'2D' | '3D' | 'WALK' | 'REF'>('3D');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedFurnId, setSelectedFurnId] = useState<string | null>(null);
   const [selectedWallId, setSelectedWallId] = useState<string | null>(null);
   const [paintColor, setPaintColor] = useState('#f5efe6');
+  const [selectedTexture, setSelectedTexture] = useState<'none' | 'wood' | 'marble' | 'tile'>('none');
   const [isSaving, setIsSaving] = useState(false);
+  const [activeFloor, setActiveFloor] = useState(0);
+
+  // Helper to get active floor's template layout object for editing
+  const getEditingLayout = (layoutData: any) => {
+    if (!layoutData) return null;
+    if (layoutData.rooms && Array.isArray(layoutData.rooms)) return layoutData; // legacy layout
+    
+    if (layoutData.floors && (layoutData.floors[activeFloor] || layoutData.floors[activeFloor + 1])) {
+      return layoutData.floors[activeFloor] || layoutData.floors[activeFloor + 1];
+    }
+    
+    const configFloors = layoutData.floorsConfig || [];
+    const floorConf = configFloors.find((fc: any) => fc.floorNumber === activeFloor + 1 || fc.floorNumber === activeFloor);
+    const type = floorConf ? floorConf.type : '2BHK';
+    
+    if (layoutData.templates && layoutData.templates[type]) {
+      return layoutData.templates[type];
+    }
+    
+    if (layoutData.templates) {
+      const available = Object.keys(layoutData.templates);
+      if (available.length > 0) {
+        return layoutData.templates[available[0]];
+      }
+    }
+    
+    return null;
+  };
+
+  const updateEditingLayout = (updater: (editingLayout: any) => void) => {
+    if (!activeFP || !activeFP.layoutData) return;
+    const layout = { ...activeFP.layoutData };
+    
+    if (layout.rooms) {
+      updater(layout);
+    } else if (layout.floors && (layout.floors[activeFloor] || layout.floors[activeFloor + 1])) {
+      const targetFloorKey = layout.floors[activeFloor] ? activeFloor : activeFloor + 1;
+      const floorLayout = { ...layout.floors[targetFloorKey] };
+      updater(floorLayout);
+      layout.floors[targetFloorKey] = floorLayout;
+    } else {
+      const configFloors = layout.floorsConfig || [];
+      const floorConf = configFloors.find((fc: any) => fc.floorNumber === activeFloor + 1 || fc.floorNumber === activeFloor);
+      const type = floorConf ? floorConf.type : '2BHK';
+      
+      if (layout.templates && layout.templates[type]) {
+        const template = { ...layout.templates[type] };
+        updater(template);
+        layout.templates[type] = template;
+      }
+    }
+    
+    setActiveFP({ ...activeFP, layoutData: layout });
+  };
 
   // Three.js refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -275,7 +352,6 @@ export default function AIFloorPlanGeneratorPage() {
     setIsUploading(true);
     setUploadProgress(10);
 
-    // Simulate progress
     const timer = setInterval(() => {
       setUploadProgress((prev) => {
         if (prev >= 90) {
@@ -288,6 +364,14 @@ export default function AIFloorPlanGeneratorPage() {
 
     setTimeout(async () => {
       try {
+        const payloadConfig = floorsConfig.map(f => ({
+          floorNumber: f.floorNumber,
+          type: f.type,
+          imageUrl: uploadModality === 'single'
+            ? (uploadFile ? `docs/${getFileCategory(uploadFile.name)}/${uploadFile.name}` : undefined)
+            : (f.fileName ? `docs/cad/${f.fileName}` : undefined)
+        }));
+
         const res = await fetch('http://localhost:3001/floorplans', {
           method: 'POST',
           headers: {
@@ -297,7 +381,10 @@ export default function AIFloorPlanGeneratorPage() {
           body: JSON.stringify({
             name: uploadName,
             projectId: selectedProjId,
-            imageUrl: uploadFile ? `docs/${getFileCategory(uploadFile.name)}/${uploadFile.name}` : undefined,
+            imageUrl: uploadModality === 'single' && uploadFile 
+              ? `docs/${getFileCategory(uploadFile.name)}/${uploadFile.name}` 
+              : `docs/cad/${floorsConfig[0]?.fileName || 'multi_layout.dwg'}`,
+            floorsConfig: payloadConfig
           }),
         });
         const data = await res.json();
@@ -439,7 +526,7 @@ export default function AIFloorPlanGeneratorPage() {
   // Generate and download a 2D engineering CAD DXF file
   const downloadCADFile = () => {
     if (!activeFP || !activeFP.layoutData) return;
-    const layout = activeFP.layoutData;
+    const layout = getEditingLayout(activeFP.layoutData) || activeFP.layoutData;
 
     let dxf = `  0
 SECTION
@@ -448,7 +535,7 @@ ENTITIES
 `;
 
     // 1. Export Rooms (Exterior Walls & Inner Partitions)
-    layout.rooms.forEach((room) => {
+    layout.rooms.forEach((room: any) => {
       const x1 = room.x;
       const y1 = room.z;
       const x2 = room.x + room.width;
@@ -475,7 +562,7 @@ ENTITIES
     });
 
     // 2. Export Furniture Layouts
-    layout.furniture.forEach((f) => {
+    layout.furniture.forEach((f: any) => {
       const fx = f.x;
       const fy = f.z;
       const size = 0.8;
@@ -544,12 +631,12 @@ ENTITIES
       scene.add(gridHelper);
 
       // 4. Load Layout from activeFP
-      const layout = activeFP.layoutData!;
+      const layout = getEditingLayout(activeFP.layoutData) || activeFP.layoutData;
       const roomMeshes: any[] = [];
       const furnitureMeshes: any[] = [];
 
       // Draw Rooms Floor Plates
-      layout.rooms.forEach((room) => {
+      layout.rooms.forEach((room: any) => {
         const floorGeo = new THREE.BoxGeometry(room.width, 0.05, room.depth);
         const floorMat = new THREE.MeshStandardMaterial({ color: room.color, roughness: 0.8 });
         const floorMesh = new THREE.Mesh(floorGeo, floorMat);
@@ -561,7 +648,7 @@ ENTITIES
       });
 
       // Draw Walls procedurally with Apertures carved out
-      (layout.walls || []).forEach((w) => {
+      (layout.walls || []).forEach((w: any) => {
         const startX = w.startX;
         const startZ = w.startZ;
         const endX = w.endX;
@@ -574,7 +661,7 @@ ENTITIES
         const length = Math.sqrt(dx * dx + dz * dz);
         const angle = Math.atan2(dz, dx);
 
-        const wallApertures = (layout.apertures || []).filter((ap) => ap.wallId === w.id);
+        const wallApertures = (layout.apertures || []).filter((ap: any) => ap.wallId === w.id);
 
         const createWallSegment = (len: number, h: number, elevation: number, offsetAlongWall: number) => {
           const segGeo = new THREE.BoxGeometry(len, h, thickness);
@@ -603,7 +690,7 @@ ENTITIES
           const ux = dx / length;
           const uz = dz / length;
 
-          sortedAps.forEach((ap) => {
+          sortedAps.forEach((ap: any) => {
             // Part before aperture
             if (ap.startOffset > currentOffset) {
               const segLen = ap.startOffset - currentOffset;
@@ -664,7 +751,7 @@ ENTITIES
       });
 
       // Draw Furniture
-      layout.furniture.forEach((item) => {
+      layout.furniture.forEach((item: any) => {
         const color = item.type === 'sofa' ? '#2f4f4f' : '#6b8e23';
         const mesh = buildFurnitureMesh(THREE, item.type, color);
         mesh.position.set(item.x, 0, item.z);
@@ -762,20 +849,52 @@ ENTITIES
       };
 
       const handleMouseMove = (e: MouseEvent) => {
-        if (!isDragging || viewMode === '2D') return;
+        if (!isDragging) return;
 
         const deltaX = e.clientX - prevMouseX;
         const deltaY = e.clientY - prevMouseY;
 
-        targetRotY -= deltaX * 0.007;
-        targetRotX -= deltaY * 0.007;
+        if (viewMode === '2D' && selectedWallId) {
+          // Drag wall in 2D mode
+          const sensitivity = 0.02;
+          updateEditingLayout((layout) => {
+            const wall = (layout.walls || []).find((w: any) => w.id === selectedWallId);
+            if (wall) {
+              wall.startX += deltaX * sensitivity;
+              wall.endX += deltaX * sensitivity;
+              wall.startZ += deltaY * sensitivity;
+              wall.endZ += deltaY * sensitivity;
+            }
+          });
+        } else if (viewMode === '2D' && selectedFurnId) {
+          // Drag furniture in 2D mode
+          const sensitivity = 0.02;
+          updateEditingLayout((layout) => {
+            const furn = (layout.furniture || []).find((f: any) => f.id === selectedFurnId);
+            if (furn) {
+              furn.x += deltaX * sensitivity;
+              furn.z += deltaY * sensitivity;
+              
+              // Snap to walls if needed
+              const snapped = snapFurnitureToWall(furn.x, furn.z, layout);
+              if (Math.hypot(snapped.x - furn.x, snapped.z - furn.z) < 0.3) {
+                furn.x = snapped.x;
+                furn.z = snapped.z;
+                if (snapped.rotation !== null) furn.rotation = snapped.rotation;
+              }
+            }
+          });
+        } else if (viewMode === '3D') {
+          targetRotY -= deltaX * 0.007;
+          targetRotX -= deltaY * 0.007;
 
-        // Clamp vertical rotation
-        targetRotX = Math.max(-Math.PI / 2 + 0.05, Math.min(-0.05, targetRotX));
+          // Clamp vertical rotation
+          targetRotX = Math.max(-Math.PI / 2 + 0.05, Math.min(-0.05, targetRotX));
+          updateCamera();
+        }
 
         prevMouseX = e.clientX;
         prevMouseY = e.clientY;
-        updateCamera();
       };
 
       const handleMouseUp = () => {
@@ -792,6 +911,17 @@ ENTITIES
       // 7. Handle WASD Walkthrough keyboard inputs
       const handleKeyDown = (e: KeyboardEvent) => {
         if (viewMode !== 'WALK') return;
+        
+        // Ignore keypresses if the user is typing in an input or textarea
+        const activeEl = document.activeElement;
+        if (activeEl && (
+          activeEl.tagName === 'INPUT' || 
+          activeEl.tagName === 'TEXTAREA' || 
+          activeEl.getAttribute('contenteditable') === 'true'
+        )) {
+          return;
+        }
+
         const speed = 0.3;
         const sin = Math.sin(targetRotY);
         const cos = Math.cos(targetRotY);
@@ -855,7 +985,7 @@ ENTITIES
         }
       };
     });
-  }, [activeFP?.id, viewMode, activeFP?.layoutData?.apertures]);
+  }, [activeFP?.id, viewMode, activeFloor, activeFP?.layoutData?.apertures]);
 
   // Synchronize room colors and furniture mesh positions when layoutData updates in React state
   useEffect(() => {
@@ -863,119 +993,141 @@ ENTITIES
     const { scene, roomMeshes, furnitureMeshes, THREE } = threeRef.current;
     if (!scene || !THREE) return;
 
-    const layout = activeFP.layoutData;
+    const layout = getEditingLayout(activeFP.layoutData) || activeFP.layoutData;
 
     // 1. Sync Room Floor/Wall Colors
-    layout.rooms.forEach((room) => {
-      const meshes = roomMeshes.filter(
-        (m: any) => m.userData && (m.userData.id === room.id || m.userData.roomId === room.id)
-      );
-      meshes.forEach((mesh: any) => {
-        if (mesh.material) {
-          if (Array.isArray(mesh.material)) {
-            mesh.material.forEach((mat: any) => mat.color.set(room.color));
-          } else {
-            mesh.material.color.set(room.color);
+    if (layout.rooms) {
+      layout.rooms.forEach((room: any) => {
+        const meshes = roomMeshes.filter(
+          (m: any) => m.userData && (m.userData.id === room.id || m.userData.roomId === room.id)
+        );
+        meshes.forEach((mesh: any) => {
+          if (mesh.material) {
+            if (Array.isArray(mesh.material)) {
+              mesh.material.forEach((mat: any) => mat.color.set(room.color));
+            } else {
+              mesh.material.color.set(room.color);
+            }
           }
-        }
+        });
       });
-    });
+    }
 
     // 2. Sync Furniture Meshes (move existing or spawn new ones)
-    layout.furniture.forEach((item) => {
-      const mesh = furnitureMeshes.find((m: any) => m.userData && m.userData.id === item.id);
-      if (mesh) {
-        // Move & rotate existing mesh
-        mesh.position.set(item.x, 0, item.z);
-        mesh.rotation.y = (item.rotation * Math.PI) / 180;
-      } else {
-        // Spawn new furniture mesh dynamically
-        const color = item.type === 'sofa' ? '#2f4f4f' : '#6b8e23';
-        const newMesh = buildFurnitureMesh(THREE, item.type, color);
-        newMesh.position.set(item.x, 0, item.z);
-        newMesh.rotation.y = (item.rotation * Math.PI) / 180;
-        newMesh.userData = { type: 'furniture', id: item.id };
-        scene.add(newMesh);
-        furnitureMeshes.push(newMesh);
-      }
-    });
+    if (layout.furniture) {
+      layout.furniture.forEach((item: any) => {
+        const mesh = furnitureMeshes.find((m: any) => m.userData && m.userData.id === item.id);
+        if (mesh) {
+          // Move & rotate existing mesh
+          mesh.position.set(item.x, 0, item.z);
+          mesh.rotation.y = (item.rotation * Math.PI) / 180;
+        } else {
+          // Spawn new furniture mesh dynamically
+          const color = item.type === 'sofa' ? '#2f4f4f' : '#6b8e23';
+          const newMesh = buildFurnitureMesh(THREE, item.type, color);
+          newMesh.position.set(item.x, 0, item.z);
+          newMesh.rotation.y = (item.rotation * Math.PI) / 180;
+          newMesh.userData = { type: 'furniture', id: item.id };
+          scene.add(newMesh);
+          furnitureMeshes.push(newMesh);
+        }
+      });
+    }
 
     // 3. Remove furniture meshes that are no longer in the layoutData state
-    for (let i = furnitureMeshes.length - 1; i >= 0; i--) {
-      const mesh = furnitureMeshes[i];
-      const exists = layout.furniture.some((item) => item.id === mesh.userData.id);
-      if (!exists) {
-        scene.remove(mesh);
-        furnitureMeshes.splice(i, 1);
+    if (layout.furniture) {
+      for (let i = furnitureMeshes.length - 1; i >= 0; i--) {
+        const mesh = furnitureMeshes[i];
+        const exists = layout.furniture.some((item: any) => item.id === mesh.userData.id);
+        if (!exists) {
+          scene.remove(mesh);
+          furnitureMeshes.splice(i, 1);
+        }
       }
     }
-  }, [activeFP?.layoutData]);
+  }, [activeFP?.layoutData, activeFloor]);
 
   // Add furniture mesh handler
   const handleAddFurniture = (type: string) => {
-    if (!activeFP || !activeFP.layoutData) return;
-    const layout = { ...activeFP.layoutData };
-    const newId = `f-${Date.now()}`;
-    layout.furniture.push({
-      id: newId,
-      type,
-      roomId: selectedRoomId || 'room-1',
-      x: selectedRoomId 
-        ? (layout.rooms.find((r) => r.id === selectedRoomId)?.x || 0) + 1
-        : 0,
-      z: selectedRoomId
-        ? (layout.rooms.find((r) => r.id === selectedRoomId)?.z || 0) + 1
-        : 0,
-      rotation: 0,
+    updateEditingLayout((layout) => {
+      if (!layout.furniture) layout.furniture = [];
+      const newId = `f-${Date.now()}`;
+      layout.furniture.push({
+        id: newId,
+        type,
+        roomId: selectedRoomId || (layout.rooms?.[0]?.id) || 'room-1',
+        x: selectedRoomId 
+          ? (layout.rooms.find((r: any) => r.id === selectedRoomId)?.x || 0) + 1
+          : 0,
+        z: selectedRoomId
+          ? (layout.rooms.find((r: any) => r.id === selectedRoomId)?.z || 0) + 1
+          : 0,
+        rotation: 0,
+      });
+      setSelectedFurnId(newId);
     });
-    setActiveFP({ ...activeFP, layoutData: layout });
-    setSelectedFurnId(newId);
   };
 
   // Move or rotate furniture
   const handleUpdateFurniture = (field: 'x' | 'z' | 'rotation', val: number) => {
-    if (!activeFP || !activeFP.layoutData || !selectedFurnId) return;
-    const layout = { ...activeFP.layoutData };
-    const idx = layout.furniture.findIndex((f) => f.id === selectedFurnId);
-    if (idx !== -1) {
-      layout.furniture[idx][field] = val;
+    if (!selectedFurnId) return;
+    updateEditingLayout((layout) => {
+      if (!layout.furniture) return;
+      const idx = layout.furniture.findIndex((f: any) => f.id === selectedFurnId);
+      if (idx !== -1) {
+        layout.furniture[idx][field] = val;
 
-      if (field === 'x' || field === 'z') {
-        const snapped = snapFurnitureToWall(
-          layout.furniture[idx].x,
-          layout.furniture[idx].z,
-          layout
-        );
-        layout.furniture[idx].x = snapped.x;
-        layout.furniture[idx].z = snapped.z;
-        if (snapped.rotation !== null) {
-          layout.furniture[idx].rotation = snapped.rotation;
+        if (field === 'x' || field === 'z') {
+          const snapped = snapFurnitureToWall(
+            layout.furniture[idx].x,
+            layout.furniture[idx].z,
+            layout
+          );
+          layout.furniture[idx].x = snapped.x;
+          layout.furniture[idx].z = snapped.z;
+          if (snapped.rotation !== null) {
+            layout.furniture[idx].rotation = snapped.rotation;
+          }
         }
       }
-
-      setActiveFP({ ...activeFP, layoutData: layout });
-    }
+    });
   };
 
   // Delete furniture
   const handleDeleteFurniture = () => {
-    if (!activeFP || !activeFP.layoutData || !selectedFurnId) return;
-    const layout = { ...activeFP.layoutData };
-    layout.furniture = layout.furniture.filter((f) => f.id !== selectedFurnId);
-    setActiveFP({ ...activeFP, layoutData: layout });
-    setSelectedFurnId(null);
+    if (!selectedFurnId) return;
+    updateEditingLayout((layout) => {
+      if (layout.furniture) {
+        layout.furniture = layout.furniture.filter((f: any) => f.id !== selectedFurnId);
+      }
+      setSelectedFurnId(null);
+    });
   };
 
   // Change room wall/floor color
   const handlePaintRoom = () => {
-    if (!activeFP || !activeFP.layoutData || !selectedRoomId) return;
-    const layout = { ...activeFP.layoutData };
-    const idx = layout.rooms.findIndex((r) => r.id === selectedRoomId);
-    if (idx !== -1) {
-      layout.rooms[idx].color = paintColor;
-      setActiveFP({ ...activeFP, layoutData: layout });
-    }
+    if (!selectedRoomId) return;
+    updateEditingLayout((layout) => {
+      if (!layout.rooms) return;
+      const idx = layout.rooms.findIndex((r: any) => r.id === selectedRoomId);  
+      if (idx !== -1) {
+        layout.rooms[idx].color = paintColor;
+      }
+    });
   };
+
+  const handleTextureRoom = () => {
+    if (!selectedRoomId) return;
+    updateEditingLayout((layout) => {
+      if (!layout.rooms) return;
+      const idx = layout.rooms.findIndex((r: any) => r.id === selectedRoomId);
+      if (idx !== -1) {
+        layout.rooms[idx].texture = selectedTexture === 'none' ? undefined : selectedTexture;
+      }
+    });
+  };
+
+  const editingLayout = getEditingLayout(activeFP?.layoutData);
 
   return (
     <div>
@@ -1035,14 +1187,79 @@ ENTITIES
                 />
               </div>
 
-              <div>
-                <span className="text-xs font-bold text-gray-500 block mb-1">Upload Blueprint / CAD / 3D Model</span>
-                <label className="border-2 border-dashed border-gray-200 hover:border-gray-950 rounded-2xl p-6 transition duration-300 cursor-pointer flex flex-col items-center justify-center gap-2">
-                  <span className="text-2xl">📐</span>
-                  <span className="text-xs text-gray-400 font-semibold text-center">Drag & drop or click to upload</span>
-                  <span className="text-[9px] text-gray-400 text-center font-normal leading-normal px-2">
-                    Supports DWG, DXF, PDF, IFC, GLB, GLTF, FBX, OBJ, PNG, JPG
-                  </span>
+              {/* Multi-floor configurations */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 block mb-1">Floors Count</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={numFloors}
+                    onChange={(e) => setNumFloors(parseInt(e.target.value, 10) || 1)}
+                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-gray-950"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 block mb-1">Upload Modality</label>
+                  <select
+                    value={uploadModality}
+                    onChange={(e) => setUploadModality(e.target.value as 'single' | 'separate')}
+                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-gray-950"
+                  >
+                    <option value="single">Single File for All</option>
+                    <option value="separate">Separate Files per Floor</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="border border-gray-150 rounded-2xl p-4 bg-gray-50/50 flex flex-col gap-3 max-h-48 overflow-y-auto">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Floor Layout Configurations</span>
+                {floorsConfig.map((floor, idx) => (
+                  <div key={floor.floorNumber} className="flex gap-2 items-center text-xs">
+                    <span className="font-bold w-14 text-gray-600">Floor {floor.floorNumber}:</span>
+                    <select
+                      value={floor.type}
+                      onChange={(e) => {
+                        const updated = [...floorsConfig];
+                        updated[idx].type = e.target.value;
+                        setFloorsConfig(updated);
+                      }}
+                      className="px-2 py-1.5 border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-gray-950 flex-1"
+                    >
+                      <option value="1BHK">1BHK (6 Flats)</option>
+                      <option value="2BHK">2BHK (4 Flats)</option>
+                      <option value="3BHK">3BHK (3 Flats)</option>
+                      <option value="PENTHOUSE">Penthouse (1 Flat)</option>
+                      <option value="LUXURY_SHOWROOM">Luxury Showroom (5 Rooms)</option>
+                    </select>
+                    {uploadModality === 'separate' && (
+                      <input
+                        type="text"
+                        placeholder="blueprint.dwg"
+                        value={floor.fileName || ''}
+                        onChange={(e) => {
+                          const updated = [...floorsConfig];
+                          updated[idx].fileName = e.target.value;
+                          setFloorsConfig(updated);
+                        }}
+                        className="px-2 py-1 border border-gray-200 rounded-lg w-28 focus:outline-none focus:border-gray-950"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <a 
+                  href="/test_building_blueprint.dxf" 
+                  download 
+                  className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline mb-2.5 block font-semibold"
+                >
+                  📥 Download Sample DXF Blueprint File
+                </a>
+                <label className="block">
+                  <span className="sr-only">Choose file</span>
                   <input 
                     type="file" 
                     accept="image/*,application/pdf,.dwg,.dxf,.ifc,.glb,.gltf,.obj,.fbx" 
@@ -1056,10 +1273,13 @@ ENTITIES
                     }}
                     className="hidden" 
                   />
+                  <div className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-gray-400 transition text-gray-400 hover:text-gray-600">
+                    <span className="text-xl">📁</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Click to upload source file</span>
+                  </div>
                   {uploadFile && <p className="text-[10px] text-emerald-600 font-bold mt-1 text-center truncate max-w-full">Selected: {uploadFile.name}</p>}
                 </label>
               </div>
-
               {isUploading && (
                 <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
                   <div className="bg-gray-950 h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
@@ -1275,37 +1495,83 @@ ENTITIES
                   <div className="flex gap-2">
                     <button
                       onClick={() => setViewMode('2D')}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-                        viewMode === '2D' ? 'bg-gray-950 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200/50'
+                      className={`px-6 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                        viewMode === '2D' ? 'bg-gray-950 text-white shadow-md' : 'text-gray-500 hover:bg-gray-200/50'
                       }`}
                     >
                       Blueprint View
                     </button>
                     <button
                       onClick={() => setViewMode('3D')}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-                        viewMode === '3D' ? 'bg-gray-950 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200/50'
+                      className={`px-6 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                        viewMode === '3D' ? 'bg-gray-950 text-white shadow-md' : 'text-gray-500 hover:bg-gray-200/50'
                       }`}
                     >
                       Perspective 3D
                     </button>
                     <button
                       onClick={() => setViewMode('WALK')}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-                        viewMode === 'WALK' ? 'bg-gray-950 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200/50'
+                      className={`px-6 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                        viewMode === 'WALK' ? 'bg-gray-950 text-white shadow-md' : 'text-gray-500 hover:bg-gray-200/50'
                       }`}
                     >
                       Walkthrough (WASD)
+                    </button>
+                    <button
+                      onClick={() => setViewMode('REF')}
+                      className={`px-6 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                        viewMode === 'REF' ? 'bg-[#00f5d4] text-[#0c0f16] shadow-md font-extrabold' : 'text-gray-500 hover:bg-gray-200/50'
+                      }`}
+                    >
+                      ⚡ Shapespark Ref
                     </button>
                   </div>
                   {viewMode === 'WALK' && (
                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Use WASD or arrow keys to move camera inside</span>
                   )}
+                  {viewMode === 'REF' && (
+                    <span className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">Loading live Shapespark interactive comparison window</span>
+                  )}
                 </div>
+
+                {/* Floor Switcher for Multi-floor plans */}
+                {activeFP.layoutData?.floorsConfig && (
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-150 p-3 rounded-2xl">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-2">Edit Floor:</span>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {activeFP.layoutData.floorsConfig.map((fc: any, idx: number) => (
+                        <button
+                          key={fc.floorNumber}
+                          onClick={() => {
+                            setActiveFloor(idx);
+                            setSelectedRoomId(null);
+                            setSelectedFurnId(null);
+                            setSelectedWallId(null);
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                            activeFloor === idx
+                              ? 'bg-gray-950 text-white shadow-sm'
+                              : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          Floor {fc.floorNumber} ({fc.type})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* 3D Canvas Box */}
                 <div className="relative border border-gray-150 rounded-3xl overflow-hidden h-[500px] shadow-inner bg-gray-50">
-                  <canvas ref={canvasRef} className="w-full h-full block focus:outline-none" />
+                  {viewMode === 'REF' ? (
+                    <iframe 
+                      src="https://demo.shapespark.com/product-tour/" 
+                      className="w-full h-full border-0 bg-[#0f172a]" 
+                      title="Shapespark Reference Walkthrough"
+                    />
+                  ) : (
+                    <canvas ref={canvasRef} className="w-full h-full block focus:outline-none" />
+                  )}
                 </div>
               </div>
 
@@ -1322,7 +1588,7 @@ ENTITIES
                   {selectedRoomId ? (
                     <div className="flex flex-col gap-3 bg-white p-4 border border-gray-100 rounded-2xl">
                       <p className="text-xs font-bold text-gray-700">
-                        Selected: <span className="text-gray-900 font-black">{activeFP.layoutData?.rooms.find((r) => r.id === selectedRoomId)?.name}</span>
+                        Selected: <span className="text-gray-900 font-black">{editingLayout?.rooms.find((r: any) => r.id === selectedRoomId)?.name}</span>
                       </p>
                       
                       {/* Paint Palette */}
@@ -1342,6 +1608,32 @@ ENTITIES
 
                       <PremiumButton variant="outline" onClick={handlePaintRoom} className="w-full">
                         Paint Room Wall
+                      </PremiumButton>
+
+                      {/* Texture Palette */}
+                      <div className="border-t border-gray-100 pt-3 mt-1">
+                        <span className="text-[9px] text-gray-400 block mb-1 font-bold uppercase">Floor Material</span>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { id: 'none', label: 'Plain', icon: 'solar:stop-bold' },
+                            { id: 'wood', label: 'Wood', icon: 'solar:palette-bold' },
+                            { id: 'marble', label: 'Marble', icon: 'solar:box-bold' },
+                            { id: 'tile', label: 'Tile', icon: 'solar:widget-bold' },
+                          ].map((tex) => (
+                            <button
+                              key={tex.id}
+                              onClick={() => { setSelectedTexture(tex.id as any); }}
+                              className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl border transition ${selectedTexture === tex.id ? 'bg-gray-950 text-white border-gray-950 shadow-md' : 'bg-gray-50 text-gray-400 border-gray-200 hover:border-gray-400'}`}
+                            >
+                              <Icon icon={tex.icon} className="text-lg" />
+                              <span className="text-[8px] font-bold mt-0.5">{tex.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <PremiumButton variant="outline" onClick={handleTextureRoom} className="w-full">
+                        Apply Floor Texture
                       </PremiumButton>
                     </div>
                   ) : (
@@ -1365,18 +1657,19 @@ ENTITIES
 
                       <div className="flex flex-col gap-1.5 my-2">
                         <span className="text-[9px] text-gray-400 font-bold uppercase">Carved Apertures</span>
-                        {(activeFP.layoutData?.apertures || []).filter((ap) => ap.wallId === selectedWallId).length === 0 ? (
+                        {(editingLayout?.apertures || []).filter((ap: any) => ap.wallId === selectedWallId).length === 0 ? (
                           <p className="text-[10px] text-gray-400 italic">No windows or doors carved yet.</p>
                         ) : (
-                          (activeFP.layoutData?.apertures || []).filter((ap) => ap.wallId === selectedWallId).map((ap) => (
+                          (editingLayout?.apertures || []).filter((ap: any) => ap.wallId === selectedWallId).map((ap: any) => (
                             <div key={ap.id} className="flex justify-between items-center bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100 text-[10px] font-semibold text-gray-700">
                               <span className="capitalize">{ap.type} (w: {ap.width}m, h: {ap.height}m)</span>
                               <button
                                 onClick={() => {
-                                  if (!activeFP || !activeFP.layoutData) return;
-                                  const layout = { ...activeFP.layoutData };
-                                  layout.apertures = layout.apertures.filter((a) => a.id !== ap.id);
-                                  setActiveFP({ ...activeFP, layoutData: layout });
+                                  updateEditingLayout((layout) => {
+                                    if (layout.apertures) {
+                                      layout.apertures = layout.apertures.filter((a: any) => a.id !== ap.id);
+                                    }
+                                  });
                                 }}
                                 className="text-red-500 hover:text-red-700"
                               >
@@ -1391,27 +1684,24 @@ ENTITIES
                         <PremiumButton
                           variant="outline"
                           onClick={() => {
-                            if (!activeFP || !activeFP.layoutData) return;
-                            const layout = { ...activeFP.layoutData };
-                            if (!layout.apertures) layout.apertures = [];
-                            
-                            const w = layout.walls.find((wl) => wl.id === selectedWallId);
-                            let offset = 1.0;
-                            if (w) {
-                              const len = Math.sqrt((w.endX - w.startX) ** 2 + (w.endZ - w.startZ) ** 2);
-                              offset = Math.max(0.2, len / 2 - 0.75);
-                            }
-
-                            layout.apertures.push({
-                              id: `ap-${Date.now()}`,
-                              wallId: selectedWallId,
-                              type: 'window',
-                              startOffset: Number(offset.toFixed(1)),
-                              width: 1.5,
-                              height: 1.2,
-                              elevation: 0.9
+                            updateEditingLayout((layout) => {
+                              if (!layout.apertures) layout.apertures = [];
+                              const w = (layout.walls || []).find((wl: any) => wl.id === selectedWallId);
+                              let offset = 1.0;
+                              if (w) {
+                                const len = Math.sqrt((w.endX - w.startX) ** 2 + (w.endZ - w.startZ) ** 2);
+                                offset = Math.max(0.2, len / 2 - 0.75);
+                              }
+                              layout.apertures.push({
+                                id: `ap-${Date.now()}`,
+                                wallId: selectedWallId,
+                                type: 'window',
+                                startOffset: Number(offset.toFixed(1)),
+                                width: 1.5,
+                                height: 1.2,
+                                elevation: 0.9
+                              });
                             });
-                            setActiveFP({ ...activeFP, layoutData: layout });
                           }}
                           className="py-2 text-[10px] font-bold text-center"
                         >
@@ -1420,27 +1710,24 @@ ENTITIES
                         <PremiumButton
                           variant="outline"
                           onClick={() => {
-                            if (!activeFP || !activeFP.layoutData) return;
-                            const layout = { ...activeFP.layoutData };
-                            if (!layout.apertures) layout.apertures = [];
-
-                            const w = layout.walls.find((wl) => wl.id === selectedWallId);
-                            let offset = 1.0;
-                            if (w) {
-                              const len = Math.sqrt((w.endX - w.startX) ** 2 + (w.endZ - w.startZ) ** 2);
-                              offset = Math.max(0.2, len / 2 - 0.45);
-                            }
-
-                            layout.apertures.push({
-                              id: `ap-${Date.now()}`,
-                              wallId: selectedWallId,
-                              type: 'door',
-                              startOffset: Number(offset.toFixed(1)),
-                              width: 0.9,
-                              height: 2.1,
-                              elevation: 0.0
+                            updateEditingLayout((layout) => {
+                              if (!layout.apertures) layout.apertures = [];
+                              const w = (layout.walls || []).find((wl: any) => wl.id === selectedWallId);
+                              let offset = 1.0;
+                              if (w) {
+                                const len = Math.sqrt((w.endX - w.startX) ** 2 + (w.endZ - w.startZ) ** 2);
+                                offset = Math.max(0.2, len / 2 - 0.45);
+                              }
+                              layout.apertures.push({
+                                id: `ap-${Date.now()}`,
+                                wallId: selectedWallId,
+                                type: 'door',
+                                startOffset: Number(offset.toFixed(1)),
+                                width: 0.9,
+                                height: 2.1,
+                                elevation: 0.0
+                              });
                             });
-                            setActiveFP({ ...activeFP, layoutData: layout });
                           }}
                           className="py-2 text-[10px] font-bold text-center"
                         >
@@ -1481,7 +1768,7 @@ ENTITIES
                     <div className="flex flex-col gap-4 bg-white p-4 border border-gray-100 rounded-2xl">
                       <div className="flex justify-between items-center">
                         <p className="text-xs font-bold text-gray-700 uppercase">
-                          {activeFP.layoutData?.furniture.find((f) => f.id === selectedFurnId)?.type} Model
+                          {editingLayout?.furniture.find((f: any) => f.id === selectedFurnId)?.type} Model
                         </p>
                         <button onClick={handleDeleteFurniture} className="text-xs font-bold text-red-500 hover:text-red-700">
                           Delete
@@ -1493,7 +1780,7 @@ ENTITIES
                         <div className="flex justify-between text-[9px] text-gray-400 font-bold mb-1 uppercase">
                           <span>Rotate</span>
                           <span className="text-gray-800">
-                            {activeFP.layoutData?.furniture.find((f) => f.id === selectedFurnId)?.rotation || 0}°
+                            {editingLayout?.furniture.find((f: any) => f.id === selectedFurnId)?.rotation || 0}°
                           </span>
                         </div>
                         <input
@@ -1501,7 +1788,7 @@ ENTITIES
                           min="0"
                           max="270"
                           step="90"
-                          value={activeFP.layoutData?.furniture.find((f) => f.id === selectedFurnId)?.rotation || 0}
+                          value={editingLayout?.furniture.find((f: any) => f.id === selectedFurnId)?.rotation || 0}
                           onChange={(e) => handleUpdateFurniture('rotation', Number(e.target.value))}
                           className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-950"
                         />
@@ -1514,7 +1801,7 @@ ENTITIES
                           <input
                             type="number"
                             step="0.5"
-                            value={activeFP.layoutData?.furniture.find((f) => f.id === selectedFurnId)?.x || 0}
+                            value={editingLayout?.furniture.find((f: any) => f.id === selectedFurnId)?.x || 0}
                             onChange={(e) => handleUpdateFurniture('x', Number(e.target.value))}
                             className="w-full px-2 py-1 text-xs border border-gray-150 rounded-lg"
                           />
@@ -1524,7 +1811,7 @@ ENTITIES
                           <input
                             type="number"
                             step="0.5"
-                            value={activeFP.layoutData?.furniture.find((f) => f.id === selectedFurnId)?.z || 0}
+                            value={editingLayout?.furniture.find((f: any) => f.id === selectedFurnId)?.z || 0}
                             onChange={(e) => handleUpdateFurniture('z', Number(e.target.value))}
                             className="w-full px-2 py-1 text-xs border border-gray-150 rounded-lg"
                           />

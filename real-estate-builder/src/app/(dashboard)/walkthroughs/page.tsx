@@ -181,6 +181,15 @@ export default function WalkthroughsPage() {
       .catch((err) => console.error('Error loading model assets:', err));
   }, [selectedModel, token, tenantId]);
 
+  // Minimap canvas ref
+  const minimapRef = useRef<HTMLCanvasElement>(null);
+
+  // Walk state ref (persistent across renders, not causing re-renders)
+  const walkRef = useRef({
+    w: false, a: false, s: false, d: false,
+    ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false,
+  });
+
   // Initialize and Render 3D Scene
   useEffect(() => {
     if (!canvasRef.current || !selectedModel) {
@@ -197,116 +206,333 @@ export default function WalkthroughsPage() {
     const width = container.clientWidth;
     const height = 550;
 
-    // Scene
+    // ── Scene ─────────────────────────────────────────────────────────
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf8fafc);
+    const isInterior = selectedModel.modelType === 'interior';
+    scene.background = new THREE.Color(isInterior ? 0x0c0f16 : 0xf8fafc);
 
-    // Camera
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    if (selectedModel.modelType === 'exterior') {
-      camera.position.set(35, 20, 35);
-    } else {
-      camera.position.set(0, 1.6, 4.0); // lobby default
-    }
+    // ── Camera ────────────────────────────────────────────────────────
+    const camera = new THREE.PerspectiveCamera(isInterior ? 75 : 45, width / height, 0.05, 1000);
+    camera.position.set(0, isInterior ? 1.6 : 35, isInterior ? 5.0 : 35);
 
-    // Renderer
+    // ── Renderer ──────────────────────────────────────────────────────
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    // Controls
+    // ── Orbit Controls ────────────────────────────────────────────────
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    if (selectedModel.modelType === 'exterior') {
-      controls.target.set(0, 10, 0);
+
+    if (isInterior) {
+      // First-person mode: disable zoom/pan, very restricted distance
+      controls.target.set(0, 1.6, 5.05);
+      controls.maxPolarAngle = Math.PI / 2 + 0.3; // allow slight downward look
+      controls.minPolarAngle = Math.PI / 6;        // can't look straight up
+      controls.enableZoom = false;
+      controls.enablePan = false;
+      controls.minDistance = 0.01;
+      controls.maxDistance = 0.1;
+      controls.rotateSpeed = 0.5;
     } else {
-      controls.target.set(0, 1.6, 4.05); // locked target first person look
+      controls.target.set(0, 10, 0);
       controls.maxPolarAngle = Math.PI / 2 - 0.02;
+      controls.minDistance = 5;
+      controls.maxDistance = 120;
     }
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+    // ── Lights ────────────────────────────────────────────────────────
+    const ambientLight = new THREE.AmbientLight(0xffffff, isInterior ? 0.45 : 0.65);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+    const dirLight = new THREE.DirectionalLight(0xffffff, isInterior ? 1.2 : 0.85);
     dirLight.position.set(15, 30, 20);
     dirLight.castShadow = true;
+    dirLight.shadow.mapSize.set(1024, 1024);
     scene.add(dirLight);
 
-    const fillLight = new THREE.DirectionalLight(0x6366f1, 0.35); // Blue tint
+    const fillLight = new THREE.DirectionalLight(isInterior ? 0x00f5d4 : 0x6366f1, 0.35);
     fillLight.position.set(-15, 10, -15);
     scene.add(fillLight);
 
-    // Grid helper (exterior only)
-    let gridHelper: THREE.GridHelper | null = null;
-    if (selectedModel.modelType === 'exterior') {
-      gridHelper = new THREE.GridHelper(50, 25, 0x6366f1, 0xe2e8f0);
+    // ── Grid (exterior only) ──────────────────────────────────────────
+    if (!isInterior) {
+      const gridHelper = new THREE.GridHelper(50, 25, 0x6366f1, 0xe2e8f0);
       gridHelper.position.y = -0.01;
       scene.add(gridHelper);
+    } else {
+      // Interior: add a dark floor plane + grid
+      const floorGeo = new THREE.PlaneGeometry(40, 40);
+      floorGeo.rotateX(-Math.PI / 2);
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.name = 'walkthroughFloor';
+      floor.userData.isFloor = true;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      const gridHelper = new THREE.GridHelper(40, 20, 0x00f5d4, 0x1f2937);
+      if (gridHelper.material instanceof THREE.Material) {
+        gridHelper.material.opacity = 0.15;
+        gridHelper.material.transparent = true;
+      }
+      gridHelper.position.y = 0.01;
+      scene.add(gridHelper);
+
+      // Hover ring for floor teleportation
+      const ringGeo = new THREE.RingGeometry(0.28, 0.42, 48);
+      ringGeo.rotateX(-Math.PI / 2);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0x00f5d4, transparent: true, opacity: 0.75,
+        side: THREE.DoubleSide, depthWrite: false,
+      });
+      const hoverRing = new THREE.Mesh(ringGeo, ringMat);
+      hoverRing.name = 'hoverRing';
+      hoverRing.visible = false;
+      scene.add(hoverRing);
+
+      // Mouse-move: project hover ring on floor
+      const floorRaycaster = new THREE.Raycaster();
+      const floorMouse = new THREE.Vector2();
+      const handleMouseMove = (e: MouseEvent) => {
+        const rect = renderer.domElement.getBoundingClientRect();
+        floorMouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        floorMouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        floorRaycaster.setFromCamera(floorMouse, camera);
+        const floorMeshes: THREE.Mesh[] = [];
+        scene.traverse(o => { if (o instanceof THREE.Mesh && o.userData.isFloor) floorMeshes.push(o); });
+        const hits = floorRaycaster.intersectObjects(floorMeshes, false);
+        if (hits.length > 0) {
+          hoverRing.position.set(hits[0].point.x, hits[0].point.y + 0.02, hits[0].point.z);
+          hoverRing.visible = true;
+          ringMat.opacity = 0.55 + Math.sin(Date.now() * 0.006) * 0.2;
+        } else {
+          hoverRing.visible = false;
+        }
+      };
+      renderer.domElement.addEventListener('mousemove', handleMouseMove);
     }
 
-    // Pins Group
+    // ── Pins Group ────────────────────────────────────────────────────
     const pinsGroup = new THREE.Group();
     scene.add(pinsGroup);
 
-    // Load Model
+    // ── Load GLTF model (if it exists) ────────────────────────────────
     let loadedModel: THREE.Group | null = null;
     const loader = new GLTFLoader();
     loader.load(
       selectedModel.modelUrl,
       (gltf) => {
         loadedModel = gltf.scene;
+        // Tag floor meshes in loaded GLTF for teleportation
+        loadedModel.traverse(child => {
+          if (child instanceof THREE.Mesh) {
+            const nameLC = child.name.toLowerCase();
+            if (nameLC.includes('floor') || nameLC.includes('ground') || nameLC.includes('tile')) {
+              child.userData.isFloor = true;
+            }
+          }
+        });
         scene.add(loadedModel);
+        if (threeRef.current) threeRef.current.loadedModel = loadedModel;
         setLoading3D(false);
       },
       undefined,
-      (err) => {
-        console.error('Error loading 3D GLB model:', err);
-        setLoading3D(false);
-      }
+      () => { setLoading3D(false); } // model missing – still show scene
     );
 
-    // Raycaster for mouse click (hotspot placement)
+    // ── Click vs Drag detection ───────────────────────────────────────
+    // We track where mousedown started. Only if the mouse barely moved
+    // (<6px) do we treat mouseup as a "click" for teleportation.
+    // A real drag (>6px movement) is just the OrbitControls look-around.
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
+    let mouseDownX = 0;
+    let mouseDownY = 0;
 
-    const handleCanvasClick = (event: MouseEvent) => {
-      if (!isPlacingHotspot) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      mouseDownX = e.clientX;
+      mouseDownY = e.clientY;
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      const dx = e.clientX - mouseDownX;
+      const dy = e.clientY - mouseDownY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Only treat as click if mouse barely moved (not a drag)
+      if (dist > 6) return;
 
       const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(mouse, camera);
-      
-      const intersects = raycaster.intersectObjects(scene.children, true);
-      if (intersects.length > 0) {
-        const hitPoint = intersects[0].point;
-        setClickCoord({ x: hitPoint.x, y: hitPoint.y, z: hitPoint.z });
-        
-        // Show Form
-        setHotspotName('');
-        setHotspotDesc('');
-        setHotspotLink('');
-        setShowHotspotDrawer(true);
-        setIsPlacingHotspot(false);
+
+      if (isInterior && !isPlacingHotspot) {
+        // Clean click on floor → GSAP teleport
+        const floorMeshes: THREE.Mesh[] = [];
+        scene.traverse(o => { if (o instanceof THREE.Mesh && o.userData.isFloor) floorMeshes.push(o); });
+        const hits = raycaster.intersectObjects(floorMeshes, false);
+        if (hits.length > 0) {
+          const pt = hits[0].point;
+          const lookDir = new THREE.Vector3();
+          camera.getWorldDirection(lookDir);
+          lookDir.y = 0; lookDir.normalize();
+          const destPos = new THREE.Vector3(pt.x, 1.6, pt.z);
+          const destLook = destPos.clone().add(lookDir.multiplyScalar(0.05));
+          controls.enabled = false;
+          gsap.to(camera.position, { x: destPos.x, y: destPos.y, z: destPos.z, duration: 1.4, ease: 'power2.inOut' });
+          gsap.to(controls.target, {
+            x: destLook.x, y: destLook.y, z: destLook.z, duration: 1.4, ease: 'power2.inOut',
+            onComplete: () => {
+              controls.enabled = true;
+              controls.enableZoom = false;
+              controls.enablePan = false;
+              controls.minDistance = 0.01;
+              controls.maxDistance = 0.1;
+            },
+          });
+          return;
+        }
+      }
+
+      if (isPlacingHotspot) {
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        if (intersects.length > 0) {
+          const hitPoint = intersects[0].point;
+          setClickCoord({ x: hitPoint.x, y: hitPoint.y, z: hitPoint.z });
+          setHotspotName(''); setHotspotDesc(''); setHotspotLink('');
+          setShowHotspotDrawer(true);
+          setIsPlacingHotspot(false);
+        }
       }
     };
 
-    renderer.domElement.addEventListener('click', handleCanvasClick);
+    renderer.domElement.addEventListener('mousedown', handleMouseDown);
+    renderer.domElement.addEventListener('mouseup', handleMouseUp);
 
-    // Animation Loop
+    // ── WASD Keyboard Walkthrough ─────────────────────────────────────
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isInterior) return;
+      const el = document.activeElement;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
+      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      if (k in walkRef.current) { e.preventDefault(); (walkRef.current as any)[k] = true; }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      if (k in walkRef.current) (walkRef.current as any)[k] = false;
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    // ── Scroll-to-zoom (walkthrough = FOV, exterior = orbit) ──────────
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (isInterior) {
+        camera.fov = Math.max(40, Math.min(90, camera.fov + (e.deltaY < 0 ? -2 : 2)));
+        camera.updateProjectionMatrix();
+      }
+    };
+    renderer.domElement.addEventListener('wheel', handleWheel, { passive: false });
+
+    // ── Minimap draw ──────────────────────────────────────────────────
+    const drawMinimap = (cam: THREE.PerspectiveCamera) => {
+      const mc = minimapRef.current;
+      if (!mc) return;
+      const ctx = mc.getContext('2d');
+      if (!ctx) return;
+      const w = mc.width, h = mc.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(3, 3, w - 6, h - 6);
+
+      const scale = 4;
+      const mmx = (x: number) => w / 2 + x * scale;
+      const mmz = (z: number) => h / 2 + z * scale;
+
+      const px = mmx(cam.position.x);
+      const pz = mmz(cam.position.z);
+      const dir = new THREE.Vector3();
+      cam.getWorldDirection(dir);
+      const angle = Math.atan2(dir.x, dir.z);
+
+      ctx.fillStyle = 'rgba(0,245,212,0.12)';
+      ctx.beginPath();
+      ctx.moveTo(px, pz);
+      ctx.arc(px, pz, 20, angle - 0.45, angle + 0.45);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#00f5d4';
+      ctx.shadowColor = '#00f5d4';
+      ctx.shadowBlur = 5;
+      ctx.beginPath();
+      ctx.arc(px, pz, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    };
+
+    // ── Animation Loop ────────────────────────────────────────────────
     let animId = 0;
     const animate = () => {
       animId = requestAnimationFrame(animate);
       controls.update();
+
+      // WASD movement (interior only)
+      if (isInterior) {
+        const keys = walkRef.current;
+        const anyPressed = keys.w || keys.a || keys.s || keys.d ||
+          keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight;
+
+        if (anyPressed) {
+          const lookDir = new THREE.Vector3();
+          camera.getWorldDirection(lookDir);
+          lookDir.y = 0; lookDir.normalize();
+          const sideDir = new THREE.Vector3().crossVectors(lookDir, camera.up).normalize();
+          const mv = new THREE.Vector3();
+          const speed = 0.06;
+          if (keys.w || keys.ArrowUp) mv.add(lookDir);
+          if (keys.s || keys.ArrowDown) mv.sub(lookDir);
+          if (keys.a || keys.ArrowLeft) mv.sub(sideDir);
+          if (keys.d || keys.ArrowRight) mv.add(sideDir);
+          if (mv.lengthSq() > 0) {
+            mv.normalize().multiplyScalar(speed);
+            camera.position.add(mv);
+            controls.target.add(mv);
+            camera.position.y = 1.6;
+            controls.target.y = 1.6;
+            camera.position.x = Math.max(-20, Math.min(20, camera.position.x));
+            camera.position.z = Math.max(-20, Math.min(20, camera.position.z));
+          }
+        }
+
+        drawMinimap(camera);
+      }
+
+      // Always enforce eye-height + bounds (catches WASD, OrbitControls drift, GSAP, everything)
+      if (isInterior) {
+        camera.position.y = 1.6;
+        controls.target.y = 1.6;
+        camera.position.x = Math.max(-19, Math.min(19, camera.position.x));
+        camera.position.z = Math.max(-19, Math.min(19, camera.position.z));
+        controls.target.x = Math.max(-19, Math.min(19, controls.target.x));
+        controls.target.z = Math.max(-19, Math.min(19, controls.target.z));
+      }
+
       renderer.render(scene, camera);
     };
     animate();
 
-    // Resize Handler
+    // (drawMinimap defined above animate loop)
+
+    // ── Resize ────────────────────────────────────────────────────────
     const handleResize = () => {
       const w = container.clientWidth;
       camera.aspect = w / height;
@@ -315,22 +541,20 @@ export default function WalkthroughsPage() {
     };
     window.addEventListener('resize', handleResize);
 
-    // Setup cleanup
+    // ── Cleanup ───────────────────────────────────────────────────────
     const cleanup = () => {
       cancelAnimationFrame(animId);
-      renderer.domElement.removeEventListener('click', handleCanvasClick);
+      renderer.domElement.removeEventListener('mousedown', handleMouseDown);
+      renderer.domElement.removeEventListener('mouseup', handleMouseUp);
+      renderer.domElement.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('resize', handleResize);
       renderer.dispose();
     };
 
     threeRef.current = {
-      scene,
-      camera,
-      renderer,
-      controls,
-      loadedModel,
-      pinsGroup,
-      cleanup,
+      scene, camera, renderer, controls, loadedModel, pinsGroup, cleanup,
     };
 
     return cleanup;
@@ -732,20 +956,20 @@ export default function WalkthroughsPage() {
               <div className="flex gap-2 pointer-events-auto">
                 <button
                   onClick={() => setIsPlacingHotspot(!isPlacingHotspot)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-bold border transition-all active:scale-95 ${
                     isPlacingHotspot 
-                      ? 'bg-red-500 text-white border-red-500' 
+                      ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20' 
                       : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200 shadow-sm'
                   }`}
                 >
-                  <Icon icon="solar:pin-bold" />
-                  <span>{isPlacingHotspot ? 'Click on 3D Model...' : 'Add Hotspot'}</span>
+                  <Icon icon="solar:pin-bold" className="text-sm" />
+                  <span>{isPlacingHotspot ? 'Click on 3D Surface...' : 'Add Hotspot'}</span>
                 </button>
                 <button
                   onClick={triggerCaptureViewpoint}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 shadow-sm transition-all"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-bold bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
-                  <Icon icon="solar:camera-bold" />
+                  <Icon icon="solar:camera-bold" className="text-sm" />
                   <span>Capture View</span>
                 </button>
               </div>
@@ -754,21 +978,50 @@ export default function WalkthroughsPage() {
 
           {/* Viewport Canvas */}
           {selectedModel ? (
-            <div className="relative w-full h-[550px]">
+            <div className={`relative w-full h-[550px] ${selectedModel.modelType === 'interior' ? 'bg-[#0c0f16]' : 'bg-gray-50'} rounded-b-2xl overflow-hidden`}>
               <canvas ref={canvasRef} className="w-full h-full block" />
+
+              {/* Loading overlay */}
               {loading3D && (
-                <div className="absolute inset-0 bg-white/70 flex flex-col justify-center items-center gap-3">
-                  <Icon icon="eos-icons:loading" className="text-3xl text-indigo-600 animate-spin" />
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading 3D asset scene...</p>
+                <div className={`absolute inset-0 flex flex-col justify-center items-center gap-3 ${selectedModel.modelType === 'interior' ? 'bg-[#0c0f16]/80' : 'bg-white/70'}`}>
+                  <Icon icon="eos-icons:loading" className={`text-3xl animate-spin ${selectedModel.modelType === 'interior' ? 'text-[#00f5d4]' : 'text-indigo-600'}`} />
+                  <p className={`text-[10px] font-black uppercase tracking-widest ${selectedModel.modelType === 'interior' ? 'text-[#00f5d4]' : 'text-gray-400'}`}>
+                    {selectedModel.modelType === 'interior' ? 'Initialising walkthrough environment...' : 'Loading 3D asset scene...'}
+                  </p>
                 </div>
               )}
-              
-              {/* Controls prompt */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-4 py-1.5 border border-gray-200/50 text-[9px] font-bold text-gray-500 tracking-wide rounded-full shadow-sm pointer-events-none text-center">
+
+              {/* Minimap (interior only) */}
+              {selectedModel.modelType === 'interior' && (
+                <div className="absolute bottom-14 left-4 rounded-xl overflow-hidden border border-white/10 shadow-xl opacity-70 hover:opacity-100 transition-opacity">
+                  <canvas ref={minimapRef} width={130} height={100} className="block" />
+                  <div className="absolute bottom-1 left-0 right-0 text-center text-[8px] text-[#00f5d4]/60 font-bold tracking-widest">MAP</div>
+                </div>
+              )}
+
+              {/* Controls hint */}
+              <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 backdrop-blur-md px-4 py-1.5 border rounded-full shadow-sm pointer-events-none text-center flex items-center gap-3 ${
+                selectedModel.modelType === 'interior'
+                  ? 'bg-black/60 border-white/10 text-white/60'
+                  : 'bg-white/90 border-gray-200/50 text-gray-500'
+              }`}>
                 {isPlacingHotspot ? (
-                  <span className="text-red-500 font-extrabold animate-pulse">🔴 Click anywhere on the 3D surface mesh to drop a hotspot</span>
+                  <span className="text-[9px] text-red-400 font-extrabold animate-pulse">🔴 Click anywhere on the 3D surface to drop a hotspot</span>
+                ) : selectedModel.modelType === 'interior' ? (
+                  <span className="text-[9px] font-bold tracking-wide flex items-center gap-2">
+                    <span className="flex gap-0.5">
+                      {['W','A','S','D'].map(k => (
+                        <span key={k} className="w-4 h-4 bg-white/10 border border-white/20 rounded text-[8px] flex items-center justify-center font-bold">{k}</span>
+                      ))}
+                    </span>
+                    <span className="opacity-60">Walk</span>
+                    <span className="w-px h-3 bg-white/20" />
+                    <span className="opacity-60">Drag to look</span>
+                    <span className="w-px h-3 bg-white/20" />
+                    <span className="text-[#00f5d4] font-bold">Click floor → Teleport</span>
+                  </span>
                 ) : (
-                  <span>Left-click drag to rotate • Right-click drag to pan • Scroll to zoom</span>
+                  <span className="text-[9px] font-bold">Left-click drag to rotate • Right-click drag to pan • Scroll to zoom</span>
                 )}
               </div>
             </div>
@@ -818,10 +1071,10 @@ export default function WalkthroughsPage() {
                   <button
                     onClick={playTourPreview}
                     disabled={isPlayingTour}
-                    className="flex items-center gap-1.5 px-2 py-0.5 border border-indigo-200 text-indigo-600 hover:bg-indigo-50 disabled:opacity-50 rounded-lg text-[10px] font-bold transition-all"
+                    className="flex items-center gap-2 px-4 py-2 border border-indigo-200 text-indigo-600 hover:bg-indigo-50 disabled:opacity-50 rounded-xl text-[10px] font-bold transition-all active:scale-95"
                   >
-                    <Icon icon={isPlayingTour ? "eos-icons:loading" : "solar:play-bold"} />
-                    <span>Preview</span>
+                    <Icon icon={isPlayingTour ? "eos-icons:loading" : "solar:play-bold"} className="text-sm" />
+                    <span>Preview Tour</span>
                   </button>
                 )}
               </div>
@@ -850,8 +1103,9 @@ export default function WalkthroughsPage() {
             {cameraPoints.length > 0 && (
               <button
                 onClick={handleSaveTour}
-                className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors mt-4"
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-bold tracking-wider uppercase transition-all duration-300 active:scale-[0.98] shadow-lg shadow-indigo-600/10 mt-4 flex items-center justify-center gap-2"
               >
+                <Icon icon="solar:diskette-bold" className="text-sm" />
                 Save Tour Route
               </button>
             )}

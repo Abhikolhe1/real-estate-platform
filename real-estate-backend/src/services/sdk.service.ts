@@ -7,6 +7,7 @@ import { AnalyticsEvent } from '../entities/analytics-event.entity';
 import { DigitalTwinModel } from '../entities/digital-twin-model.entity';
 import { Hotspot } from '../entities/hotspot.entity';
 import { TourRoute } from '../entities/tour-route.entity';
+import { FloorPlan } from '../entities/floorplan.entity';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -24,6 +25,8 @@ export class SdkService {
     private readonly hotspotRepo: Repository<Hotspot>,
     @InjectRepository(TourRoute)
     private readonly tourRepo: Repository<TourRoute>,
+    @InjectRepository(FloorPlan)
+    private readonly floorPlanRepo: Repository<FloorPlan>,
   ) {}
 
   // SDK Keys CRUD
@@ -192,6 +195,11 @@ export class SdkService {
     // Fetch all spatial models for this project
     const models = await this.modelRepo.find({ where: { tenantId, projectId } });
     
+    // Fetch floor plans for procedural structure generation
+    const floorPlans = await this.floorPlanRepo.find({ 
+      where: { tenantId, projectId } 
+    });
+
     const result: any[] = [];
     for (const model of models) {
       const hotspots = await this.hotspotRepo.find({ where: { tenantId, modelId: model.id } });
@@ -206,6 +214,7 @@ export class SdkService {
     return {
       tenantId,
       data: result,
+      floorPlans: floorPlans || []
     };
   }
 }

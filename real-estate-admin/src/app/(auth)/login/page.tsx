@@ -99,7 +99,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl tracking-wider uppercase transition-all duration-300 active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-indigo-600/20"
+            className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded-xl tracking-[0.2em] uppercase transition-all duration-300 active:scale-[0.98] disabled:opacity-50 shadow-xl shadow-indigo-600/20 flex items-center justify-center gap-2"
           >
             {loading ? 'Authorizing Console...' : 'Establish Connection'}
           </button>

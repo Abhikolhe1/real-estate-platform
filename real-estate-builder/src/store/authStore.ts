@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface User {
   id: string;
@@ -26,7 +26,8 @@ export const useAuthStore = create<AuthState>()(
       clearAuth: () => set({ token: null, user: null }),
     }),
     {
-      name: 'aether-builder-auth',
+      name: 'aether-builder-auth',          // sessionStorage key
+      storage: createJSONStorage(() => sessionStorage), // survives refresh, cleared on tab close
     }
   )
 );

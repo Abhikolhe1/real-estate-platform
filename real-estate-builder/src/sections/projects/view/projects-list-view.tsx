@@ -168,15 +168,16 @@ export default function DashboardOverviewPage() {
         <div className="flex gap-3">
           <Link
             href={paths.dashboard.leads}
-            className="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition"
+            className="px-6 py-3 rounded-xl border border-gray-200 text-[11px] font-bold text-gray-600 hover:bg-gray-50 transition active:scale-95 flex items-center justify-center"
           >
             View Leads
           </Link>
           <Link
             href={paths.dashboard.projects}
-            className="px-4 py-2.5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition shadow-sm"
+            className="px-6 py-3 rounded-xl bg-gray-900 text-white text-[11px] font-bold hover:bg-gray-800 transition shadow-xl shadow-gray-900/10 active:scale-95 flex items-center justify-center gap-2"
           >
-            + New Project
+            <span>+</span>
+            New Project
           </Link>
         </div>
       </header>

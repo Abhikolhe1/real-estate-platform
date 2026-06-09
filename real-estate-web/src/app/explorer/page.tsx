@@ -57,7 +57,9 @@ export default function ExplorerPage() {
         <div className="lg:col-span-7 relative bg-surface-container/20 rounded-3xl border border-white/5 overflow-hidden anim-explorer group shadow-2xl">
           <BuildingViewer 
             activeFloor={activeFloor} 
+            setActiveFloor={setActiveFloor}
             viewMode={viewMode} 
+            setViewMode={setViewMode}
             activeRoom={activeRoom} 
             setActiveRoom={setActiveRoom} 
           />

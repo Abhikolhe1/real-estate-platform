@@ -1,0 +1,40 @@
+{
+  "name": "real-estate-builder",
+  "version": "1.0.0",
+  "description": "Production Next.js Builder Dashboard aligned with Minimal UI Kit",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3003",
+    "build": "next build",
+    "start": "next start -p 3003",
+    "lint": "next lint",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx}\""
+  },
+  "dependencies": {
+    "@iconify/react": "^6.0.2",
+    "@tanstack/react-query": "^5.28.9",
+    "@types/three": "^0.184.1",
+    "axios": "^1.6.8",
+    "clsx": "^2.1.0",
+    "gsap": "^3.12.5",
+    "next": "^14.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.2.2",
+    "three": "^0.184.0",
+    "zustand": "^4.5.2",
+    "@aether/ui": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.18",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.2.0",
+    "postcss": "^8.4.35",
+    "prettier": "^3.2.5",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3"
+  }
+}

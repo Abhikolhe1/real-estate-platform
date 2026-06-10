@@ -22,6 +22,9 @@ export class FloorPlan {
   @Column({ type: 'varchar', length: 500, nullable: true })
   imageUrl?: string;
 
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  pdfRasterPath?: string;
+
   @Column({ type: 'integer', default: 0 })
   flatCount!: number;
 

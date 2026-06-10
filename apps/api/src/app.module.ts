@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { MulterModule } from '@nestjs/platform-express';
 
 // Controllers
 import { AuthController } from './controllers/auth.controller';
@@ -20,6 +21,7 @@ import { TwinsController } from './controllers/twins.controller';
 import { SdkController } from './controllers/sdk.controller';
 import { BillingController } from './controllers/billing.controller';
 import { EnterpriseController } from './controllers/enterprise.controller';
+import { HealthController } from './controllers/health.controller';
 
 // Services
 import { AuthService } from './services/auth.service';
@@ -80,6 +82,9 @@ import { AuditService } from './services/audit.service';
 
 @Module({
   imports: [
+    MulterModule.register({
+      dest: process.env.UPLOAD_DIR || './apps/api/uploads',
+    }),
     // Standard JWT configuration
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'aether-secret-token-key-99',
@@ -125,6 +130,7 @@ import { AuditService } from './services/audit.service';
     SdkController,
     BillingController,
     EnterpriseController,
+    HealthController,
   ],
   providers: [
     AuthService,

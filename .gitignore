@@ -36,3 +36,11 @@ yarn-error.log*
 **/package-lock.json
 **/yarn.lock
 **/pnpm-lock.yaml
+
+# local uploads
+**/uploads/
+**/shared-uploads/
+
+# log files
+**/logs/
+*.log

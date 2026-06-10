@@ -19,7 +19,7 @@
 
 | Phase | Title | Status | Est. Days |
 |-------|-------|--------|-----------|
-| 0 | Foundation & Dev Environment | ⬜ Not Started | 2 |
+| 0 | Foundation & Dev Environment | ✅ Completed | 2 |
 | 1 | AI Pipeline — End to End | ⬜ Not Started | 5 |
 | 2 | Procedural 3D Renderer (JSON → Three.js) | ⬜ Not Started | 7 |
 | 3 | Multi-Floor & Tower System | ⬜ Not Started | 4 |
@@ -44,8 +44,8 @@
 
 ### 0.1 — Environment Setup
 
-- [ ] **0.1.1** Create a single root `.env` file with all keys. Copy `apps/api/.env.example` → `.env.example` at root and document every variable.
-- [ ] **0.1.2** Add these env variables to `.env`:
+- [x] **0.1.1** Create a single root `.env` file with all keys. Copy `apps/api/.env.example` → `.env.example` at root and document every variable.
+- [x] **0.1.2** Add these env variables to `.env`:
   ```
   DATABASE_URL=postgresql://user:pass@localhost:5432/aether
   REDIS_URL=redis://localhost:6379
@@ -57,24 +57,24 @@
   RAZORPAY_KEY_SECRET=      # Phase 11
   UPLOAD_DIR=./apps/api/uploads
   ```
-- [ ] **0.1.3** Add a `docker-compose.dev.yml` at root that spins up PostgreSQL 16 and Redis 7 with correct ports and persistent volumes.
-- [ ] **0.1.4** Confirm `npm run dev:all` starts all 5 services without errors (api :3001, web :3000, builder :3002, admin :3003, ai-service :8000).
-- [ ] **0.1.5** Confirm `GET http://localhost:8000/health` returns `{"status":"healthy"}`.
-- [ ] **0.1.6** Confirm `GET http://localhost:3001/api/health` returns 200.
+- [x] **0.1.3** Add a `docker-compose.dev.yml` at root that spins up PostgreSQL 16 and Redis 7 with correct ports and persistent volumes.
+- [x] **0.1.4** Confirm `npm run dev:all` starts all 5 services without errors (api :3001, web :3000, builder :3002, admin :3003, ai-service :8000).
+- [x] **0.1.5** Confirm `GET http://localhost:8000/health` returns `{"status":"healthy"}`.
+- [x] **0.1.6** Confirm `GET http://localhost:3001/api/health` returns 200.
 
 ### 0.2 — Database
 
-- [ ] **0.2.1** Run TypeORM migrations. All 30+ entities should create tables cleanly with no errors.
-- [ ] **0.2.2** Run `npm run seed` (or `ts-node apps/api/src/seed.ts`) to create the default admin user and test builder.
-- [ ] **0.2.3** Verify in your DB client that these tables exist: `builder`, `project`, `tower`, `floor`, `flat`, `generated_structure`, `digital_twin_model`, `floorplan`, `structural_aperture`.
-- [ ] **0.2.4** Add a `structureJson` JSONB column to `generated_structure` entity if not already present — this holds the full parsed output from the AI service.
-- [ ] **0.2.5** Add a `pdfRasterPath` varchar column to `floorplan` entity — used in Phase 1 for PDF processing.
+- [x] **0.2.1** Run TypeORM migrations. All 30+ entities should create tables cleanly with no errors.
+- [x] **0.2.2** Run `npm run seed` (or `ts-node apps/api/src/seed.ts`) to create the default admin user and test builder.
+- [x] **0.2.3** Verify in your DB client that these tables exist: `builder`, `project`, `tower`, `floor`, `flat`, `generated_structure`, `digital_twin_model`, `floorplan`, `structural_aperture`.
+- [x] **0.2.4** Add a `structureJson` JSONB column to `generated_structure` entity if not already present — this holds the full parsed output from the AI service.
+- [x] **0.2.5** Add a `pdfRasterPath` varchar column to `floorplan` entity — used in Phase 1 for PDF processing.
 
 ### 0.3 — Uploads Directory
 
-- [ ] **0.3.1** Ensure `apps/api/uploads/` directory exists and is git-ignored.
-- [ ] **0.3.2** Create subdirectory structure: `uploads/dxf/`, `uploads/pdf/`, `uploads/images/`, `uploads/exports/`.
-- [ ] **0.3.3** Confirm the NestJS `MulterModule` in `app.module.ts` is configured to write to the correct `UPLOAD_DIR` from env.
+- [x] **0.3.1** Ensure `apps/api/uploads/` directory exists and is git-ignored.
+- [x] **0.3.2** Create subdirectory structure: `uploads/dxf/`, `uploads/pdf/`, `uploads/images/`, `uploads/exports/`.
+- [x] **0.3.3** Confirm the NestJS `MulterModule` in `app.module.ts` is configured to write to the correct `UPLOAD_DIR` from env.
 
 **⬛ AUDIT CHECKPOINT 0:** Send me: (1) screenshot of all 5 services running in terminal, (2) screenshot of DB tables in your DB client.
 

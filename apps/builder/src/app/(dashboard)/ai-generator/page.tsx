@@ -3,9 +3,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PremiumButton from '@/components/premium-button';
 import { Icon } from '@iconify/react';
+import { useValidationStore } from '@/store/validationStore';
+import { calculateArea } from '@/utils/geo-utils';
 
 interface FloorPlan {
   id: string;
+  projectId: string;
   name: string;
   imageUrl: string;
   flatCount: number;
@@ -51,19 +54,38 @@ export default function AIFloorPlanGeneratorPage() {
   // Screen 2: Floor Split state
   const [splitBoxes, setSplitBoxes] = useState<any[]>([]);
   const [drawingBox, setDrawingBox] = useState<any | null>(null);
+  const [eps, setEps] = useState(8.0);
+  const [isAutoSplitting, setIsAutoSplitting] = useState(false);
   const splitCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Screen 3: Validation Studio state
-  const [valRooms, setValRooms] = useState<any[]>([]);
-  const [valWalls, setValWalls] = useState<any[]>([]);
-  const [valApertures, setValApertures] = useState<any[]>([]);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [selectedApId, setSelectedApId] = useState<string | null>(null);
+  // Screen 3: Validation Studio Zustand State
+  const {
+    rooms: valRooms,
+    walls: valWalls,
+    apertures: valApertures,
+    selectedRoomId,
+    selectedApId,
+    initStore,
+    selectRoom,
+    selectAperture,
+    updateRoomName,
+    addRoom: storeAddRoom,
+    deleteRoom: storeDeleteRoom,
+    addAperture: storeAddAperture,
+    dragRoomCorner,
+    mergeRooms,
+    splitRoom,
+    getOverlaps,
+  } = useValidationStore();
+
+  const [draggedCorner, setDraggedCorner] = useState<{ roomId: string; cornerIndex: number } | null>(null);
   const valCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Screen 4: Theme state
   const [selectedTheme, setSelectedTheme] = useState('Modern');
   const [themeImage, setThemeImage] = useState('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80');
+  const [detectedStyle, setDetectedStyle] = useState<any | null>(null);
+  const [isDetectingStyle, setIsDetectingStyle] = useState(false);
 
   // Screen 5: Generate state
   const [generationProgress, setGenerationProgress] = useState(0);
@@ -126,14 +148,13 @@ export default function AIFloorPlanGeneratorPage() {
   useEffect(() => {
     if (activeFP && activeFP.layoutData) {
       const layout = activeFP.layoutData;
-      setValRooms(layout.rooms || []);
-      setValWalls(layout.walls || []);
-      setValApertures(layout.apertures || []);
+      initStore(layout.rooms || [], layout.walls || [], layout.apertures || []);
       setSplitBoxes(layout.splitBoxes || []);
       if (layout.theme) setSelectedTheme(layout.theme);
       if (layout.frontImageUrl) setThemeImage(layout.frontImageUrl);
+      if (layout.detectedStyle) setDetectedStyle(layout.detectedStyle);
     }
-  }, [activeFP]);
+  }, [activeFP, initStore]);
 
   // ==================== SCREEN 1: UPLOAD ====================
   const handleUpload = async (e: React.FormEvent) => {
@@ -294,6 +315,30 @@ export default function AIFloorPlanGeneratorPage() {
     setDrawingBox(null);
   };
 
+  const triggerAutoSplit = async () => {
+    if (!activeFP) return;
+    setIsAutoSplitting(true);
+    try {
+      const res = await fetch(`http://localhost:3001/floorplans/${activeFP.id}/auto-split`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-tenant-id': tenantId,
+        },
+        body: JSON.stringify({ eps, minSamples: 3 })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActiveFP(data.floorPlan);
+        setSplitBoxes(data.floorPlan.layoutData?.splitBoxes || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsAutoSplitting(false);
+    }
+  };
+
   const saveSplits = async () => {
     if (!activeFP) return;
     try {
@@ -326,28 +371,53 @@ export default function AIFloorPlanGeneratorPage() {
     ctx.fillStyle = '#fafbfc';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw validation studio rooms
+    // Draw validation studio rooms (polygons)
     valRooms.forEach((r) => {
+      if (!r.points || r.points.length === 0) return;
       const isSelected = r.id === selectedRoomId;
-      // Map coordinate space meters to canvas pixels
-      const cx = canvas.width / 2 + r.x * 18;
-      const cy = canvas.height / 2 + r.z * 18;
-      const cw = r.width * 18;
-      const ch = r.depth * 18;
 
-      ctx.fillStyle = isSelected ? 'rgba(79, 70, 229, 0.12)' : (r.color || '#f5efe6');
+      ctx.fillStyle = isSelected ? 'rgba(79, 70, 229, 0.08)' : (r.color || '#f5efe6');
       ctx.strokeStyle = isSelected ? '#4f46e5' : '#e2e8f0';
       ctx.lineWidth = isSelected ? 2.5 : 1.5;
 
-      ctx.fillRect(cx, cy, cw, ch);
-      ctx.strokeRect(cx, cy, cw, ch);
+      ctx.beginPath();
+      r.points.forEach((pt, idx) => {
+        const cx = canvas.width / 2 + pt.x * 18;
+        const cy = canvas.height / 2 + pt.z * 18;
+        if (idx === 0) ctx.moveTo(cx, cy);
+        else ctx.lineTo(cx, cy);
+      });
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
 
-      // Label
+      // Draw centroid label
+      const rCentroid = r.node || { x: r.x + r.width / 2, z: r.z + r.depth / 2 };
+      const cx = canvas.width / 2 + rCentroid.x * 18;
+      const cy = canvas.height / 2 + rCentroid.z * 18;
       ctx.fillStyle = '#0f172a';
       ctx.font = 'bold 9px Inter, sans-serif';
-      ctx.fillText(r.name, cx + 6, cy + 14);
+      ctx.textAlign = 'center';
+      ctx.fillText(r.name, cx, cy - 2);
       ctx.fillStyle = '#6b7280';
-      ctx.fillText(`${r.width}m x ${r.depth}m`, cx + 6, cy + 26);
+      const rArea = calculateArea(r.points);
+      ctx.fillText(`${rArea.toFixed(1)} m²`, cx, cy + 8);
+      ctx.textAlign = 'left'; // Reset
+
+      // Render handle widgets for selected room corners
+      if (isSelected) {
+        r.points.forEach((pt) => {
+          const hx = canvas.width / 2 + pt.x * 18;
+          const hy = canvas.height / 2 + pt.z * 18;
+          ctx.fillStyle = '#4f46e5';
+          ctx.beginPath();
+          ctx.arc(hx, hy, 5, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        });
+      }
     });
 
     // Draw walls
@@ -386,75 +456,86 @@ export default function AIFloorPlanGeneratorPage() {
     });
   }, [currentStep, valRooms, valWalls, valApertures, selectedRoomId, selectedApId, activeFP]);
 
-  const handleValCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleValMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
+    const canvas = e.currentTarget;
 
-    // Check click on rooms
+    // 1. Proximity check on selected room handles first (12px threshold)
+    if (selectedRoomId) {
+      const room = valRooms.find(r => r.id === selectedRoomId);
+      if (room) {
+        for (let i = 0; i < room.points.length; i++) {
+          const pt = room.points[i];
+          const hx = canvas.width / 2 + pt.x * 18;
+          const hy = canvas.height / 2 + pt.z * 18;
+          if (Math.hypot(mx - hx, my - hy) < 12) {
+            setDraggedCorner({ roomId: room.id, cornerIndex: i });
+            return;
+          }
+        }
+      }
+    }
+
+    // 2. Select clicked room using raycasting point-in-polygon
     let clickedRoom = null;
     valRooms.forEach((r) => {
-      const cx = e.currentTarget.width / 2 + r.x * 18;
-      const cy = e.currentTarget.height / 2 + r.z * 18;
-      const cw = r.width * 18;
-      const ch = r.depth * 18;
+      const canvasPoly = r.points.map(pt => ({
+        x: canvas.width / 2 + pt.x * 18,
+        z: canvas.height / 2 + pt.z * 18
+      }));
+      
+      let inside = false;
+      for (let i = 0, j = canvasPoly.length - 1; i < canvasPoly.length; j = i++) {
+        const xi = canvasPoly[i].x, zi = canvasPoly[i].z;
+        const xj = canvasPoly[j].x, zj = canvasPoly[j].z;
+        const intersect = ((zi > my) !== (zj > my))
+          && (mx < (xj - xi) * (my - zi) / (zj - zi + 1e-9) + xi);
+        if (intersect) inside = !inside;
+      }
 
-      if (mx >= cx && mx <= cx + cw && my >= cy && my <= cy + ch) {
+      if (inside) {
         clickedRoom = r.id;
       }
     });
 
-    setSelectedRoomId(clickedRoom);
-    setSelectedApId(null);
+    selectRoom(clickedRoom);
+    selectAperture(null);
+  };
+
+  const handleValMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!draggedCorner) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const canvas = e.currentTarget;
+
+    const newX = (mx - canvas.width / 2) / 18;
+    const newZ = (my - canvas.height / 2) / 18;
+
+    dragRoomCorner(draggedCorner.roomId, draggedCorner.cornerIndex, newX, newZ);
+  };
+
+  const handleValMouseUp = () => {
+    setDraggedCorner(null);
   };
 
   const handleAddRoom = (isBalcony = false) => {
     const name = prompt(isBalcony ? "Enter Balcony Name:" : "Enter Room Name:", isBalcony ? "Balcony Deck" : "Living Area");
-    if (!name) return;
-
-    const newRoom = {
-      id: `room-${Date.now()}`,
-      name,
-      x: -5 + Math.random() * 4,
-      z: -3 + Math.random() * 4,
-      width: 4.5,
-      depth: 4.0,
-      color: isBalcony ? '#faf5ef' : '#f5efe6'
-    };
-
-    setValRooms([...valRooms, newRoom]);
-
-    // Construct 4 mock walls around the new room
-    const wallIdBase = `w-new-${Date.now()}`;
-    const newWalls = [
-      { id: `${wallIdBase}-top`, startX: newRoom.x, startZ: newRoom.z, endX: newRoom.x + newRoom.width, endZ: newRoom.z },
-      { id: `${wallIdBase}-right`, startX: newRoom.x + newRoom.width, startZ: newRoom.z, endX: newRoom.x + newRoom.width, endZ: newRoom.z + newRoom.depth },
-      { id: `${wallIdBase}-bottom`, startX: newRoom.x + newRoom.width, startZ: newRoom.z + newRoom.depth, endX: newRoom.x, endZ: newRoom.z + newRoom.depth },
-      { id: `${wallIdBase}-left`, startX: newRoom.x, startZ: newRoom.z + newRoom.depth, endX: newRoom.x, startZ: newRoom.z }
-    ];
-
-    setValWalls([...valWalls, ...newWalls]);
+    if (name) {
+      storeAddRoom(name, isBalcony);
+    }
   };
 
   const handleDeleteRoom = () => {
-    if (!selectedRoomId) return;
-    setValRooms(valRooms.filter(r => r.id !== selectedRoomId));
-    setSelectedRoomId(null);
+    if (selectedRoomId) {
+      storeDeleteRoom(selectedRoomId);
+    }
   };
 
   const handleAddAperture = (type: 'door' | 'window') => {
-    if (valWalls.length === 0) return;
-    const targetWall = valWalls[0]; // defaults to placing on first wall segment for MVP simplification
-    const newAp = {
-      id: `ap-${Date.now()}`,
-      wallId: targetWall.id,
-      type,
-      startOffset: 1.0,
-      width: type === 'door' ? 0.9 : 1.5,
-      height: type === 'door' ? 2.1 : 1.2,
-      elevation: type === 'door' ? 0.0 : 0.9,
-    };
-    setValApertures([...valApertures, newAp]);
+    storeAddAperture(type);
   };
 
   const saveValidationLayout = async () => {
@@ -485,6 +566,32 @@ export default function AIFloorPlanGeneratorPage() {
   };
 
   // ==================== SCREEN 4: EXTERIOR THEME SELECTION ====================
+  const handleDetectStyle = async () => {
+    if (!activeFP || !themeImage) return;
+    setIsDetectingStyle(true);
+    try {
+      const res = await fetch(`http://localhost:3001/floorplans/${activeFP.id}/detect-style`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-tenant-id': tenantId,
+        },
+        body: JSON.stringify({ imageUrl: themeImage })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setDetectedStyle(data);
+        if (data.style) {
+          setSelectedTheme(data.style);
+        }
+      }
+    } catch (err) {
+      console.error("Style detection failed:", err);
+    } finally {
+      setIsDetectingStyle(false);
+    }
+  };
+
   const saveThemeConfig = async () => {
     if (!activeFP) return;
     try {
@@ -494,7 +601,7 @@ export default function AIFloorPlanGeneratorPage() {
           'Content-Type': 'application/json',
           'x-tenant-id': tenantId,
         },
-        body: JSON.stringify({ theme: selectedTheme, frontImageUrl: themeImage })
+        body: JSON.stringify({ theme: selectedTheme, frontImageUrl: themeImage, detectedStyle })
       });
       const data = await res.json();
       if (data.success) {
@@ -593,6 +700,47 @@ export default function AIFloorPlanGeneratorPage() {
       const slabDepth = 15;
       const slabHeight = 3.0;
 
+      // Resolve Style Intelligence colors and theme parameters
+      const theme = selectedTheme || 'Modern';
+      const activeDetectedStyle = detectedStyle || layout.detectedStyle || {};
+      const colors = activeDetectedStyle.colors || [];
+      const materials = activeDetectedStyle.materials || [];
+
+      // Determine key colors
+      let primaryColor = 0x1e293b; // slab
+      let secondaryColor = 0x475569; // columns
+      let glassColor = 0x00f5d4; // glass
+      let frameColor = 0x1f2937; // frames/posts
+
+      if (theme === 'Luxury') {
+        primaryColor = 0x3e2723;
+        secondaryColor = 0xd97706;
+        glassColor = 0xf59e0b;
+        frameColor = 0x78350f;
+      } else if (theme === 'Commercial') {
+        primaryColor = 0x1e3a8a;
+        secondaryColor = 0x1e40af;
+        glassColor = 0x3b82f6;
+        frameColor = 0x0f172a;
+      } else if (theme === 'Minimalist') {
+        primaryColor = 0xf3f4f6;
+        secondaryColor = 0x9ca3af;
+        glassColor = 0xe5e7eb;
+        frameColor = 0x4b5563;
+      } else if (theme === 'Premium') {
+        primaryColor = 0x271e18;
+        secondaryColor = 0x854d0e;
+        glassColor = 0x10b981;
+        frameColor = 0x1f2937;
+      }
+
+      if (colors.length > 0) {
+        const hexToNum = (hex: string) => parseInt(hex.replace('#', ''), 16);
+        if (colors[0]) glassColor = hexToNum(colors[0]);
+        if (colors[1]) secondaryColor = hexToNum(colors[1]);
+        if (colors[2]) primaryColor = hexToNum(colors[2]);
+      }
+
       // Draw Floor Stack & Exterior
       for (let f = 0; f < numFloorsConfigured; f++) {
         const hOffset = f * slabHeight;
@@ -601,7 +749,7 @@ export default function AIFloorPlanGeneratorPage() {
         // Floor Slab (with glassmorphism edge)
         const slabGeo = new THREE.BoxGeometry(slabWidth, 0.1, slabDepth);
         const slabMat = new THREE.MeshStandardMaterial({ 
-          color: isActive ? 0x312e81 : 0x1e293b,
+          color: isActive ? primaryColor : new THREE.Color(primaryColor).multiplyScalar(0.7).getHex(),
           roughness: 0.5
         });
         const slabMesh = new THREE.Mesh(slabGeo, slabMat);
@@ -610,7 +758,11 @@ export default function AIFloorPlanGeneratorPage() {
 
         // Render simple columns at corners
         const colGeo = new THREE.BoxGeometry(0.3, slabHeight, 0.3);
-        const colMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
+        const colMat = new THREE.MeshStandardMaterial({
+          color: secondaryColor,
+          metalness: materials.includes('steel') || materials.includes('bronze') ? 0.8 : 0.2,
+          roughness: 0.4
+        });
         const corners = [
           { x: -slabWidth/2, z: -slabDepth/2 },
           { x: slabWidth/2, z: -slabDepth/2 },
@@ -626,7 +778,7 @@ export default function AIFloorPlanGeneratorPage() {
         // Procedural Facade Glass Panels
         const facadeGeo = new THREE.BoxGeometry(slabWidth - 0.2, slabHeight - 0.2, 0.05);
         const facadeMat = new THREE.MeshStandardMaterial({
-          color: selectedTheme === 'Modern' ? 0x00f5d4 : selectedTheme === 'Luxury' ? 0xf59e0b : 0x3b82f6,
+          color: glassColor,
           transparent: true,
           opacity: 0.35,
           roughness: 0.1,
@@ -638,7 +790,7 @@ export default function AIFloorPlanGeneratorPage() {
 
         // Balcony glass railings
         const balconyGeo = new THREE.BoxGeometry(6, 1.0, 0.05);
-        const balconyMat = new THREE.MeshStandardMaterial({ color: 0x00f5d4, transparent: true, opacity: 0.4 });
+        const balconyMat = new THREE.MeshStandardMaterial({ color: glassColor, transparent: true, opacity: 0.4 });
         const balconyRail = new THREE.Mesh(balconyGeo, balconyMat);
         balconyRail.position.set(-3, hOffset + 0.5, slabDepth/2 + 0.6);
         scene.add(balconyRail);
@@ -658,7 +810,11 @@ export default function AIFloorPlanGeneratorPage() {
       renderer.render(scene, camera);
       threeRef.current = { renderer, scene, camera };
     });
-  }, [currentStep, viewMode, activeFloor, selectedTheme, activeFP]);
+  }, [currentStep, viewMode, activeFloor, selectedTheme, activeFP, detectedStyle]);
+
+  const selectedRoom = selectedRoomId ? valRooms.find(r => r.id === selectedRoomId) : null;
+  const overlaps = getOverlaps();
+  const hasOverlap = selectedRoomId ? overlaps.some(pair => pair.includes(selectedRoomId)) : false;
 
   return (
     <div className="p-8 max-w-7xl mx-auto flex flex-col gap-8">
@@ -856,12 +1012,52 @@ export default function AIFloorPlanGeneratorPage() {
               />
             </div>
           </div>
-          <div className="col-span-4 bg-gray-50 border border-gray-150 p-6 rounded-3xl flex flex-col gap-6 justify-between h-[450px]">
+          <div className="col-span-4 bg-gray-50 border border-gray-150 p-6 rounded-3xl flex flex-col gap-5 justify-between h-[450px] overflow-y-auto">
             <div>
               <h3 className="text-sm font-black text-gray-950 uppercase tracking-wider">Manual Floor Splitter</h3>
               <p className="text-xs text-gray-400 mt-1">
                 Drag colored boxes on the blueprint to isolate separate tower or floor sections.
               </p>
+
+              {/* Automated DBSCAN Spatial Clustering Splitter */}
+              <div className="border-t border-gray-200 mt-4 pt-4 flex flex-col gap-3">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Automated Split Engine</span>
+                <div>
+                  <div className="flex justify-between text-[10px] font-bold text-gray-500 mb-1">
+                    <span>Clustering Sensitivity (Eps)</span>
+                    <span className="text-indigo-600 font-black">{eps}m</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1.0"
+                    max="20.0"
+                    step="0.5"
+                    value={eps}
+                    onChange={(e) => setEps(parseFloat(e.target.value))}
+                    className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  />
+                </div>
+                <PremiumButton 
+                  type="button" 
+                  variant="outline" 
+                  onClick={triggerAutoSplit} 
+                  disabled={isAutoSplitting}
+                  className="w-full text-indigo-600 hover:text-indigo-800 border-indigo-200 hover:border-indigo-400 flex items-center justify-center gap-1.5"
+                >
+                  {isAutoSplitting ? (
+                    <>
+                      <Icon icon="line-md:loading-twotone-loop" className="w-4 h-4 animate-spin" />
+                      Auto-Splitting...
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs">⚡</span>
+                      Auto-Detect Zones (DBSCAN)
+                    </>
+                  )}
+                </PremiumButton>
+              </div>
+
               <div className="flex flex-col gap-2 mt-4 max-h-48 overflow-y-auto">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Active Split Regions</span>
                 {splitBoxes.length === 0 ? (
@@ -881,7 +1077,7 @@ export default function AIFloorPlanGeneratorPage() {
                 )}
               </div>
             </div>
-            <PremiumButton variant="primary" onClick={saveSplits} className="w-full">
+            <PremiumButton variant="primary" onClick={saveSplits} className="w-full mt-2">
               Confirm Split & Proceed
             </PremiumButton>
           </div>
@@ -898,7 +1094,9 @@ export default function AIFloorPlanGeneratorPage() {
                 ref={valCanvasRef} 
                 width={700}
                 height={450}
-                onClick={handleValCanvasClick}
+                onMouseDown={handleValMouseDown}
+                onMouseMove={handleValMouseMove}
+                onMouseUp={handleValMouseUp}
                 className="w-full h-full block cursor-pointer" 
               />
             </div>
@@ -910,31 +1108,77 @@ export default function AIFloorPlanGeneratorPage() {
                 <p className="text-xs text-gray-400 mt-1">Review, rename, or delete rooms and place apertures.</p>
               </div>
 
-              {selectedRoomId ? (
+              {selectedRoom ? (
                 <div className="bg-white p-4 rounded-2xl border border-gray-100 flex flex-col gap-3">
-                  <p className="text-xs font-bold text-gray-600">Selected Room ID: <span className="font-black text-gray-900">{selectedRoomId}</span></p>
+                  <div className="flex justify-between items-center">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Selected Room ID: <span className="font-black text-gray-700">{selectedRoom.id.substring(0, 8)}...</span></p>
+                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[9px] font-bold">
+                      {calculateArea(selectedRoom.points).toFixed(1)} m²
+                    </span>
+                  </div>
+
+                  {hasOverlap && (
+                    <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-800 text-[10px] rounded-xl font-medium leading-normal flex items-start gap-1">
+                      <span>⚠️</span>
+                      <span>Warning: This room overlaps with another boundary! Adjust vertices.</span>
+                    </div>
+                  )}
+
                   <div>
                     <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Rename Room</label>
                     <input
                       type="text"
-                      value={valRooms.find(r => r.id === selectedRoomId)?.name || ''}
-                      onChange={(e) => {
-                        const updated = [...valRooms];
-                        const idx = updated.findIndex(r => r.id === selectedRoomId);
-                        if (idx !== -1) {
-                          updated[idx].name = e.target.value;
-                          setValRooms(updated);
-                        }
-                      }}
+                      value={selectedRoom.name || ''}
+                      onChange={(e) => updateRoomName(selectedRoom.id, e.target.value)}
                       className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none"
                     />
                   </div>
+
+                  {/* Merge Adjacent Room Droplist */}
+                  <div className="flex flex-col gap-1.5 pt-1.5 border-t border-gray-100">
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Merge Adjacent Room</span>
+                    <select 
+                      className="w-full px-2 py-1.5 border border-gray-200 rounded-lg bg-white text-xs focus:outline-none focus:border-indigo-500"
+                      defaultValue=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          mergeRooms(selectedRoom.id, e.target.value);
+                          e.target.value = "";
+                        }
+                      }}
+                    >
+                      <option value="" disabled>Select target room to merge...</option>
+                      {valRooms.filter(r => r.id !== selectedRoom.id).map(r => (
+                        <option key={r.id} value={r.id}>{r.name} ({calculateArea(r.points).toFixed(1)} m²)</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Split Room buttons */}
+                  <div className="flex flex-col gap-1.5 pt-1.5 border-t border-gray-100">
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Split Polygon (Midpoint)</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button 
+                        onClick={() => splitRoom(selectedRoom.id, 'x', 0.5)}
+                        className="px-2 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] rounded-lg transition"
+                      >
+                        ✂️ Split Vertically
+                      </button>
+                      <button 
+                        onClick={() => splitRoom(selectedRoom.id, 'z', 0.5)}
+                        className="px-2 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] rounded-lg transition"
+                      >
+                        ✂️ Split Horizontally
+                      </button>
+                    </div>
+                  </div>
+
                   <PremiumButton variant="outline" onClick={handleDeleteRoom} className="w-full text-red-500 hover:text-red-700">
                     Delete Selected Room
                   </PremiumButton>
                 </div>
               ) : (
-                <p className="text-xs text-gray-400 italic">Select a room polygon to edit its labels.</p>
+                <p className="text-xs text-gray-400 italic">Select a room polygon on the grid to edit its labels or drag handles.</p>
               )}
 
               <div className="flex flex-col gap-2 pt-2 border-t border-gray-150">
@@ -1004,13 +1248,67 @@ export default function AIFloorPlanGeneratorPage() {
 
               <div>
                 <label className="text-xs font-bold text-gray-500 block mb-1">Style Ingestion Image URL</label>
-                <input
-                  type="text"
-                  value={themeImage}
-                  onChange={(e) => setThemeImage(e.target.value)}
-                  className="w-full px-4 py-2 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={themeImage}
+                    onChange={(e) => setThemeImage(e.target.value)}
+                    className="flex-1 px-4 py-2 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleDetectStyle}
+                    disabled={isDetectingStyle}
+                    className="px-3 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
+                  >
+                    {isDetectingStyle ? (
+                      <>
+                        <Icon icon="line-md:loading-twotone-loop" className="w-4 h-4 animate-spin" />
+                        Detecting...
+                      </>
+                    ) : (
+                      <>
+                        <span>⚡</span>
+                        Detect
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
+
+              {detectedStyle && (
+                <div className="bg-white p-3.5 border border-indigo-100 rounded-2xl flex flex-col gap-2.5 shadow-sm">
+                  <div className="flex justify-between items-center text-[10px] font-bold">
+                    <span className="text-gray-400 uppercase tracking-widest">AI Style Detection Analysis</span>
+                    <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-black">
+                      Confidence: {(detectedStyle.confidence * 100).toFixed(0)}%
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Detected Materials</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(detectedStyle.materials || []).map((mat: string) => (
+                        <span key={mat} className="px-2.5 py-0.5 bg-gray-100 text-gray-700 font-bold rounded-lg text-[9px] uppercase tracking-wide">
+                          {mat}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Dominant Color Swatches</span>
+                    <div className="flex gap-2">
+                      {(detectedStyle.colors || []).map((color: string) => (
+                        <div key={color} className="flex items-center gap-1">
+                          <span className="w-4 h-4 rounded-full border border-gray-200 shadow-sm" style={{ backgroundColor: color }} />
+                          <span className="text-[9px] font-mono text-gray-450">{color}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="border border-gray-150 rounded-2xl overflow-hidden h-36 relative bg-gray-100">
                 <img src={themeImage} alt="Theme Elevation Blueprint" className="w-full h-full object-cover" />

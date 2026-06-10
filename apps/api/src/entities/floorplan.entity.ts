@@ -38,8 +38,7 @@ export class FloorPlan {
   status!: 'PENDING_ANALYSIS' | 'ANALYZED' | 'PAID' | 'GENERATED';
 
   @Column({ type: 'jsonb', nullable: true })
-  layoutData?: Record<string, any>; // Stores room coordinates, custom wall colors, furniture
-
+  layoutData!: any;
   @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt!: Date;
 

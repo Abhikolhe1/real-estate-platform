@@ -246,6 +246,51 @@ function buildFloorPlanMesh(
   viewMode: 'building' | 'walkthrough',
   floorIndex: number
 ) {
+  // Resolve Theme / Style Intelligence configurations
+  const theme = layout.theme || 'Modern';
+  const detectedStyle = layout.detectedStyle || {};
+  const colors = detectedStyle.colors || [];
+  const materials = detectedStyle.materials || [];
+
+  // Determine key colors
+  let primaryColor = 0x1f2937; // floor slab
+  let secondaryColor = 0x475569; // columns
+  let glassColor = 0x00f5d4; // windows / balconies
+  let frameColor = 0x1f2937; // window frames
+  let wallColor = isActiveFloor ? 0xd1d5db : 0x4b5563; // walls
+
+  // Theme overrides
+  if (theme === 'Luxury') {
+    primaryColor = 0x3e2723; // warm brown
+    secondaryColor = 0xd97706; // bronze/gold
+    glassColor = 0xf59e0b; // amber glass
+    frameColor = 0x78350f; // bronze frames
+  } else if (theme === 'Commercial') {
+    primaryColor = 0x1e3a8a; // deep blue
+    secondaryColor = 0x1e40af; // bright blue steel
+    glassColor = 0x3b82f6; // blue glass
+    frameColor = 0x0f172a; // dark steel
+  } else if (theme === 'Minimalist') {
+    primaryColor = 0xf3f4f6; // light gray
+    secondaryColor = 0x9ca3af; // silver
+    glassColor = 0xe5e7eb; // transparent clear glass
+    frameColor = 0x4b5563; // gray steel
+    wallColor = isActiveFloor ? 0xf9fafb : 0xe5e7eb;
+  } else if (theme === 'Premium') {
+    primaryColor = 0x271e18; // dark wood tones
+    secondaryColor = 0x854d0e; // walnut wood columns
+    glassColor = 0x10b981; // emerald green tint glass
+    frameColor = 0x1f2937; // dark steel frame
+  }
+
+  // Override using Style Intelligence detected colors if available
+  if (colors.length > 0) {
+    const hexToNum = (hex: string) => parseInt(hex.replace('#', ''), 16);
+    if (colors[0]) glassColor = hexToNum(colors[0]);
+    if (colors[1]) secondaryColor = hexToNum(colors[1]);
+    if (colors[2]) primaryColor = hexToNum(colors[2]);
+  }
+
   const floorGroup = new THREE.Group();
   floorGroup.userData.floorIndex = floorIndex;
 
@@ -276,7 +321,7 @@ function buildFloorPlanMesh(
   // Unified Floor Slab
   const floorGeo = new THREE.BoxGeometry(slabWidth, 0.1, slabDepth);
   const floorMat = new THREE.MeshStandardMaterial({
-    color: isActiveFloor ? 0x1f2937 : 0x0f172a,
+    color: isActiveFloor ? primaryColor : new THREE.Color(primaryColor).multiplyScalar(0.5).getHex(),
     roughness: 0.8,
     metalness: 0.1
   });
@@ -288,7 +333,7 @@ function buildFloorPlanMesh(
   // Unified Ceiling Slab
   const ceilingGeo = new THREE.BoxGeometry(slabWidth, 0.05, slabDepth);
   const ceilingMat = new THREE.MeshStandardMaterial({
-    color: isActiveFloor ? 0xe5e7eb : 0x111827,
+    color: isActiveFloor ? 0xe5e7eb : new THREE.Color(primaryColor).multiplyScalar(0.25).getHex(),
     roughness: 0.9,
     metalness: 0.05,
     transparent: !isActiveFloor,
@@ -304,7 +349,11 @@ function buildFloorPlanMesh(
   // 1. Procedural Concrete Columns (Exterior Stucco Columns)
   if (viewMode === 'building') {
     const colGeo = new THREE.BoxGeometry(0.4, 3.2, 0.4);
-    const colMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 }); // Slate concrete
+    const colMat = new THREE.MeshStandardMaterial({
+      color: secondaryColor,
+      roughness: 0.5,
+      metalness: materials.includes('steel') || materials.includes('bronze') ? 0.8 : 0.2
+    });
     const corners = [
       { x: coreMinX, z: coreMinZ },
       { x: coreMaxX, z: coreMinZ },
@@ -327,7 +376,11 @@ function buildFloorPlanMesh(
 
     // Decorative columns
     const pillarGeo = new THREE.CylinderGeometry(0.25, 0.25, 3.2, 12);
-    const pillarMat = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.8, roughness: 0.2 });
+    const pillarMat = new THREE.MeshStandardMaterial({
+      color: secondaryColor,
+      metalness: materials.includes('steel') || materials.includes('bronze') ? 0.8 : 0.2,
+      roughness: 0.4
+    });
     const leftPillar = new THREE.Mesh(pillarGeo, pillarMat);
     leftPillar.position.set(-1.8, 1.6, 0);
     const rightPillar = leftPillar.clone();
@@ -336,7 +389,11 @@ function buildFloorPlanMesh(
 
     // Gold header beam
     const beamGeo = new THREE.BoxGeometry(4.2, 0.3, 0.5);
-    const beamMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.6, roughness: 0.3 });
+    const beamMat = new THREE.MeshStandardMaterial({
+      color: theme === 'Luxury' || theme === 'Premium' ? 0xd97706 : 0x1f2937,
+      metalness: 0.7,
+      roughness: 0.3
+    });
     const beam = new THREE.Mesh(beamGeo, beamMat);
     beam.position.set(0, 3.25, 0);
     gateGroup.add(beam);
@@ -344,7 +401,7 @@ function buildFloorPlanMesh(
     // Cyan reflective glass panel
     const archGeo = new THREE.BoxGeometry(3.0, 2.8, 0.08);
     const archMat = new THREE.MeshStandardMaterial({
-      color: 0x00f5d4,
+      color: glassColor,
       transparent: true,
       opacity: 0.3,
       metalness: 0.9,
@@ -437,7 +494,7 @@ function buildFloorPlanMesh(
         // Transparent glass panel
         const glassGeo = new THREE.BoxGeometry(len, 1.0, 0.03);
         const glassMat = new THREE.MeshStandardMaterial({
-          color: 0x00f5d4,
+          color: glassColor,
           transparent: true,
           opacity: 0.35,
           roughness: 0.1,
@@ -449,7 +506,11 @@ function buildFloorPlanMesh(
 
         // Dark metal handrail
         const topRailGeo = new THREE.BoxGeometry(len, 0.04, 0.05);
-        const metalMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.8, roughness: 0.3 });
+        const metalMat = new THREE.MeshStandardMaterial({
+          color: frameColor,
+          metalness: 0.8,
+          roughness: 0.3
+        });
         const topRail = new THREE.Mesh(topRailGeo, metalMat);
         topRail.position.set(len / 2, 1.02, 0);
         railingGroup.add(topRail);
@@ -504,7 +565,7 @@ function buildFloorPlanMesh(
     if (wallApertures.length === 0) {
       const wallGeo = new THREE.BoxGeometry(length, height, thickness);
       const wallMat = new THREE.MeshStandardMaterial({
-        color: isActiveFloor ? 0xd1d5db : 0x4b5563,
+        color: wallColor,
         roughness: 0.7,
         metalness: 0.1,
         transparent: !isActiveFloor,
@@ -524,7 +585,7 @@ function buildFloorPlanMesh(
       const sortedAps = [...wallApertures].sort((a, b) => a.startOffset - b.startOffset);
       let currentOffset = 0;
       const wallMat = new THREE.MeshStandardMaterial({
-        color: isActiveFloor ? 0xd1d5db : 0x4b5563,
+        color: wallColor,
         roughness: 0.7,
         metalness: 0.1,
         transparent: !isActiveFloor,
@@ -589,12 +650,16 @@ function buildFloorPlanMesh(
 
         if (ap.type === 'window') {
           const frameGeo = new THREE.BoxGeometry(ap.width, ap.height, thickness * 1.2);
-          const frameMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.5 });
+          const frameMat = new THREE.MeshStandardMaterial({
+            color: frameColor,
+            roughness: 0.5,
+            metalness: 0.7
+          });
           const frameMesh = new THREE.Mesh(frameGeo, frameMat);
 
           const glassGeo = new THREE.BoxGeometry(ap.width - 0.1, ap.height - 0.1, thickness * 0.4);
           const glassMat = new THREE.MeshStandardMaterial({
-            color: 0x00f5d4,
+            color: glassColor,
             transparent: true,
             opacity: 0.45,
             roughness: 0.05,
@@ -620,7 +685,7 @@ function buildFloorPlanMesh(
 
           const panelGeo = new THREE.BoxGeometry(ap.width, ap.height, thickness * 0.8);
           const panelMat = new THREE.MeshStandardMaterial({
-            color: isActiveFloor ? 0x5c4033 : 0x3e2723,
+            color: isActiveFloor ? (theme === 'Luxury' || theme === 'Premium' ? 0x5c4033 : 0x3e2723) : 0x1f140e,
             roughness: 0.6,
             transparent: !isActiveFloor,
             opacity: isActiveFloor ? 1.0 : 0.25

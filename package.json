@@ -11,7 +11,7 @@
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:admin": "npm run dev --workspace=apps/admin",
     "dev:builder": "npm run dev --workspace=apps/builder",
-    "dev:ai": "C:\\Users\\Abhishek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000 --app-dir apps/ai-service",
+    "dev:ai": "C:\\Users\\Abhishek\\AppData\\Local\\Programs\\Python\\Python312\\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000 --app-dir apps/ai-service --reload",
     "dev:all": "concurrently \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:admin\" \"npm run dev:builder\" \"npm run dev:ai\""
   },
   "devDependencies": {

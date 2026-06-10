@@ -572,12 +572,147 @@ export class FloorPlanController {
     return { success: true, floorPlan: saved };
   }
 
+  // Auto-Detect Floor/Tower splits using DBSCAN Clustering
+  @Post(':id/auto-split')
+  async autoSplitFloorPlan(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() body: { eps?: number; minSamples?: number },
+  ) {
+    const fp = await this.floorplanRepo.findOne({ where: { id, tenantId } });
+    if (!fp) {
+      return { success: false, message: 'Floor plan not found' };
+    }
+
+    const eps = body.eps || 8.0;
+    const minSamples = body.minSamples || 3;
+
+    // Extract walls from layoutData
+    let walls = fp.layoutData?.walls || [];
+    if (walls.length === 0 && fp.layoutData?.templates) {
+      const keys = Object.keys(fp.layoutData.templates);
+      if (keys.length > 0) {
+        walls = fp.layoutData.templates[keys[0]].walls || [];
+      }
+    }
+
+    if (walls.length === 0) {
+      // Fallback to a mock set of split boxes if there are no walls
+      const mockSplitBoxes = [
+        { id: 'mock-1', name: 'Tower A', x: 100, y: 100, width: 200, height: 250 },
+        { id: 'mock-2', name: 'Tower B', x: 400, y: 100, width: 200, height: 250 }
+      ];
+      fp.layoutData = {
+        ...(fp.layoutData || {}),
+        splitBoxes: mockSplitBoxes
+      };
+      const saved = await this.floorplanRepo.save(fp);
+      return { success: true, floorPlan: saved };
+    }
+
+    try {
+      // Call Python AI service clustering API
+      const res = await fetch('http://localhost:8000/cluster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walls, eps, minSamples })
+      });
+
+      if (res.ok) {
+        const data = await res.json() as any;
+        if (data.success && data.clusters) {
+          const canvasWidth = 700;
+          const canvasHeight = 450;
+          const scale = 18;
+
+          const splitBoxes = data.clusters.map((cluster: any) => {
+            const cx = canvasWidth / 2 + cluster.minX * scale;
+            const cy = canvasHeight / 2 + cluster.minZ * scale;
+            const cw = (cluster.maxX - cluster.minX) * scale;
+            const ch = (cluster.maxZ - cluster.minZ) * scale;
+
+            return {
+               id: cluster.id,
+               name: cluster.name,
+               x: Math.round(cx * 10) / 10,
+               y: Math.round(cy * 10) / 10,
+               width: Math.round(cw * 10) / 10,
+               height: Math.round(ch * 10) / 10
+            };
+          });
+
+          fp.layoutData = {
+            ...(fp.layoutData || {}),
+            splitBoxes
+          };
+          const saved = await this.floorplanRepo.save(fp);
+          return { success: true, floorPlan: saved };
+        }
+      }
+    } catch (err) {
+      console.error("Clustering microservice error, using fallback JS clustering:", err);
+    }
+
+    // JS Fallback: partition walls by their X coordinate simply (Tower A vs Tower B)
+    const midpoints = walls.map((w: any) => (w.startX + w.endX) / 2);
+    const avgX = midpoints.length > 0 ? midpoints.reduce((a: number, b: number) => a + b, 0) / midpoints.length : 0;
+    
+    const leftWalls = walls.filter((w: any) => ((w.startX + w.endX) / 2) < avgX);
+    const rightWalls = walls.filter((w: any) => ((w.startX + w.endX) / 2) >= avgX);
+
+    const getBoundingBox = (wallsList: any[]) => {
+      if (wallsList.length === 0) return null;
+      const minX = Math.min(...wallsList.map((w: any) => Math.min(w.startX, w.endX)));
+      const minZ = Math.min(...wallsList.map((w: any) => Math.min(w.startZ, w.endZ)));
+      const maxX = Math.max(...wallsList.map((w: any) => Math.max(w.startX, w.endX)));
+      const maxZ = Math.max(...wallsList.map((w: any) => Math.max(w.startZ, w.endZ)));
+      return { minX, minZ, maxX, maxZ };
+    };
+
+    const leftBox = getBoundingBox(leftWalls);
+    const rightBox = getBoundingBox(rightWalls);
+
+    const splitBoxes: any[] = [];
+    const scale = 18;
+    const cxW = 700;
+    const cyH = 450;
+
+    if (leftBox) {
+      splitBoxes.push({
+        id: 'left-cluster',
+        name: 'Tower A',
+        x: Math.round((cxW / 2 + (leftBox.minX - 0.5) * scale) * 10) / 10,
+        y: Math.round((cyH / 2 + (leftBox.minZ - 0.5) * scale) * 10) / 10,
+        width: Math.round(((leftBox.maxX - leftBox.minX + 1.0) * scale) * 10) / 10,
+        height: Math.round(((leftBox.maxZ - leftBox.minZ + 1.0) * scale) * 10) / 10
+      });
+    }
+    if (rightBox) {
+      splitBoxes.push({
+        id: 'right-cluster',
+        name: 'Tower B',
+        x: Math.round((cxW / 2 + (rightBox.minX - 0.5) * scale) * 10) / 10,
+        y: Math.round((cyH / 2 + (rightBox.minZ - 0.5) * scale) * 10) / 10,
+        width: Math.round(((rightBox.maxX - rightBox.minX + 1.0) * scale) * 10) / 10,
+        height: Math.round(((rightBox.maxZ - rightBox.minZ + 1.0) * scale) * 10) / 10
+      });
+    }
+
+    fp.layoutData = {
+      ...(fp.layoutData || {}),
+      splitBoxes
+    };
+
+    const saved = await this.floorplanRepo.save(fp);
+    return { success: true, floorPlan: saved };
+  }
+
   // Save Exterior Theme selection and style image
   @Post(':id/theme')
   async saveTheme(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() body: { theme: string; frontImageUrl?: string },
+    @Body() body: { theme: string; frontImageUrl?: string; detectedStyle?: any },
   ) {
     const fp = await this.floorplanRepo.findOne({ where: { id, tenantId } });
     if (!fp) {
@@ -588,10 +723,45 @@ export class FloorPlanController {
       ...(fp.layoutData || {}),
       theme: body.theme,
       frontImageUrl: body.frontImageUrl,
+      detectedStyle: body.detectedStyle || fp.layoutData?.detectedStyle,
     };
 
     const saved = await this.floorplanRepo.save(fp);
     return { success: true, floorPlan: saved };
+  }
+
+  // Detect Architectural Theme and materials using Style Intelligence
+  @Post(':id/detect-style')
+  async detectStyle(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() body: { imageUrl: string },
+  ) {
+    const fp = await this.floorplanRepo.findOne({ where: { id, tenantId } });
+    if (!fp) {
+      return { success: false, message: 'Floor plan not found' };
+    }
+
+    try {
+      const response = await fetch('http://localhost:8000/detect-style', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: body.imageUrl })
+      });
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      return {
+        success: false,
+        message: 'AI Service connection failed',
+        fallback: {
+          style: 'Modern',
+          materials: ['concrete', 'glass'],
+          colors: ['#1e293b', '#00f5d4'],
+          confidence: 0.5
+        }
+      };
+    }
   }
 
   // Finalize Digital Twin Generation

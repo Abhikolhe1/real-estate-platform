@@ -1,10 +1,11 @@
 import os
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, List
 from parser import CADParser
 from geometry import GeometryEngine
 from ocr import OCREngine
+from style import StyleIntelligence
 
 app = FastAPI(
     title="Aether AI Engine Service",
@@ -186,6 +187,125 @@ def run_ocr(request: ParseRequest) -> Dict[str, Any]:
             detail=f"Internal OCR engine processing error: {str(e)}"
         )
 
+class WallData(BaseModel):
+    startX: float
+    startZ: float
+    endX: float
+    endZ: float
+
+class ClusterRequest(BaseModel):
+    walls: List[WallData]
+    eps: float = 8.0
+    minSamples: int = 3
+
+@app.post("/cluster")
+def run_clustering(request: ClusterRequest) -> Dict[str, Any]:
+    try:
+        import numpy as np
+        from sklearn.cluster import DBSCAN
+        
+        walls = request.walls
+        if not walls:
+            return {"success": True, "clusters": []}
+            
+        # 1. Compute midpoints of all walls
+        midpoints = []
+        for w in walls:
+            midpoints.append([
+                (w.startX + w.endX) / 2.0,
+                (w.startZ + w.endZ) / 2.0
+            ])
+        
+        X = np.array(midpoints)
+        
+        # 2. Run DBSCAN clustering
+        # Handle cases where number of samples is less than minSamples
+        min_samples = min(request.minSamples, len(walls))
+        if min_samples < 1:
+            min_samples = 1
+            
+        db = DBSCAN(eps=request.eps, min_samples=min_samples).fit(X)
+        labels = db.labels_
+        
+        # 3. Group walls by cluster label
+        clusters_map = {}
+        for idx, label in enumerate(labels):
+            if label == -1:
+                # Noise in DBSCAN is labeled as -1, ignore or map to a noise cluster
+                continue
+            if label not in clusters_map:
+                clusters_map[label] = []
+            clusters_map[label].append(walls[idx])
+            
+        # 4. For each cluster, compute the bounding box enclosing all its walls
+        clusters_result = []
+        for label, cluster_walls in clusters_map.items():
+            min_x = min(min(w.startX, w.endX) for w in cluster_walls)
+            min_z = min(min(w.startZ, w.endZ) for w in cluster_walls)
+            max_x = max(max(w.startX, w.endX) for w in cluster_walls)
+            max_z = max(max(w.startZ, w.endZ) for w in cluster_walls)
+            
+            # Buffer the bounding box slightly (e.g. 0.5 meters) so it cleanly surrounds the walls
+            buffer = 0.5
+            min_x -= buffer
+            min_z -= buffer
+            max_x += buffer
+            max_z += buffer
+            
+            # Label the cluster dynamically
+            cluster_name = f"Tower {chr(65 + int(label))}" if int(label) < 26 else f"Tower Region {int(label) + 1}"
+            
+            clusters_result.append({
+                "id": f"cluster-{label}",
+                "name": cluster_name,
+                "minX": round(min_x, 3),
+                "minZ": round(min_z, 3),
+                "maxX": round(max_x, 3),
+                "maxZ": round(max_z, 3)
+            })
+            
+        # Sort clusters by name or coordinate to ensure deterministic ordering
+        clusters_result.sort(key=lambda c: c["name"])
+        
+        return {
+            "success": True,
+            "clusters": clusters_result
+        }
+    except Exception as e:
+        import traceback
+        print(f"Spatial clustering failed:\n{traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal clustering engine processing error: {str(e)}"
+        )
+
+class DetectStyleRequest(BaseModel):
+    imageUrl: str
+
+@app.post("/detect-style")
+def detect_style(request: DetectStyleRequest) -> Dict[str, Any]:
+    try:
+        print(f"Triggering Style Intelligence on: {request.imageUrl}")
+        intelligence = StyleIntelligence()
+        result = intelligence.detect_style(request.imageUrl)
+        return {
+            "success": True,
+            "imageUrl": request.imageUrl,
+            "style": result["style"],
+            "materials": result["materials"],
+            "colors": result["colors"],
+            "confidence": result["confidence"],
+            "local": result.get("local", True)
+        }
+    except Exception as e:
+        import traceback
+        print(f"Style detection failed:\n{traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal style intelligence error: {str(e)}"
+        )
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+

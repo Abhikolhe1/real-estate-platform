@@ -30,6 +30,18 @@ export class GeneratedStructure {
   @Column({ type: 'double precision', default: 1.0 })
   scaleMultiplier!: number;
 
+  @Column({ type: 'uuid', nullable: true })
+  floorplanId?: string;
+
+  @Column({ type: 'integer', default: 0 })
+  wallCount!: number;
+
+  @Column({ type: 'integer', default: 0 })
+  roomCount!: number;
+
+  @Column({ type: 'varchar', length: 50, default: 'generated' })
+  status!: string;
+
   @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt!: Date;
 

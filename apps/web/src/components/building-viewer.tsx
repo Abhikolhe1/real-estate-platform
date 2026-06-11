@@ -2,7 +2,9 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { SceneCompiler } from './scene-compiler/SceneCompiler';
+import { TowerCompiler, TowerFloorInfo } from './scene-compiler/TowerCompiler';
+import { ExteriorGenerator } from './scene-compiler/ExteriorGenerator';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { gsap } from 'gsap';
 import { Icon } from '@iconify/react';
@@ -828,6 +830,24 @@ const getLayoutForFloor = (layout: any, floorIndex: number): any => {
   return defaultLayoutData;
 };
 
+const getFlatDbInfo = (flatId: string, floorFlats: any[]): any => {
+  if (!flatId) return null;
+  let matched = floorFlats.find(f => f.flatNumber === flatId);
+  if (!matched) {
+    const digits = flatId.replace(/\D/g, '');
+    if (digits) {
+      matched = floorFlats.find(f => f.flatNumber.includes(digits) || digits.includes(f.flatNumber));
+    }
+  }
+  if (!matched) {
+    const matchNum = parseInt(flatId.replace(/\D/g, ''), 10);
+    if (!isNaN(matchNum) && matchNum > 0 && matchNum <= floorFlats.length) {
+      matched = floorFlats[matchNum - 1];
+    }
+  }
+  return matched;
+};
+
 export default function BuildingViewer({
   activeFloor,
   setActiveFloor,
@@ -875,28 +895,185 @@ export default function BuildingViewer({
   const [isPlayingTour, setIsPlayingTour] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedFurnId, setSelectedFurnId] = useState<string | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<any | null>(null);
+  const [selectedWall, setSelectedWall] = useState<any | null>(null);
 
+  // Tower and floor-specific state variables
+  const [towerFloors, setTowerFloors] = useState<any[]>([]);
+  const [selectedTower, setSelectedTower] = useState<any>(null);
+  const [towersList, setTowersList] = useState<any[]>([]);
+  const [isExploded, setIsExploded] = useState(false);
+  const [isolatedFloorId, setIsolatedFloorId] = useState<string | null>(null);
+  const [selectedFlat, setSelectedFlat] = useState<any>(null);
 
+  const [showExteriorBuilding, setShowExteriorBuilding] = useState(true);
+  const [projectData, setProjectData] = useState<any>(null);
 
-  // Fetch LayoutData dynamically
+  // Fetch project details for exterior configuration
+  useEffect(() => {
+    if (!projectId || !tenantId) return;
+    fetch(`http://localhost:3001/projects/${projectId}`, {
+      headers: { 'x-tenant-id': tenantId },
+    })
+      .then(r => r.json())
+      .then(data => {
+        setProjectData(data);
+      })
+      .catch(err => console.error('Error fetching project details:', err));
+  }, [projectId, tenantId]);
+
+  // Fetch towers first
   useEffect(() => {
     if (isEmbedded) return;
     if (!tenantId) return;
-
-    fetch(`http://localhost:3001/floorplans`, {
+    fetch(`http://localhost:3001/inventory/towers`, {
       headers: { 'x-tenant-id': tenantId },
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && Array.isArray(data)) {
-          const fpWithLayout = data.find((fp) => fp.layoutData && (fp.layoutData.rooms || fp.layoutData.floorsConfig));
-          if (fpWithLayout) {
-            setLayoutData(fpWithLayout.layoutData);
-          }
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setTowersList(data);
+          setSelectedTower(data[0]);
         }
       })
-      .catch((err) => console.error('Error fetching floorplans:', err));
+      .catch(err => console.error('Error fetching towers:', err));
   }, [tenantId, isEmbedded]);
+
+  // Once a tower is selected, fetch its floors with their structures
+  useEffect(() => {
+    if (isEmbedded) return;
+    if (!tenantId || !selectedTower) return;
+    setLoading(true);
+    fetch(`http://localhost:3001/inventory/towers/${selectedTower.id}/floors`, {
+      headers: { 'x-tenant-id': tenantId },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setTowerFloors(data);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error fetching tower floors:', err);
+        setLoading(false);
+      });
+  }, [tenantId, selectedTower, isEmbedded]);
+
+  // Ref to track rendered floor groups for dynamic animation and opacity changes
+  const floorGroupsRef = useRef<Map<string, THREE.Group>>(new Map());
+
+  // Handle Floor Isolation & Explode animation transitions in WebGL
+  useEffect(() => {
+    const floorGroups = floorGroupsRef.current;
+    if (!floorGroups || floorGroups.size === 0) return;
+
+    floorGroups.forEach((floorGroup: THREE.Group, floorId: string) => {
+      // 1. Explode position animation Y offsets
+      const baseElevation = floorGroup.userData.baseElevation || 0;
+      const targetY = isExploded ? baseElevation * 1.5 : 0;
+      
+      gsap.to(floorGroup.position, {
+        y: targetY,
+        duration: 0.8,
+        ease: 'power2.out',
+      });
+
+      // 2. Set Opacity based on isolation state
+      const isSelected = isolatedFloorId === null || isolatedFloorId === floorId;
+      const opacity = isSelected ? 1.0 : 0.1;
+      
+      floorGroup.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          if (child.userData?.isDoorSwing) {
+            child.visible = isSelected;
+            return;
+          }
+          if (!child.userData.originalMaterial) {
+            child.userData.originalMaterial = child.material;
+          }
+          if (opacity === 1.0) {
+            child.material = child.userData.originalMaterial;
+          } else {
+            if (!child.userData.transparentMaterial) {
+              const mats = Array.isArray(child.material) ? child.material : [child.material];
+              const clonedMats = mats.map(m => {
+                const cloned = m.clone();
+                cloned.transparent = true;
+                cloned.opacity = opacity;
+                return cloned;
+              });
+              child.userData.transparentMaterial = Array.isArray(child.material) ? clonedMats : clonedMats[0];
+            } else {
+              const mats = Array.isArray(child.userData.transparentMaterial) 
+                ? child.userData.transparentMaterial 
+                : [child.userData.transparentMaterial];
+              mats.forEach(m => {
+                m.opacity = opacity;
+              });
+            }
+            child.material = child.userData.transparentMaterial;
+          }
+        }
+      });
+    });
+  }, [isolatedFloorId, isExploded, towerFloors]);
+
+  const handleFloorSelect = (floor: any) => {
+    setIsolatedFloorId(floor.id);
+    if (setActiveFloor) setActiveFloor(floor.floorNumber);
+
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    if (camera && controls) {
+      const baseElevation = floor.baseElevation || 0;
+      const height = Number(floor.floorHeight) || 3.0;
+      
+      const targetLookY = baseElevation + height / 2;
+      const targetCamY = baseElevation + 1.65;
+
+      gsap.to(controls.target, {
+        y: targetLookY,
+        duration: 1.0,
+        ease: 'power2.inOut',
+        onUpdate: () => controls.update(),
+      });
+
+      gsap.to(camera.position, {
+        y: targetCamY,
+        duration: 1.0,
+        ease: 'power2.inOut',
+        onUpdate: () => controls.update(),
+      });
+    }
+  };
+
+  const handleShowAll = () => {
+    setIsolatedFloorId(null);
+    const controls = controlsRef.current;
+    const camera = cameraRef.current;
+    if (controls && camera) {
+      gsap.to(controls.target, {
+        x: 0, y: 15, z: 0,
+        duration: 1.0,
+        ease: 'power2.inOut',
+        onUpdate: () => controls.update(),
+      });
+      gsap.to(camera.position, {
+        x: 40, y: 25, z: 45,
+        duration: 1.0,
+        ease: 'power2.inOut',
+        onUpdate: () => controls.update(),
+      });
+    }
+  };
+
+  // Fallback if no towers or embedded layoutData is provided
+  useEffect(() => {
+    if (initialLayoutData) {
+      setLocalLayout(initialLayoutData);
+    }
+  }, [initialLayoutData]);
 
   // Keep WebGL refs accessible across animation updates
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -1243,24 +1420,134 @@ export default function BuildingViewer({
     proceduralGroup.name = "procedural_building";
 
     if (viewMode === 'building') {
-      // Stack multiple floors (procedural building shell)
-      const configFloors = localLayout.floorsConfig || [];
-      const numFloors = configFloors.length || 10;
-      for (let fNum = 0; fNum < numFloors; fNum++) {
-        const floorOffset = fNum * 3.2;
-        const isAct = fNum === activeFloor;
-        const floorLayout = getLayoutForFloor(localLayout, fNum);
-        const floorMesh = buildFloorPlanMesh(floorLayout, floorOffset, isAct, viewMode, fNum);
-        proceduralGroup.add(floorMesh);
+      if (showExteriorBuilding && towerFloors && towerFloors.length > 0) {
+        // Compile the exterior building shell
+        const floorsInfo = towerFloors.map((f) => ({
+          floor: {
+            id: f.id,
+            floorNumber: f.floorNumber,
+            floorHeight: Number(f.floorHeight) || 3.0,
+            flatType: f.flatType,
+            unitsPerFloor: f.unitsPerFloor,
+            description: f.description,
+          },
+          structureJson: f.structureJson,
+        }));
+
+        try {
+          const extGroup = ExteriorGenerator.compile({
+            floorsInfo,
+            exteriorConfig: projectData?.exteriorConfig
+          });
+          proceduralGroup.add(extGroup);
+
+          // Add large green ground plane
+          const groundGeo = new THREE.PlaneGeometry(300, 300);
+          const groundMat = new THREE.MeshStandardMaterial({
+            color: 0x2e7d32, // Grass green
+            roughness: 0.9,
+            metalness: 0.1
+          });
+          const ground = new THREE.Mesh(groundGeo, groundMat);
+          ground.rotation.x = -Math.PI / 2;
+          ground.position.y = -0.5; // Align with base grid
+          ground.receiveShadow = true;
+          proceduralGroup.add(ground);
+
+          // Add gradient/skybox sphere
+          const skyGeo = new THREE.SphereGeometry(300, 32, 15);
+          const skyMat = new THREE.MeshBasicMaterial({
+            color: 0xbae6fd, // Sky blue
+            side: THREE.BackSide
+          });
+          const sky = new THREE.Mesh(skyGeo, skyMat);
+          proceduralGroup.add(sky);
+
+          // Update sky color background
+          scene.background = new THREE.Color(0xbae6fd);
+        } catch (err) {
+          console.error('Error compiling building exterior:', err);
+        }
+      } else if (towerFloors && towerFloors.length > 0) {
+        // Stack real database floors using TowerCompiler!
+        const floorsInfo: TowerFloorInfo[] = towerFloors.map((f) => ({
+          floor: {
+            id: f.id,
+            floorNumber: f.floorNumber,
+            floorHeight: Number(f.floorHeight) || 3.0,
+            flatType: f.flatType,
+            unitsPerFloor: f.unitsPerFloor,
+            description: f.description,
+          },
+          structureJson: f.structureJson,
+        }));
+
+        try {
+          const { group: compiledTower, floorGroups } = TowerCompiler.compile(floorsInfo);
+          proceduralGroup.add(compiledTower);
+          floorGroupsRef.current = floorGroups;
+        } catch (err) {
+          console.error('Error compiling tower:', err);
+        }
+      } else {
+        // Fallback: stack multiple floors (procedural building shell from localLayout config)
+        const configFloors = localLayout.floorsConfig || [];
+        const numFloors = configFloors.length || 10;
+        for (let fNum = 0; fNum < numFloors; fNum++) {
+          const floorOffset = fNum * 3.2;
+          const floorLayout = getLayoutForFloor(localLayout, fNum);
+          
+          try {
+            const compiler = new SceneCompiler({
+              structureJson: floorLayout,
+              wallHeight: 3.0,
+              wallThickness: 0.15,
+              floorElevation: floorOffset,
+            });
+            const compiledGroup = compiler.compile();
+            proceduralGroup.add(compiledGroup);
+          } catch (err) {
+            console.error(`Error compiling floor ${fNum} scene:`, err);
+          }
+        }
       }
       scene.add(proceduralGroup);
       setLoading(false);
     } else {
       // Walkthrough mode: render active floor and add walkable nodes
-      const floorOffset = activeFloor * 3.2;
-      const floorLayout = getLayoutForFloor(localLayout, activeFloor);
-      const floorMesh = buildFloorPlanMesh(floorLayout, floorOffset, true, viewMode, activeFloor);
-      proceduralGroup.add(floorMesh);
+      let floorOffset = 0;
+      let floorLayout = defaultLayoutData;
+      let wallH = 3.0;
+
+      if (towerFloors && towerFloors.length > 0) {
+        const activeF = towerFloors.find(f => f.floorNumber === activeFloor) || towerFloors[0];
+        if (activeF) {
+          wallH = Number(activeF.floorHeight) || 3.0;
+          floorLayout = activeF.structureJson || defaultLayoutData;
+          // Calculate cumulative height offset
+          const sorted = [...towerFloors].sort((a, b) => a.floorNumber - b.floorNumber);
+          for (const f of sorted) {
+            if (f.floorNumber === activeFloor) break;
+            floorOffset += (Number(f.floorHeight) || 3.0) + 0.25;
+          }
+        }
+      } else {
+        floorOffset = activeFloor * 3.2;
+        floorLayout = getLayoutForFloor(localLayout, activeFloor);
+      }
+      
+      try {
+        const compiler = new SceneCompiler({
+          structureJson: floorLayout,
+          wallHeight: wallH,
+          wallThickness: 0.15,
+          floorElevation: floorOffset,
+        });
+        const compiledGroup = compiler.compile();
+        proceduralGroup.add(compiledGroup);
+      } catch (err) {
+        console.error('Error compiling walkthrough scene:', err);
+      }
 
       // Add walkable nodes
       if (floorLayout.rooms) {
@@ -1278,18 +1565,6 @@ export default function BuildingViewer({
           nodeMesh.name = `node_${r.id}`;
           nodeMesh.position.set(r.node.x, 0.05 + floorOffset, r.node.z);
           proceduralGroup.add(nodeMesh);
-        });
-      }
-
-      // Add Furniture
-      if (floorLayout.furniture) {
-        floorLayout.furniture.forEach((f: any) => {
-          const color = f.color || (f.type === 'sofa' ? '#2f4f4f' : '#6b8e23');
-          const mesh = buildFurnitureMesh(THREE, f.type, color);
-          mesh.position.set(f.x, 0.01 + floorOffset, f.z);
-          mesh.rotation.y = (f.rotation * Math.PI) / 180;
-          mesh.userData = { type: 'furniture', id: f.id };
-          proceduralGroup.add(mesh);
         });
       }
 
@@ -1415,18 +1690,81 @@ export default function BuildingViewer({
 
       if (viewMode === 'building') {
         const intersects = raycaster.intersectObjects(scene.children, true);
-        if (intersects.length > 0) {
-          let clickedFloorIndex: number | undefined;
-          for (const hit of intersects) {
-            if (hit.object.userData && hit.object.userData.floorIndex !== undefined) {
-              clickedFloorIndex = hit.object.userData.floorIndex;
-              break;
+        
+        // 1. If we are in isolated floor mode, check if we clicked a floor mesh in that floor
+        if (isolatedFloorId && intersects.length > 0) {
+          const floorMeshHit = intersects.find(h => h.object.userData?.isFloor);
+          if (floorMeshHit) {
+            const userData = floorMeshHit.object.userData;
+            const activeF = towerFloors.find(f => f.id === isolatedFloorId);
+            if (activeF && activeF.structureJson) {
+              const rId = userData.roomId;
+              const room = activeF.structureJson.rooms?.find((r: any) => r.id === rId);
+              if (room && room.flatId) {
+                const matchedFlat = getFlatDbInfo(room.flatId, activeF.flats || []);
+                if (matchedFlat) {
+                  setSelectedFlat(matchedFlat);
+                  
+                  // Flash highlight all rooms of this flat
+                  const flatId = room.flatId;
+                  const flatRooms = activeF.structureJson.rooms?.filter((r: any) => r.flatId === flatId) || [room];
+                  const flatFloorMeshes: THREE.Mesh[] = [];
+                  scene.traverse((obj) => {
+                    if (obj instanceof THREE.Mesh && obj.userData.isFloor) {
+                      const roomMatch = flatRooms.find((fr: any) => fr.id === obj.userData.roomId);
+                      if (roomMatch) {
+                        flatFloorMeshes.push(obj);
+                      }
+                    }
+                  });
+
+                  flatFloorMeshes.forEach(mesh => {
+                    if (mesh.material && 'color' in mesh.material) {
+                      const origColor = (mesh.material as any).color.clone();
+                      const highlightColor = new THREE.Color(0x00f5d4);
+                      gsap.to((mesh.material as any).color, {
+                        r: highlightColor.r,
+                        g: highlightColor.g,
+                        b: highlightColor.b,
+                        duration: 0.3,
+                        yoyo: true,
+                        repeat: 1,
+                        onComplete: () => {
+                          gsap.to((mesh.material as any).color, {
+                            r: origColor.r,
+                            g: origColor.g,
+                            b: origColor.b,
+                            duration: 0.5
+                          });
+                        }
+                      });
+                    }
+                  });
+                  return;
+                }
+              }
             }
           }
-          if (clickedFloorIndex !== undefined) {
-            if (setActiveFloor) setActiveFloor(clickedFloorIndex);
-            if (setViewMode) setViewMode('walkthrough');
-            trackEvent('building_click_enter', { floorIndex: clickedFloorIndex });
+        }
+
+        // 2. Otherwise, check if we clicked a floor slab to isolate that floor
+        if (intersects.length > 0) {
+          let clickedFloor: any;
+          for (const hit of intersects) {
+            let parentObj: THREE.Object3D | null = hit.object;
+            while (parentObj && parentObj !== scene) {
+              if (parentObj.name.startsWith('floor_group_level_')) {
+                const fNumber = parentObj.userData.floorNumber;
+                clickedFloor = towerFloors.find(f => f.floorNumber === fNumber);
+                break;
+              }
+              parentObj = parentObj.parent;
+            }
+            if (clickedFloor) break;
+          }
+          if (clickedFloor) {
+            handleFloorSelect(clickedFloor);
+            trackEvent('building_floor_click_isolate', { floorNumber: clickedFloor.floorNumber });
           }
         }
         return;
@@ -1437,9 +1775,32 @@ export default function BuildingViewer({
       const intersects = raycaster.intersectObjects(scene.children, true);
 
       if (intersects.length > 0) {
-        // Find if we intersected a floor mesh, and its distance
+        // Find if we intersected a wall mesh or floor mesh
+        const wallHit = intersects.find(h => h.object.userData?.type === 'wall');
         const floorHit = intersects.find(h => (h.object as THREE.Mesh).userData?.isFloor);
+        
+        const wallDist = wallHit ? wallHit.distance : Infinity;
         const floorDist = floorHit ? floorHit.distance : Infinity;
+
+        // If we hit a wall closer than the floor, select wall!
+        if (wallHit && wallDist < floorDist) {
+          const wallData = wallHit.object.userData;
+          const fl = getLayoutForFloor(localLayout, activeFloor);
+          const apCount = (fl?.apertures || []).filter((ap: any) => ap.wallId === wallData.wallId).length;
+          
+          setSelectedWall({
+            wallId: wallData.wallId,
+            length: wallData.length,
+            thickness: wallData.thickness,
+            height: wallData.height,
+            aperturesCount: apCount
+          });
+          setSelectedRoom(null);
+          return;
+        }
+
+        // Find if we intersected a floor mesh, and its distance
+        const floorDistCheck = floorHit ? floorHit.distance : Infinity;
 
         // 1. Try to find a walkable node first among any of the intersected objects closer than the floor
         let nodeName = '';
@@ -1616,6 +1977,51 @@ export default function BuildingViewer({
           const floorOffset = activeFloor * 3.2;
           const destY = 1.6 + floorOffset;
 
+          // Detect which room we landed in
+          const fl = getLayoutForFloor(localLayout, activeFloor);
+          const landed = fl.rooms?.find((r: any) =>
+            pt.x >= r.x && pt.x <= r.x + r.width &&
+            pt.z >= r.z && pt.z <= r.z + r.depth
+          );
+          
+          if (landed) {
+            setActiveRoom(landed.name);
+            setSelectedRoom({
+              id: landed.id,
+              name: landed.name,
+              width: landed.width,
+              depth: landed.depth,
+              areaSqFt: Math.round(landed.width * landed.depth * 10.7639 * 10) / 10,
+              color: landed.color || '#cbd5e1',
+              flatId: landed.flatId || 'Standard Unit'
+            });
+            setSelectedWall(null);
+            
+            // GSAP highlight color flash
+            const floorMesh = floorHit.object as THREE.Mesh;
+            if (floorMesh.material && 'color' in floorMesh.material) {
+              const origColor = (floorMesh.material as any).color.clone();
+              const highlightColor = new THREE.Color(0x00f5d4);
+              
+              gsap.to((floorMesh.material as any).color, {
+                r: highlightColor.r,
+                g: highlightColor.g,
+                b: highlightColor.b,
+                duration: 0.3,
+                yoyo: true,
+                repeat: 1,
+                onComplete: () => {
+                  gsap.to((floorMesh.material as any).color, {
+                    r: origColor.r,
+                    g: origColor.g,
+                    b: origColor.b,
+                    duration: 0.5
+                  });
+                }
+              });
+            }
+          }
+
           // Look direction: keep current horizontal look, just move position
           const lookDir = new THREE.Vector3();
           camera.getWorldDirection(lookDir);
@@ -1641,13 +2047,6 @@ export default function BuildingViewer({
               controls.enablePan = false;
               controls.minDistance = 0.01;
               controls.maxDistance = 0.1;
-              // Detect which room we landed in
-              const fl = getLayoutForFloor(localLayout, activeFloor);
-              const landed = fl.rooms?.find((r: any) =>
-                pt.x >= r.x && pt.x <= r.x + r.width &&
-                pt.z >= r.z && pt.z <= r.z + r.depth
-              );
-              if (landed) setActiveRoom(landed.name);
             },
           });
           trackEvent('floor_teleport', { x: pt.x, z: pt.z });
@@ -1872,7 +2271,7 @@ export default function BuildingViewer({
         container.removeChild(renderer.domElement);
       }
     };
-  }, [activeModel, activeFloor, viewMode, localLayout]); // Updated deps array
+  }, [activeModel, activeFloor, viewMode, localLayout, showExteriorBuilding, projectData]); // Updated deps array
 
   // Project 3D Hotspots to HTML screenspace coordinates
   const updateHotspotPlacement = () => {
@@ -2138,6 +2537,40 @@ export default function BuildingViewer({
     }
   };
 
+  const resetCamera = () => {
+    if (!cameraRef.current || !controlsRef.current) return;
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    
+    controls.enabled = false;
+    if (viewMode === 'building') {
+      gsap.to(camera.position, { x: 40, y: 25, z: 45, duration: 1.6, ease: 'power2.inOut' });
+      gsap.to(controls.target, {
+        x: 0, y: 16, z: 0,
+        duration: 1.6,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          controls.enabled = true;
+        }
+      });
+    } else {
+      const floorOffset = activeFloor * 3.2;
+      gsap.to(camera.position, { x: 0, y: 1.6 + floorOffset, z: 5.0, duration: 1.6, ease: 'power2.inOut' });
+      gsap.to(controls.target, {
+        x: 0, y: 1.6 + floorOffset, z: 5.05,
+        duration: 1.6,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          controls.enabled = true;
+          controls.enableZoom = false;
+          controls.enablePan = false;
+          controls.minDistance = 0.01;
+          controls.maxDistance = 0.1;
+        }
+      });
+    }
+  };
+
   // Viewport Control Actions
   const handleZoom = (direction: 'in' | 'out') => {
     if (!cameraRef.current || !controlsRef.current) return;
@@ -2229,6 +2662,65 @@ export default function BuildingViewer({
         </div>
       )}
 
+      {/* Floating Room & Wall Inspector (Walkthrough mode only) */}
+      {viewMode === 'walkthrough' && (selectedRoom || selectedWall) && (
+        <div className="absolute top-24 left-6 z-10 w-52 bg-black/50 backdrop-blur-xl border border-white/10 rounded-3xl p-4 flex flex-col gap-4 animate-slideInLeft shadow-2xl text-stone-100">
+          <div className="flex justify-between items-center border-b border-white/5 pb-2">
+            <span className="text-[9px] font-black text-[#00f5d4] uppercase tracking-widest">Inspector</span>
+            <button
+              onClick={() => { setSelectedRoom(null); setSelectedWall(null); }}
+              className="text-white/40 hover:text-white transition-colors"
+            >
+              <Icon icon="solar:close-circle-bold" className="text-sm" />
+            </button>
+          </div>
+
+          {selectedRoom && (
+            <div className="space-y-2 text-[11px] leading-tight text-stone-300">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedRoom.color || '#cbd5e1' }} />
+                <p className="font-bold text-white text-xs">{selectedRoom.name}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-white/5">
+                <div>
+                  <p className="text-[8px] uppercase tracking-wider text-stone-500 font-bold">Dimensions</p>
+                  <p className="font-semibold text-white">{selectedRoom.width}m × {selectedRoom.depth}m</p>
+                </div>
+                <div>
+                  <p className="text-[8px] uppercase tracking-wider text-stone-500 font-bold">Area</p>
+                  <p className="font-semibold text-white">{selectedRoom.areaSqFt} sq. ft.</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-[8px] uppercase tracking-wider text-stone-500 font-bold">Type / Flat</p>
+                  <p className="font-semibold text-white capitalize">{selectedRoom.flatId || 'Standard Unit'}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {selectedWall && (
+            <div className="space-y-2 text-[11px] leading-tight text-stone-300">
+              <p className="font-bold text-white text-xs">Wall Segment</p>
+              <p className="text-[8px] text-[#00f5d4] uppercase tracking-wider font-semibold">{selectedWall.wallId}</p>
+              <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-white/5">
+                <div>
+                  <p className="text-[8px] uppercase tracking-wider text-stone-500 font-bold">Length</p>
+                  <p className="font-semibold text-white">{selectedWall.length.toFixed(2)}m</p>
+                </div>
+                <div>
+                  <p className="text-[8px] uppercase tracking-wider text-stone-500 font-bold">Thickness</p>
+                  <p className="font-semibold text-white">{selectedWall.thickness.toFixed(2)}m</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-[8px] uppercase tracking-wider text-stone-500 font-bold">Apertures</p>
+                  <p className="font-semibold text-white">{selectedWall.aperturesCount} openings</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Walkthrough HUD Controls Legend */}
       {viewMode === 'walkthrough' && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-black/50 backdrop-blur-md border border-white/10 rounded-full px-5 py-2 pointer-events-none select-none">
@@ -2255,6 +2747,13 @@ export default function BuildingViewer({
 
       {/* Floating Viewport Controls widget (Top-Right) */}
       <div className="absolute top-6 right-6 z-10 flex flex-col gap-2 pointer-events-auto">
+        <button
+          onClick={resetCamera}
+          className="w-11 h-11 bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-white rounded-full flex items-center justify-center transition-all active:scale-95 shadow-xl group"
+          title="Reset Camera"
+        >
+          <Icon icon="solar:refresh-circle-bold" className="text-xl group-hover:scale-110 transition-transform" />
+        </button>
         <button
           onClick={toggleFullscreen}
           className="w-11 h-11 bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-white rounded-full flex items-center justify-center transition-all active:scale-95 shadow-xl group"
@@ -2478,6 +2977,149 @@ export default function BuildingViewer({
                   Read Layout Plan
                 </a>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3D Tower Floor Selector UI (Building mode only) */}
+      {viewMode === 'building' && towerFloors && towerFloors.length > 0 && (
+        <div className="absolute left-6 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-2 bg-black/60 backdrop-blur-xl border border-white/10 p-4 rounded-3xl shadow-2xl max-h-[80%] overflow-y-auto scrollbar-hide text-stone-100 min-w-[120px]">
+          <span className="text-[8px] font-black text-[#00f5d4] uppercase tracking-widest text-center mb-2">Floor Isolation</span>
+          
+          <button
+            onClick={handleShowAll}
+            className={`py-2 px-3 rounded-xl border text-[9px] font-bold tracking-wider uppercase transition-all duration-300 ${
+              isolatedFloorId === null
+                ? 'bg-[#00f5d4] text-[#0c0f16] border-[#00f5d4] shadow-lg shadow-[#00f5d4]/20'
+                : 'bg-white/5 border-white/10 text-white/70 hover:border-white/20'
+            }`}
+          >
+            Show All
+          </button>
+
+          <div className="w-full h-[1px] bg-white/10 my-1" />
+
+          <div className="flex flex-col gap-1.5 overflow-y-auto pr-1">
+            {[...towerFloors]
+              .sort((a, b) => b.floorNumber - a.floorNumber)
+              .map((f) => {
+                const isSelected = isolatedFloorId === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => handleFloorSelect(f)}
+                    className={`py-2 px-3 rounded-xl border transition-all duration-300 font-bold text-xs flex items-center justify-between gap-2 ${
+                      isSelected
+                        ? 'bg-[#00f5d4] text-[#0c0f16] border-[#00f5d4] shadow-lg shadow-[#00f5d4]/20 scale-105'
+                        : 'bg-white/5 border-white/10 text-white/70 hover:border-white/20'
+                    }`}
+                  >
+                    <span>L{f.floorNumber}</span>
+                    <span className="text-[9px] opacity-60 font-medium">({f.flatType || '2BHK'})</span>
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* Building View Mode Toolbar (Exterior/Interior toggle, Explode, etc.) */}
+      {viewMode === 'building' && (
+        <div className="absolute right-6 bottom-6 z-10 flex flex-col gap-2">
+          {/* Exterior / Interior Toggle Button */}
+          <button
+            onClick={() => setShowExteriorBuilding(!showExteriorBuilding)}
+            className={`w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-300 shadow-xl ${
+              showExteriorBuilding
+                ? 'bg-[#00f5d4] text-[#0c0f16] border-[#00f5d4] shadow-lg shadow-[#00f5d4]/20 scale-110'
+                : 'bg-black/60 text-white border-white/10 hover:border-white/20 hover:scale-105'
+            }`}
+            title={showExteriorBuilding ? "Switch to Stacked Floors View" : "Switch to Exterior Building View"}
+          >
+            <Icon icon={showExteriorBuilding ? 'solar:home-bold' : 'solar:home-outline'} className="text-lg" />
+          </button>
+
+          {/* Explode View Toggle (only shown for stacked interior floors) */}
+          {!showExteriorBuilding && (
+            <button
+              onClick={() => setIsExploded(!isExploded)}
+              className={`w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-300 shadow-xl ${
+                isExploded
+                  ? 'bg-[#00f5d4] text-[#0c0f16] border-[#00f5d4] shadow-lg shadow-[#00f5d4]/20 scale-110'
+                  : 'bg-black/60 text-white border-white/10 hover:border-white/20 hover:scale-105'
+              }`}
+              title="Toggle Explode View"
+            >
+              <Icon icon={isExploded ? 'solar:box-minimalistic-bold' : 'solar:box-bold'} className="text-lg" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Flat Info Card Overlay */}
+      {selectedFlat && (
+        <div className="absolute bottom-24 right-6 z-20 w-80 bg-black/70 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl animate-slideInRight text-stone-100">
+          <div className="flex justify-between items-start border-b border-white/5 pb-3 mb-4">
+            <div>
+              <span className="text-[9px] font-black text-[#00f5d4] uppercase tracking-widest block">Unit Details</span>
+              <h4 className="text-lg font-black text-white mt-1">Flat {selectedFlat.flatNumber}</h4>
+            </div>
+            <button
+              onClick={() => setSelectedFlat(null)}
+              className="text-white/40 hover:text-white transition-colors"
+            >
+              <Icon icon="solar:close-circle-bold" className="text-xl" />
+            </button>
+          </div>
+
+          <div className="space-y-4 text-xs text-stone-300">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider block">BHK Type</span>
+                <span className="text-white font-bold">{selectedFlat.type || '2BHK'}</span>
+              </div>
+              <div>
+                <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider block">Carpet Area</span>
+                <span className="text-white font-bold">{selectedFlat.sizeSqFt || 1200} Sq. Ft.</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider block">Price</span>
+                <span className="text-white font-bold">₹{(Number(selectedFlat.price) / 10000000).toFixed(2)} Cr</span>
+              </div>
+              <div>
+                <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider block">Status</span>
+                <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                  selectedFlat.status === 'AVAILABLE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                  selectedFlat.status === 'BOOKED' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                  'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                }`}>
+                  {selectedFlat.status}
+                </span>
+              </div>
+            </div>
+
+            {selectedFlat.orientation && (
+              <div>
+                <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider block">Orientation</span>
+                <span className="text-white font-semibold">{selectedFlat.orientation}</span>
+              </div>
+            )}
+
+            <div className="pt-2 border-t border-white/5 flex gap-2">
+              <button
+                onClick={() => {
+                  if (setViewMode) setViewMode('walkthrough');
+                  if (setActiveRoom) setActiveRoom(null);
+                  setSelectedFlat(null);
+                }}
+                className="flex-1 py-3 text-center bg-[#00f5d4] hover:bg-[#00f5d4]/90 text-[#0c0f16] font-bold rounded-xl text-xs transition shadow-lg shadow-[#00f5d4]/10"
+              >
+                🚶 Walk Inside
+              </button>
             </div>
           </div>
         </div>

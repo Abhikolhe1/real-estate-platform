@@ -25,6 +25,12 @@ export class FloorPlan {
   @Column({ type: 'varchar', length: 500, nullable: true })
   pdfRasterPath?: string;
 
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  filePath?: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  structureId?: string;
+
   @Column({ type: 'integer', default: 0 })
   flatCount!: number;
 
@@ -38,7 +44,7 @@ export class FloorPlan {
   isPaid!: boolean;
 
   @Column({ type: 'varchar', length: 50, default: 'PENDING_ANALYSIS' })
-  status!: 'PENDING_ANALYSIS' | 'ANALYZED' | 'PAID' | 'GENERATED';
+  status!: 'PENDING_ANALYSIS' | 'ANALYZED' | 'PAID' | 'GENERATED' | 'uploaded' | 'parsing' | 'parsed' | 'failed';
 
   @Column({ type: 'jsonb', nullable: true })
   layoutData!: any;

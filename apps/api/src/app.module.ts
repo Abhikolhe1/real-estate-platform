@@ -22,6 +22,7 @@ import { SdkController } from './controllers/sdk.controller';
 import { BillingController } from './controllers/billing.controller';
 import { EnterpriseController } from './controllers/enterprise.controller';
 import { HealthController } from './controllers/health.controller';
+import { StructuresController } from './controllers/structures.controller';
 
 // Services
 import { AuthService } from './services/auth.service';
@@ -131,6 +132,7 @@ import { AuditService } from './services/audit.service';
     BillingController,
     EnterpriseController,
     HealthController,
+    StructuresController,
   ],
   providers: [
     AuthService,

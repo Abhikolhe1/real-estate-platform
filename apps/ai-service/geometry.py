@@ -4,7 +4,7 @@ from shapely.geometry import Polygon, Point
 from typing import List, Dict, Any, Tuple
 
 class GeometryEngine:
-    def __init__(self, snap_tolerance: float = 0.08):
+    def __init__(self, snap_tolerance: float = 0.25):
         self.snap_tolerance = snap_tolerance
 
     def _snap_vertices(self, walls: List[Dict[str, float]]) -> Tuple[List[Tuple[float, float]], List[Tuple[int, int]]]:

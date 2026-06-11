@@ -42,4 +42,7 @@ export class UpdateProjectDto {
   @IsString()
   @IsOptional()
   status?: 'PLANNING' | 'UNDER_CONSTRUCTION' | 'READY' | 'SOLD_OUT';
+
+  @IsOptional()
+  exteriorConfig?: Record<string, any>;
 }

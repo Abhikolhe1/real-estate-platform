@@ -6,6 +6,9 @@ from parser import CADParser
 from geometry import GeometryEngine
 from ocr import OCREngine
 from style import StyleIntelligence
+from pdf_processor import PDFProcessor
+
+import ezdxf
 
 app = FastAPI(
     title="Aether AI Engine Service",
@@ -15,10 +18,38 @@ app = FastAPI(
 
 class ParseRequest(BaseModel):
     filePath: str
+    snapTolerance: float = 0.25
+    layerMapping: Dict[str, str] = None
 
 @app.get("/health")
 def health_check() -> Dict[str, str]:
     return {"status": "healthy", "service": "aether-ai-engine"}
+
+@app.get("/layers")
+def get_dxf_layers(filePath: str) -> Dict[str, Any]:
+    if not os.path.exists(filePath):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Blueprint file not found at path: {filePath}"
+        )
+    if not filePath.lower().endswith(".dxf"):
+        raise HTTPException(
+            status_code=400,
+            detail="File is not a DXF drawing."
+        )
+    try:
+        doc = ezdxf.readfile(filePath)
+        layers = [layer.dxf.name for layer in doc.layers]
+        return {
+            "success": True,
+            "filePath": filePath,
+            "layers": layers
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to read DXF layers: {str(e)}"
+        )
 
 @app.post("/parse")
 def parse_dxf_file(request: ParseRequest) -> Dict[str, Any]:
@@ -30,11 +61,12 @@ def parse_dxf_file(request: ParseRequest) -> Dict[str, Any]:
         )
     
     is_dxf = file_path.lower().endswith(".dxf")
+    is_pdf = file_path.lower().endswith(".pdf")
 
     try:
         if is_dxf:
             print(f"Triggering production ezdxf parser on file: {file_path}")
-            parser = CADParser(file_path)
+            parser = CADParser(file_path, layer_mapping=request.layerMapping)
             parsed_data = parser.parse()
             
             # Integrate OCR fallback for empty DXF text layouts
@@ -48,8 +80,8 @@ def parse_dxf_file(request: ParseRequest) -> Dict[str, Any]:
                     print(f"OCR label fallback failed: {ocr_err}")
 
             # Run advanced computational geometry Room Detection engine
-            print("Running advanced Planar Graph Cycle-Finding Room & Aperture Snapping...")
-            engine = GeometryEngine(snap_tolerance=0.08)
+            print(f"Running advanced Planar Graph Cycle-Finding Room & Aperture Snapping (tolerance={request.snapTolerance})...")
+            engine = GeometryEngine(snap_tolerance=request.snapTolerance)
             rooms, snapped_walls, snapped_apertures = engine.detect_rooms(
                 parsed_data["walls"],
                 parsed_data["labels"],
@@ -59,8 +91,12 @@ def parse_dxf_file(request: ParseRequest) -> Dict[str, Any]:
             parsed_data["rooms"] = rooms
             parsed_data["walls"] = snapped_walls
             parsed_data["apertures"] = snapped_apertures
+        elif is_pdf:
+            print(f"Triggering PDFProcessor on file: {file_path}")
+            pdf_proc = PDFProcessor()
+            parsed_data = pdf_proc.process(file_path)
         else:
-            print(f"Triggering OCR procedural parsing on non-DXF file: {file_path}")
+            print(f"Triggering OCR procedural parsing on non-DXF/non-PDF file: {file_path}")
             ocr = OCREngine()
             labels = ocr.extract_labels(file_path)
             

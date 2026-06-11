@@ -1,10 +1,12 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Tower } from '../entities/tower.entity';
 import { Floor } from '../entities/floor.entity';
 import { Flat } from '../entities/flat.entity';
 import { Lead } from '../entities/lead.entity';
+import { GeneratedStructure } from '../entities/generated-structure.entity';
+import { FloorPlan } from '../entities/floorplan.entity';
 import { TenantId } from '../interceptors/tenant.decorator';
 
 @Controller('inventory')
@@ -18,6 +20,8 @@ export class InventoryController {
     private readonly flatRepo: Repository<Flat>,
     @InjectRepository(Lead)
     private readonly leadRepo: Repository<Lead>,
+    @InjectRepository(GeneratedStructure)
+    private readonly generatedStructureRepo: Repository<GeneratedStructure>,
   ) {}
 
   // Get Towers
@@ -139,19 +143,33 @@ export class InventoryController {
   @Post('floors')
   async createFloor(
     @TenantId() tenantId: string,
-    @Body() body: { towerId: string; floorNumber: number; description?: string; flatsCount?: number },
+    @Body() body: {
+      towerId: string;
+      floorNumber: number;
+      description?: string;
+      flatsCount?: number;
+      floorHeight?: number;
+      floorplanId?: string;
+      flatType?: string;
+      unitsPerFloor?: number;
+    },
   ) {
     const floor = new Floor();
     floor.tenantId = tenantId;
     floor.towerId = body.towerId;
     floor.floorNumber = body.floorNumber;
     floor.description = body.description || `Floor level ${body.floorNumber}`;
+    floor.floorHeight = body.floorHeight !== undefined ? body.floorHeight : 3.0;
+    if (body.floorplanId) floor.floorplanId = body.floorplanId;
+    if (body.flatType) floor.flatType = body.flatType;
+    if (body.unitsPerFloor !== undefined) floor.unitsPerFloor = body.unitsPerFloor;
     const savedFloor = await this.floorRepo.save(floor);
 
     // Auto-seed flats if flatsCount specified
     const seededFlats: Flat[] = [];
-    if (body.flatsCount && body.flatsCount > 0) {
-      for (let unit = 1; unit <= body.flatsCount; unit++) {
+    const count = body.flatsCount !== undefined ? body.flatsCount : (body.unitsPerFloor || 0);
+    if (count > 0) {
+      for (let unit = 1; unit <= count; unit++) {
         const flat = new Flat();
         flat.tenantId = tenantId;
         flat.floorId = savedFloor.id;
@@ -159,7 +177,7 @@ export class InventoryController {
         flat.status = 'AVAILABLE';
         flat.sizeSqFt = 1200 + unit * 200;
         flat.price = 12000000 + unit * 3000000;
-        flat.type = '2BHK';
+        flat.type = (body.flatType as any) || '2BHK';
         const savedFlat = await this.flatRepo.save(flat);
         seededFlats.push(savedFlat);
       }
@@ -168,17 +186,28 @@ export class InventoryController {
     return { success: true, floor: savedFloor, flatsSeeded: seededFlats.length };
   }
 
-  // Update floor description
+  // Update floor description and geometry/plan associations
   @Put('floors/:id')
   async updateFloor(
     @TenantId() tenantId: string,
     @Param('id') id: string,
-    @Body() body: { description?: string; floorNumber?: number },
+    @Body() body: {
+      description?: string;
+      floorNumber?: number;
+      floorHeight?: number;
+      floorplanId?: string | null;
+      flatType?: string;
+      unitsPerFloor?: number;
+    },
   ) {
     const floor = await this.floorRepo.findOne({ where: { id, tenantId } });
     if (!floor) return { success: false, message: 'Floor not found' };
     if (body.description !== undefined) floor.description = body.description;
     if (body.floorNumber !== undefined) floor.floorNumber = body.floorNumber;
+    if (body.floorHeight !== undefined) floor.floorHeight = body.floorHeight;
+    if (body.floorplanId !== undefined) floor.floorplanId = body.floorplanId === null ? undefined : body.floorplanId;
+    if (body.flatType !== undefined) floor.flatType = body.flatType;
+    if (body.unitsPerFloor !== undefined) floor.unitsPerFloor = body.unitsPerFloor;
     const saved = await this.floorRepo.save(floor);
     return { success: true, floor: saved };
   }
@@ -190,6 +219,39 @@ export class InventoryController {
     if (!floor) return { success: false, message: 'Floor not found' };
     await this.floorRepo.remove(floor);
     return { success: true };
+  }
+
+  // Get floors of a tower with their corresponding structureJson
+  @Get('towers/:id/floors')
+  async getTowerFloors(@TenantId() tenantId: string, @Param('id') id: string) {
+    const floors = await this.floorRepo.find({
+      where: { tenantId, towerId: id },
+      relations: ['floorplan', 'flats'],
+      order: { floorNumber: 'ASC' },
+    });
+
+    const floorplanIds = floors
+      .map((f) => f.floorplanId)
+      .filter((fpId): fpId is string => !!fpId);
+
+    let structures: GeneratedStructure[] = [];
+    if (floorplanIds.length > 0) {
+      structures = await this.generatedStructureRepo.find({
+        where: { tenantId, floorplanId: In(floorplanIds) },
+      });
+    }
+
+    const structureMap = new Map<string, any>();
+    for (const struct of structures) {
+      if (struct.floorplanId) {
+        structureMap.set(struct.floorplanId, struct.structureJson);
+      }
+    }
+
+    return floors.map((floor) => ({
+      ...floor,
+      structureJson: floor.floorplanId ? structureMap.get(floor.floorplanId) || null : null,
+    }));
   }
 
   // ===================== TOWERS UPDATE/DELETE =====================

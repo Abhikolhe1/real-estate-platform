@@ -34,6 +34,9 @@ export class Builder {
   @Column({ type: 'jsonb', default: '{}' })
   themeSettings!: Record<string, any>;
 
+  @Column({ type: 'jsonb', nullable: true, default: null })
+  dxfLayerPreferences?: Record<string, string>;
+
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 

@@ -4,7 +4,7 @@ import ezdxf
 from typing import Dict, List, Any, Tuple
 
 class CADParser:
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, layer_mapping: Dict[str, str] = None):
         self.file_path = file_path
         self.doc = ezdxf.readfile(file_path)
         self.model_space = self.doc.modelspace()
@@ -14,6 +14,50 @@ class CADParser:
         self.door_keywords = ["door", "dr", "swing", "panel"]
         self.window_keywords = ["window", "wd", "glaze", "glass", "sash"]
         self.label_keywords = ["label", "txt", "room", "name", "title"]
+
+        if layer_mapping:
+            # We support both:
+            # 1. key=category, val=layer_name (old format/fallback)
+            # 2. key=layer_name, val=category (new format)
+            categories = {"walls", "doors", "windows", "annotations", "ignore"}
+            is_new_format = any(v in categories for v in layer_mapping.values())
+            
+            if is_new_format:
+                overridden_categories = set(layer_mapping.values()) & categories
+                if "walls" in overridden_categories:
+                    self.wall_keywords = []
+                if "doors" in overridden_categories:
+                    self.door_keywords = []
+                if "windows" in overridden_categories:
+                    self.window_keywords = []
+                if "annotations" in overridden_categories:
+                    self.label_keywords = []
+                
+                for layer_name, cat in layer_mapping.items():
+                    if not cat or not layer_name:
+                        continue
+                    cat_lower = cat.lower()
+                    layer_lower = layer_name.lower()
+                    if cat_lower == "walls":
+                        self.wall_keywords.append(layer_lower)
+                    elif cat_lower == "doors":
+                        self.door_keywords.append(layer_lower)
+                    elif cat_lower == "windows":
+                        self.window_keywords.append(layer_lower)
+                    elif cat_lower == "annotations":
+                        self.label_keywords.append(layer_lower)
+            else:
+                for key, val in layer_mapping.items():
+                    if val:
+                        mapped_val = val.lower()
+                        if key == "walls":
+                            self.wall_keywords = [mapped_val]
+                        elif key == "doors":
+                            self.door_keywords = [mapped_val]
+                        elif key == "windows":
+                            self.window_keywords = [mapped_val]
+                        elif key == "annotations":
+                            self.label_keywords = [mapped_val]
 
     def matches_layer(self, layer_name: str, keywords: List[str]) -> bool:
         layer_lower = layer_name.lower()

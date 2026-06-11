@@ -5,6 +5,9 @@ import { DigitalTwinModel } from '../entities/digital-twin-model.entity';
 import { CameraPoint } from '../entities/camera-point.entity';
 import { Hotspot } from '../entities/hotspot.entity';
 import { TourRoute } from '../entities/tour-route.entity';
+import { FloorPlan } from '../entities/floorplan.entity';
+import { GeneratedStructure } from '../entities/generated-structure.entity';
+import { Builder } from '../entities/builder.entity';
 
 @Injectable()
 export class TwinsService {
@@ -17,7 +20,109 @@ export class TwinsService {
     private readonly hotspotRepo: Repository<Hotspot>,
     @InjectRepository(TourRoute)
     private readonly tourRepo: Repository<TourRoute>,
+    @InjectRepository(FloorPlan)
+    private readonly floorplanRepo: Repository<FloorPlan>,
+    @InjectRepository(GeneratedStructure)
+    private readonly structureRepo: Repository<GeneratedStructure>,
+    @InjectRepository(Builder)
+    private readonly builderRepo: Repository<Builder>,
   ) {}
+
+  async parseFloorplan(
+    tenantId: string,
+    floorplanId: string,
+    filePath: string,
+    fileType: 'dxf' | 'pdf',
+    snapTolerance?: number,
+    layerMapping?: Record<string, string>,
+  ) {
+    const fp = await this.floorplanRepo.findOne({ where: { id: floorplanId, tenantId } });
+    if (!fp) {
+      throw new NotFoundException(`Floor plan with ID ${floorplanId} not found.`);
+    }
+
+    // Update status to parsing
+    fp.status = 'parsing';
+    await this.floorplanRepo.save(fp);
+
+    // Retrieve default layer preferences from builder if not provided
+    let finalLayerMapping = layerMapping;
+    if (!finalLayerMapping) {
+      try {
+        const builder = await this.builderRepo.findOne({ where: { id: tenantId } });
+        if (builder?.dxfLayerPreferences) {
+          finalLayerMapping = builder.dxfLayerPreferences;
+        }
+      } catch (err) {
+        console.error('Failed to load builder dxfLayerPreferences:', err);
+      }
+    }
+
+    // Call python AI service
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+    
+    // We run the actual API call in a wrapper to ensure safety
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      const response = await fetch(`${aiServiceUrl}/parse`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filePath,
+          snapTolerance,
+          layerMapping: finalLayerMapping,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`AI Service returned status code ${response.status}`);
+      }
+
+      const resJson = await response.json() as any;
+      if (!resJson.success || !resJson.data) {
+        throw new Error(resJson.detail || 'Parsing failed on AI service side');
+      }
+
+      const parsedData = resJson.data;
+
+      // Save GeneratedStructure entity
+      const structure = this.structureRepo.create({
+        tenantId,
+        projectId: fp.projectId,
+        structureJson: parsedData,
+        wallCount: parsedData.walls?.length || 0,
+        roomCount: parsedData.rooms?.length || 0,
+        floorplanId: fp.id,
+        scaleMultiplier: 1.0,
+        status: 'generated',
+      });
+
+      const savedStructure = await this.structureRepo.save(structure);
+
+      // Update FloorPlan status to parsed and associate structureId
+      fp.status = 'parsed';
+      fp.structureId = savedStructure.id;
+      fp.roomCount = structure.roomCount;
+      fp.flatCount = parsedData.rooms?.filter((r: any) =>
+        r.name.toLowerCase().includes('living') ||
+        r.name.toLowerCase().includes('flat') ||
+        r.name.toLowerCase().includes('suite')
+      ).length || 1;
+
+      await this.floorplanRepo.save(fp);
+
+      return savedStructure;
+    } catch (err) {
+      console.error(`Error parsing floorplan ${floorplanId}:`, err);
+      fp.status = 'failed';
+      await this.floorplanRepo.save(fp);
+      throw err;
+    }
+  }
 
   // Models CRUD
   async findAllModels(tenantId: string, projectId?: string) {

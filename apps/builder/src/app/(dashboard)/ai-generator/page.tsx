@@ -103,6 +103,116 @@ export default function AIFloorPlanGeneratorPage() {
 
   const tenantId = 'b0d39e2a-1cbe-4c28-bbbe-e6e788e99aa2';
 
+  // Polling, layer mapping, and snap tolerance states
+  const [isPolling, setIsPolling] = useState(false);
+  const [pollingStatus, setPollingStatus] = useState<'uploaded' | 'parsing' | 'parsed' | 'failed'>('uploaded');
+  const [showLayerModal, setShowLayerModal] = useState(false);
+  const [detectedLayers, setDetectedLayers] = useState<string[]>([]);
+  const [layerMapping, setLayerMapping] = useState<Record<string, string>>({});
+  const [snapTolerance, setSnapTolerance] = useState(0.25);
+  const [isReparsing, setIsReparsing] = useState(false);
+
+  // Status polling function
+  const startStatusPolling = (fpId: string) => {
+    setIsPolling(true);
+    setPollingStatus('uploaded');
+    
+    const interval = setInterval(async () => {
+      try {
+        const statusRes = await fetch(`http://localhost:3001/floorplans/${fpId}/status`, {
+          headers: { 'x-tenant-id': tenantId },
+        });
+        const statusData = await statusRes.json();
+        if (statusData.success) {
+          setPollingStatus(statusData.status);
+          
+          if (statusData.status === 'parsed') {
+            clearInterval(interval);
+            setIsPolling(false);
+            
+            // Fetch updated floor plan details
+            const detailRes = await fetch(`http://localhost:3001/floorplans/${fpId}`, {
+              headers: { 'x-tenant-id': tenantId },
+            });
+            const detailData = await detailRes.json();
+            setActiveFP(detailData);
+            
+            // If room count is less than 3, open the layer remapping modal
+            if (detailData.roomCount < 3) {
+              const layersRes = await fetch(`http://localhost:3001/floorplans/${fpId}/layers`, {
+                headers: { 'x-tenant-id': tenantId },
+              });
+              const layersData = await layersRes.json();
+              if (layersData.success) {
+                setDetectedLayers(layersData.layers);
+                const initialMapping: Record<string, string> = {};
+                layersData.layers.forEach((layerName: string) => {
+                  const lower = layerName.toLowerCase();
+                  if (lower.includes('wall') || lower.includes('wl')) {
+                    initialMapping[layerName] = 'walls';
+                  } else if (lower.includes('door') || lower.includes('dr')) {
+                    initialMapping[layerName] = 'doors';
+                  } else if (lower.includes('window') || lower.includes('wd') || lower.includes('glaze')) {
+                    initialMapping[layerName] = 'windows';
+                  } else if (lower.includes('txt') || lower.includes('text') || lower.includes('label') || lower.includes('room')) {
+                    initialMapping[layerName] = 'annotations';
+                  } else {
+                    initialMapping[layerName] = 'ignore';
+                  }
+                });
+                setLayerMapping(initialMapping);
+              }
+              setShowLayerModal(true);
+            } else {
+              setCurrentStep(2); // Proceed to Step 2: floor split
+            }
+            loadInitialData();
+          } else if (statusData.status === 'failed') {
+            clearInterval(interval);
+            setIsPolling(false);
+            alert('AI pipeline parsing failed. Please check the drawing file structure.');
+          }
+        }
+      } catch (err) {
+        console.error('Status polling error:', err);
+      }
+    }, 1500);
+  };
+
+  const openParserSettings = async () => {
+    if (!activeFP) return;
+    try {
+      const layersRes = await fetch(`http://localhost:3001/floorplans/${activeFP.id}/layers`, {
+        headers: { 'x-tenant-id': tenantId },
+      });
+      const layersData = await layersRes.json();
+      if (layersData.success) {
+        setDetectedLayers(layersData.layers);
+        const initialMapping: Record<string, string> = { ...layerMapping };
+        layersData.layers.forEach((layerName: string) => {
+          if (!initialMapping[layerName]) {
+            const lower = layerName.toLowerCase();
+            if (lower.includes('wall') || lower.includes('wl')) {
+              initialMapping[layerName] = 'walls';
+            } else if (lower.includes('door') || lower.includes('dr')) {
+              initialMapping[layerName] = 'doors';
+            } else if (lower.includes('window') || lower.includes('wd') || lower.includes('glaze')) {
+              initialMapping[layerName] = 'windows';
+            } else if (lower.includes('txt') || lower.includes('text') || lower.includes('label') || lower.includes('room')) {
+              initialMapping[layerName] = 'annotations';
+            } else {
+              initialMapping[layerName] = 'ignore';
+            }
+          }
+        });
+        setLayerMapping(initialMapping);
+      }
+      setShowLayerModal(true);
+    } catch (err) {
+      console.error('Failed to open parser settings:', err);
+    }
+  };
+
   // Load initial data
   const loadInitialData = async () => {
     try {
@@ -162,54 +272,79 @@ export default function AIFloorPlanGeneratorPage() {
     if (!uploadName || !selectedProjId) return;
 
     setIsUploading(true);
-    setUploadProgress(15);
+    setUploadProgress(10);
 
-    const timer = setInterval(() => {
-      setUploadProgress((prev) => (prev >= 90 ? 90 : prev + 15));
-    }, 150);
+    try {
+      const payloadConfig = floorsConfig.map(f => ({
+        floorNumber: f.floorNumber,
+        type: f.type,
+        imageUrl: uploadFile ? `docs/cad/${uploadFile.name}` : undefined
+      }));
 
-    setTimeout(async () => {
-      try {
-        const payloadConfig = floorsConfig.map(f => ({
-          floorNumber: f.floorNumber,
-          type: f.type,
-          imageUrl: uploadFile ? `docs/cad/${uploadFile.name}` : undefined
-        }));
+      // 1. Create floor plan record
+      const res = await fetch('http://localhost:3001/floorplans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-tenant-id': tenantId,
+        },
+        body: JSON.stringify({
+          name: uploadName,
+          projectId: selectedProjId,
+          imageUrl: uploadFile ? `docs/cad/${uploadFile.name}` : 'docs/cad/building_layout.dxf',
+          floorsConfig: payloadConfig
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error('Failed to create floor plan record');
+      }
 
-        const res = await fetch('http://localhost:3001/floorplans', {
+      const fpId = data.floorPlan.id;
+      setUploadProgress(40);
+
+      // 2. Upload file if selected
+      if (uploadFile) {
+        const formData = new FormData();
+        formData.append('plan', uploadFile);
+        
+        const uploadRes = await fetch(`http://localhost:3001/floorplans/${fpId}/upload`, {
+          method: 'POST',
+          headers: {
+            'x-tenant-id': tenantId,
+          },
+          body: formData
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.status !== 'uploaded') {
+          throw new Error('File upload failed');
+        }
+      } else {
+        // Trigger parsing of default DXF
+        const analyzeRes = await fetch(`http://localhost:3001/floorplans/${fpId}/analyze`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-tenant-id': tenantId,
-          },
-          body: JSON.stringify({
-            name: uploadName,
-            projectId: selectedProjId,
-            imageUrl: uploadFile ? `docs/cad/${uploadFile.name}` : 'docs/cad/building_layout.dxf',
-            floorsConfig: payloadConfig
-          }),
+          }
         });
-        const data = await res.json();
-        if (data.success) {
-          // Immediately simulate the upgraded parser analysis to get geometry
-          const analyzeRes = await fetch(`http://localhost:3001/floorplans/${data.floorPlan.id}/analyze`, {
-            method: 'POST',
-            headers: { 'x-tenant-id': tenantId },
-          });
-          const analyzeData = await analyzeRes.json();
-          
-          setUploadProgress(100);
-          setActiveFP(analyzeData.floorPlan);
-          setCurrentStep(2); // Proceed to step 2: split
-          loadInitialData();
+        const analyzeData = await analyzeRes.json();
+        if (!analyzeData.success) {
+          throw new Error('Failed to analyze default floorplan');
         }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsUploading(false);
-        clearInterval(timer);
       }
-    }, 800);
+
+      setUploadProgress(100);
+      setIsUploading(false);
+      
+      // Start status polling
+      startStatusPolling(fpId);
+
+    } catch (err) {
+      console.error(err);
+      alert('Failed to start Virtual Twin Pipeline: ' + (err as Error).message);
+      setIsUploading(false);
+    }
   };
 
   // ==================== SCREEN 2: FLOOR SPLIT INTERACTIVE CANVAS ====================
@@ -923,7 +1058,7 @@ export default function AIFloorPlanGeneratorPage() {
                 <label className="block">
                   <input 
                     type="file" 
-                    accept=".dxf" 
+                    accept=".dxf,.pdf" 
                     onChange={(e) => {
                       const file = e.target.files?.[0] || null;
                       setUploadFile(file);
@@ -935,7 +1070,7 @@ export default function AIFloorPlanGeneratorPage() {
                   />
                   <div className="w-full py-6 border-2 border-dashed border-gray-250 rounded-2xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-gray-400 transition text-gray-400 hover:text-gray-600">
                     <span className="text-2xl">📐</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest">Select CAD Blueprint (.DXF)</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">Select CAD Blueprint (.DXF, .PDF)</span>
                   </div>
                   {uploadFile && <p className="text-[10px] text-emerald-600 font-bold mt-1 text-center truncate max-w-full">Selected: {uploadFile.name}</p>}
                 </label>
@@ -1014,7 +1149,17 @@ export default function AIFloorPlanGeneratorPage() {
           </div>
           <div className="col-span-4 bg-gray-50 border border-gray-150 p-6 rounded-3xl flex flex-col gap-5 justify-between h-[450px] overflow-y-auto">
             <div>
-              <h3 className="text-sm font-black text-gray-950 uppercase tracking-wider">Manual Floor Splitter</h3>
+              <div className="flex justify-between items-center mb-1">
+                <h3 className="text-sm font-black text-gray-950 uppercase tracking-wider">Manual Floor Splitter</h3>
+                <button
+                  type="button"
+                  onClick={openParserSettings}
+                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-805 flex items-center gap-1 border border-indigo-100 hover:border-indigo-300 px-2 py-1 rounded-lg bg-white"
+                >
+                  <Icon icon="mdi:cog" />
+                  Settings
+                </button>
+              </div>
               <p className="text-xs text-gray-400 mt-1">
                 Drag colored boxes on the blueprint to isolate separate tower or floor sections.
               </p>
@@ -1104,7 +1249,17 @@ export default function AIFloorPlanGeneratorPage() {
           <div className="col-span-4 bg-gray-50 border border-gray-150 p-6 rounded-3xl flex flex-col gap-5 justify-between h-[450px] overflow-y-auto">
             <div className="flex flex-col gap-4">
               <div>
-                <h3 className="text-sm font-black text-gray-950 uppercase tracking-wider">Validation Studio</h3>
+                <div className="flex justify-between items-center mb-1">
+                  <h3 className="text-sm font-black text-gray-950 uppercase tracking-wider">Validation Studio</h3>
+                  <button
+                    type="button"
+                    onClick={openParserSettings}
+                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-805 flex items-center gap-1 border border-indigo-100 hover:border-indigo-300 px-2 py-1 rounded-lg bg-white"
+                  >
+                    <Icon icon="mdi:cog" />
+                    Settings
+                  </button>
+                </div>
                 <p className="text-xs text-gray-400 mt-1">Review, rename, or delete rooms and place apertures.</p>
               </div>
 
@@ -1443,6 +1598,170 @@ export default function AIFloorPlanGeneratorPage() {
             <PremiumButton variant="primary" onClick={() => { setActiveFP(null); setCurrentStep(1); }} className="w-full">
               Complete Setup & Finish
             </PremiumButton>
+          </div>
+        </div>
+      )}
+
+      {/* Status Polling Overlay */}
+      {isPolling && (
+        <div className="fixed inset-0 bg-gray-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-8 max-w-md w-full text-center flex flex-col items-center gap-6 shadow-2xl">
+            <div className="relative flex items-center justify-center">
+              <div className="w-20 h-20 border-4 border-indigo-500/25 border-t-indigo-500 rounded-full animate-spin"></div>
+              <span className="absolute text-2xl">📐</span>
+            </div>
+            
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-sm font-black text-white uppercase tracking-wider">AI Digital Twin Pipeline</h3>
+              <p className="text-xs text-indigo-400 font-bold uppercase tracking-widest animate-pulse">
+                Status: {pollingStatus}
+              </p>
+              <p className="text-[11px] text-gray-400 mt-2 max-w-xs leading-normal">
+                {pollingStatus === 'uploaded' && 'File received. Preparing parsing environment...'}
+                {pollingStatus === 'parsing' && 'Running planar graph cycle detection, room label matching, and aperture alignment...'}
+                {pollingStatus === 'parsed' && 'Parsing completed successfully! Preparing workspace...'}
+                {pollingStatus === 'failed' && 'Parsing failed. Check parser settings or file integrity.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Layer Remapping Settings Modal */}
+      {showLayerModal && (
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 max-w-xl w-full max-h-[85vh] overflow-hidden flex flex-col p-6 animate-scale-up">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-sm font-black text-gray-950 uppercase tracking-wider flex items-center gap-2">
+                  <Icon icon="mdi:cog" className="text-indigo-600 text-lg" />
+                  CAD Parser Settings & Layer Remapping
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  AI resolved less than 3 rooms. Map your layers manually to align the parser.
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowLayerModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <Icon icon="mdi:close" className="text-lg" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-4">
+              {/* Snap Tolerance Adjustment */}
+              <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider block mb-1">
+                  Snap Vertex Tolerance (meters)
+                </span>
+                <div className="flex gap-4 items-center">
+                  <input
+                    type="range"
+                    min={0.05}
+                    max={1.00}
+                    step={0.05}
+                    value={snapTolerance}
+                    onChange={(e) => setSnapTolerance(parseFloat(e.target.value))}
+                    className="flex-1 accent-indigo-600"
+                  />
+                  <span className="text-xs font-bold text-gray-700 w-16 text-right">
+                    {snapTolerance.toFixed(2)}m
+                  </span>
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  Higher values (e.g. 0.25m - 0.40m) snap walls together across draft gaps.
+                </p>
+              </div>
+
+              {/* Layer mapping grid */}
+              <div>
+                <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider block mb-2">
+                  Layer Categorization Mapping
+                </span>
+                {detectedLayers.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-gray-400 bg-gray-50 rounded-2xl">
+                    No layer structure found in blueprint file.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2 max-h-[30vh] overflow-y-auto border border-gray-150 rounded-2xl p-3 bg-gray-50">
+                    {detectedLayers.map((layerName) => (
+                      <div key={layerName} className="flex gap-3 items-center text-xs justify-between">
+                        <span className="font-semibold text-gray-700 truncate max-w-[50%]" title={layerName}>
+                          {layerName}
+                        </span>
+                        <select
+                          value={layerMapping[layerName] || 'ignore'}
+                          onChange={(e) => {
+                            setLayerMapping({
+                              ...layerMapping,
+                              [layerName]: e.target.value
+                            });
+                          }}
+                          className="px-2 py-1 border border-gray-200 rounded-lg bg-white w-40 text-[11px] font-semibold"
+                        >
+                          <option value="ignore">ignore</option>
+                          <option value="walls">walls</option>
+                          <option value="doors">doors</option>
+                          <option value="windows">windows</option>
+                          <option value="annotations">annotations</option>
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end mt-6 border-t border-gray-100 pt-4">
+              <button
+                onClick={() => setShowLayerModal(false)}
+                className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!activeFP) return;
+                  setIsReparsing(true);
+                  try {
+                    const res = await fetch(`http://localhost:3001/floorplans/${activeFP.id}/analyze`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'x-tenant-id': tenantId
+                      },
+                      body: JSON.stringify({
+                        snapTolerance,
+                        layerMapping
+                      })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      setShowLayerModal(false);
+                      startStatusPolling(activeFP.id);
+                    } else {
+                      alert('Re-parse request failed');
+                    }
+                  } catch (err) {
+                    console.error('Failed to trigger re-parse:', err);
+                  } finally {
+                    setIsReparsing(false);
+                  }
+                }}
+                disabled={isReparsing}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-md shadow-indigo-600/10"
+              >
+                {isReparsing ? (
+                  <>
+                    <Icon icon="line-md:loading-loop" />
+                    Re-parsing...
+                  </>
+                ) : (
+                  'Re-parse Blueprint'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

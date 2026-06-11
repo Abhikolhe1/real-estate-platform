@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FloorPlan } from '../entities/floorplan.entity';
@@ -6,6 +6,10 @@ import { TenantId } from '../interceptors/tenant.decorator';
 import { parseDXF } from '../utils/dxf-parser';
 import * as path from 'path';
 import * as fs from 'fs';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { TwinsService } from '../services/twins.service';
+import { Builder } from '../entities/builder.entity';
 
 // Template coordinates lookup generator for configurable floors
 function getTemplateLayout(type: string) {
@@ -338,6 +342,9 @@ export class FloorPlanController {
   constructor(
     @InjectRepository(FloorPlan)
     private readonly floorplanRepo: Repository<FloorPlan>,
+    @InjectRepository(Builder)
+    private readonly builderRepo: Repository<Builder>,
+    private readonly twinsService: TwinsService,
   ) {}
 
   // Get all floor plans
@@ -390,16 +397,19 @@ export class FloorPlanController {
 
   // Trigger simulated AI computer vision analysis / real CAD DXF parsing
   @Post(':id/analyze')
-  async analyzeFloorPlan(@TenantId() tenantId: string, @Param('id') id: string) {
+  async analyzeFloorPlan(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() body?: { snapTolerance?: number; layerMapping?: Record<string, string> }
+  ) {
     const fp = await this.floorplanRepo.findOne({ where: { id, tenantId } });
     if (!fp) {
       return { success: false, message: 'Floor plan not found' };
     }
 
-    let parsedLayout: any = null;
-    let blueprintPath = '';
-
-    if (fp.imageUrl) {
+    // Determine path to parse
+    let parsePath = fp.filePath;
+    if (!parsePath && fp.imageUrl) {
       const parts = fp.imageUrl.split('/');
       const filename = parts[parts.length - 1];
       
@@ -413,89 +423,51 @@ export class FloorPlanController {
       for (const p of candidatePaths) {
         if (fs.existsSync(p)) {
           const ext = path.extname(p).toLowerCase();
-          if (['.dxf', '.pdf', '.png', '.jpg', '.jpeg'].includes(ext)) {
-            blueprintPath = p;
+          if (['.dxf', '.pdf'].includes(ext)) {
+            parsePath = p;
             break;
           }
         }
       }
     }
 
-    if (blueprintPath) {
+    if (!parsePath) {
+      // absolute fallback to building_layout.dxf
+      parsePath = 'docs/cad/building_layout.dxf';
+    }
+
+    // Save preferences to builder if provided
+    const layerMapping = body?.layerMapping;
+    if (layerMapping) {
       try {
-        console.log(`Parsing active blueprint drawing file: ${blueprintPath}`);
-        parsedLayout = await parseDXF(blueprintPath);
+        await this.builderRepo.update(tenantId, { dxfLayerPreferences: layerMapping });
       } catch (err) {
-        console.error(`Blueprint parser execution failed:`, err);
+        console.error('Failed to save dxfLayerPreferences to builder:', err);
       }
     }
 
-    let flatCount = 0;
-    let roomCount = 0;
+    fp.status = 'parsing';
+    await this.floorplanRepo.save(fp);
 
-    if (parsedLayout) {
-      roomCount = parsedLayout.rooms.length;
-      // Estimate flat counts by checking rooms labeled living/flat/etc.
-      flatCount = parsedLayout.rooms.filter((r: any) => 
-        r.name.toLowerCase().includes('living') || 
-        r.name.toLowerCase().includes('flat') || 
-        r.name.toLowerCase().includes('suite')
-      ).length;
-      if (flatCount === 0) flatCount = 2; // fallback to 2 flats if undefined
+    const snapTolerance = body?.snapTolerance;
+    const fileType = parsePath.toLowerCase().endsWith('.pdf') ? 'pdf' : 'dxf';
 
-      const priceEstimate = flatCount * 15000;
-
-      fp.flatCount = flatCount;
-      fp.roomCount = roomCount;
-      fp.priceEstimate = priceEstimate;
-      fp.status = 'ANALYZED';
-
-      // Restructure layoutData to support floor-varying layouts
-      const floorsConfig = fp.layoutData?.floorsConfig || [
-        { floorNumber: 1, type: '2BHK', flatsCount: flatCount },
-        { floorNumber: 2, type: '2BHK', flatsCount: flatCount }
-      ];
-
-      const floors: Record<number, any> = {};
-      const templates: Record<string, any> = {};
-
-      floorsConfig.forEach((fl: any) => {
-        floors[fl.floorNumber] = parsedLayout;
-        if (fl.type) {
-          templates[fl.type] = parsedLayout;
-        }
-      });
-
-      fp.layoutData = {
-        floorsConfig,
-        floors,
-        templates
-      };
-    } else {
-      // Fallback to mock behavior if file not found or not DXF
-      const config = fp.layoutData?.floorsConfig || [];
-      config.forEach((fl: any) => {
-        const fType = fl.type || '2BHK';
-        const count = fType === '1BHK' ? 6 : fType === '2BHK' ? 4 : fType === '3BHK' ? 3 : 1;
-        flatCount += count;
-        roomCount += count;
-      });
-
-      if (flatCount === 0) {
-        flatCount = 8;
-        roomCount = 10;
+    setImmediate(async () => {
+      try {
+        await this.twinsService.parseFloorplan(
+          tenantId,
+          id,
+          parsePath,
+          fileType,
+          snapTolerance,
+          layerMapping
+        );
+      } catch (err) {
+        console.error(`Async parse execution failed for floorplan ${id}:`, err);
       }
+    });
 
-      const priceEstimate = flatCount * 15000;
-
-      fp.flatCount = flatCount;
-      fp.roomCount = roomCount;
-      fp.priceEstimate = priceEstimate;
-      fp.status = 'ANALYZED';
-    }
-
-    const saved = await this.floorplanRepo.save(fp);
-    return { success: true, floorPlan: saved };
+    return { success: true, status: 'parsing' };
   }
 
   // Process simulated payment
@@ -798,5 +770,142 @@ export class FloorPlanController {
 
     const saved = await this.floorplanRepo.save(fp);
     return { success: true, floorPlan: saved };
+  }
+
+  @Post(':id/upload')
+  @UseInterceptors(
+    FileInterceptor('plan', {
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const ext = path.extname(file.originalname).toLowerCase();
+          const baseDir = process.env.UPLOAD_DIR || './apps/api/uploads';
+          let destFolder = baseDir;
+          if (ext === '.dxf') {
+            destFolder = path.join(baseDir, 'dxf');
+          } else if (ext === '.pdf') {
+            destFolder = path.join(baseDir, 'pdf');
+          }
+          fs.mkdirSync(destFolder, { recursive: true });
+          cb(null, destFolder);
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = path.extname(file.originalname);
+          cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+        },
+      }),
+    }),
+  )
+  async uploadFloorPlanFile(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body?: { snapTolerance?: string; layerMapping?: string },
+  ) {
+    if (!file) {
+      return { success: false, message: 'No file uploaded' };
+    }
+
+    const fp = await this.floorplanRepo.findOne({ where: { id, tenantId } });
+    if (!fp) {
+      return { success: false, message: 'Floor plan record not found' };
+    }
+
+    // Save filename/path details to DB
+    fp.filePath = file.path;
+    fp.imageUrl = file.path; // fallback mapping if needed for view links
+    fp.status = 'uploaded';
+    await this.floorplanRepo.save(fp);
+
+    // Trigger parsing async via setImmediate
+    const fileType = path.extname(file.originalname).toLowerCase().replace('.', '') as 'dxf' | 'pdf';
+    const snapTolerance = body?.snapTolerance ? parseFloat(body.snapTolerance) : undefined;
+    const layerMapping = body?.layerMapping ? JSON.parse(body.layerMapping) : undefined;
+
+    setImmediate(async () => {
+      try {
+        await this.twinsService.parseFloorplan(
+          tenantId,
+          id,
+          file.path,
+          fileType,
+          snapTolerance,
+          layerMapping
+        );
+      } catch (err) {
+        console.error('Async parse failed:', err);
+      }
+    });
+
+    return {
+      floorplanId: id,
+      filePath: file.path,
+      status: 'uploaded',
+    };
+  }
+
+  @Get(':id/status')
+  async getFloorPlanStatus(@TenantId() tenantId: string, @Param('id') id: string) {
+    const fp = await this.floorplanRepo.findOne({ where: { id, tenantId } });
+    if (!fp) {
+      return { success: false, message: 'Floor plan not found' };
+    }
+    return {
+      success: true,
+      status: fp.status,
+      structureId: fp.structureId,
+    };
+  }
+
+  @Get(':id/layers')
+  async getLayers(@TenantId() tenantId: string, @Param('id') id: string) {
+    const fp = await this.floorplanRepo.findOne({ where: { id, tenantId } });
+    if (!fp) {
+      return { success: false, message: 'Floor plan not found' };
+    }
+
+    let parsePath = fp.filePath;
+    if (!parsePath && fp.imageUrl) {
+      const parts = fp.imageUrl.split('/');
+      const filename = parts[parts.length - 1];
+      
+      const candidatePaths = [
+        path.join('c:/xampp/htdocs/real-estate-platform', fp.imageUrl),
+        path.join('c:/xampp/htdocs/real-estate-platform/shared-uploads', filename),
+        path.join('c:/xampp/htdocs/real-estate-platform/real-estate-builder/public', filename),
+        path.join('c:/xampp/htdocs/real-estate-platform/docs/cad', filename)
+      ];
+      
+      for (const p of candidatePaths) {
+        if (fs.existsSync(p)) {
+          const ext = path.extname(p).toLowerCase();
+          if (['.dxf'].includes(ext)) {
+            parsePath = p;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!parsePath) {
+      parsePath = 'docs/cad/building_layout.dxf';
+    }
+
+    if (!parsePath.toLowerCase().endsWith('.dxf')) {
+      return { success: true, layers: [] }; // PDF/Image files don't have CAD layers
+    }
+
+    try {
+      const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+      const response = await fetch(`${aiServiceUrl}/layers?filePath=${encodeURIComponent(parsePath)}`);
+      if (!response.ok) {
+        throw new Error(`AI service returned ${response.status}`);
+      }
+      const data = await response.json() as any;
+      return data;
+    } catch (err) {
+      console.error('Failed to fetch layers:', err);
+      return { success: false, message: 'Failed to fetch layers from AI service' };
+    }
   }
 }

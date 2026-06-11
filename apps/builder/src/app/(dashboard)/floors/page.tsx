@@ -8,6 +8,11 @@ interface Floor {
   id: string;
   towerId: string;
   floorNumber: number;
+  floorHeight: number;
+  floorplanId?: string;
+  flatType?: string;
+  unitsPerFloor?: number;
+  floorplan?: { id: string; name: string };
   description?: string;
   flats?: { id: string; flatNumber: string; status: string; price: number; sizeSqFt: number; type: string }[];
   createdAt: string;
@@ -39,11 +44,22 @@ export default function FloorsPage() {
   const [towers, setTowers] = useState<Tower[]>([]);
   const [selectedTowerId, setSelectedTowerId] = useState('');
   const [floors, setFloors] = useState<Floor[]>([]);
+  const [floorplans, setFloorplans] = useState<any[]>([]);
+  const [activeTabMap, setActiveTabMap] = useState<Record<string, 'units' | 'settings'>>({});
+  const [floorSettings, setFloorSettings] = useState<Record<string, { floorHeight: number; floorplanId: string; flatType: string; unitsPerFloor: number }>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [expandedFloor, setExpandedFloor] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({ floorNumber: 1, description: '', flatsCount: 2 });
+  const [formData, setFormData] = useState({
+    floorNumber: 1,
+    description: '',
+    flatsCount: 2,
+    floorHeight: 3.0,
+    floorplanId: '',
+    flatType: '2BHK',
+    unitsPerFloor: 2,
+  });
 
   const fetchTowers = async () => {
     try {
@@ -57,15 +73,37 @@ export default function FloorsPage() {
     } catch { setLoading(false); }
   };
 
+  const fetchFloorplans = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/floorplans', { headers: getHeaders() });
+      if (res.ok) {
+        setFloorplans(await res.json());
+      }
+    } catch {}
+  };
+
   const fetchFloors = async (towerId: string) => {
     if (!towerId) return;
     try {
       const res = await fetch(`http://localhost:3001/inventory/floors?towerId=${towerId}`, { headers: getHeaders() });
-      if (res.ok) setFloors(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setFloors(data);
+        const initialSettings: any = {};
+        data.forEach((f: any) => {
+          initialSettings[f.id] = {
+            floorHeight: Number(f.floorHeight) || 3.0,
+            floorplanId: f.floorplanId || '',
+            flatType: f.flatType || '2BHK',
+            unitsPerFloor: f.unitsPerFloor || (f.flats?.length || 2),
+          };
+        });
+        setFloorSettings(initialSettings);
+      }
     } catch { }
   };
 
-  useEffect(() => { fetchTowers(); }, []);
+  useEffect(() => { fetchTowers(); fetchFloorplans(); }, []);
 
   useEffect(() => {
     if (selectedTowerId) fetchFloors(selectedTowerId);
@@ -89,11 +127,43 @@ export default function FloorsPage() {
           floorNumber: formData.floorNumber,
           description: formData.description,
           flatsCount: formData.flatsCount,
+          floorHeight: formData.floorHeight,
+          floorplanId: formData.floorplanId || undefined,
+          flatType: formData.flatType,
+          unitsPerFloor: formData.unitsPerFloor,
         }),
       });
       setShowAddModal(false);
       fetchFloors(selectedTowerId);
     } catch { } finally { setSaving(false); }
+  };
+
+  const handleSaveFloorSettings = async (floorId: string) => {
+    const settings = floorSettings[floorId];
+    if (!settings) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`http://localhost:3001/inventory/floors/${floorId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getHeaders() },
+        body: JSON.stringify({
+          floorHeight: settings.floorHeight,
+          floorplanId: settings.floorplanId || null,
+          flatType: settings.flatType,
+          unitsPerFloor: settings.unitsPerFloor,
+        }),
+      });
+      if (res.ok) {
+        fetchFloors(selectedTowerId);
+        alert('Floor settings saved successfully!');
+      } else {
+        alert('Failed to save floor settings.');
+      }
+    } catch {
+      alert('Failed to save floor settings.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDeleteFloor = async (id: string) => {
@@ -210,7 +280,23 @@ export default function FloorsPage() {
                           </div>
                           <div>
                             <p className="font-bold text-gray-900 text-sm">Floor {floor.floorNumber}</p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">{floor.description || `Level ${floor.floorNumber}`}</p>
+                            <div className="flex gap-2 items-center text-[10px] text-gray-400 mt-0.5 flex-wrap">
+                              <span>{floor.description || `Level ${floor.floorNumber}`}</span>
+                              <span>•</span>
+                              <span className="font-bold text-gray-600">📐 {floor.floorHeight || 3.0}m Height</span>
+                              {floor.floorplan?.name && (
+                                <>
+                                  <span>•</span>
+                                  <span className="font-bold text-blue-600">📋 Plan: {floor.floorplan.name}</span>
+                                </>
+                              )}
+                              {floor.flatType && (
+                                <>
+                                  <span>•</span>
+                                  <span className="font-bold text-amber-600">🛏️ {floor.flatType} Type</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
@@ -229,30 +315,123 @@ export default function FloorsPage() {
                         </div>
                       </div>
 
-                      {/* Expanded Flats Grid */}
+                      {/* Expanded Flats Grid & Settings */}
                       {isExpanded && (
                         <div className="border-t border-gray-50 px-5 py-4 bg-gray-50/30">
-                          {flats.length === 0 ? (
-                            <p className="text-xs text-gray-400 text-center py-4">No flat units on this floor.</p>
+                          {/* Tabs */}
+                          <div className="flex gap-3 mb-4 border-b border-gray-200/55 pb-2">
+                            <button
+                              onClick={() => setActiveTabMap(prev => ({ ...prev, [floor.id]: 'units' }))}
+                              className={`text-xs font-bold pb-1 border-b-2 transition-all ${
+                                (activeTabMap[floor.id] || 'units') === 'units'
+                                  ? 'border-gray-900 text-gray-900'
+                                  : 'border-transparent text-gray-400 hover:text-gray-600'
+                              }`}
+                            >
+                              🛏️ Flat Units ({flats.length})
+                            </button>
+                            <button
+                              onClick={() => setActiveTabMap(prev => ({ ...prev, [floor.id]: 'settings' }))}
+                              className={`text-xs font-bold pb-1 border-b-2 transition-all ${
+                                (activeTabMap[floor.id] || 'units') === 'settings'
+                                  ? 'border-gray-900 text-gray-900'
+                                  : 'border-transparent text-gray-400 hover:text-gray-600'
+                              }`}
+                            >
+                              ⚙️ Floor Settings
+                            </button>
+                          </div>
+
+                          {(activeTabMap[floor.id] || 'units') === 'units' ? (
+                            flats.length === 0 ? (
+                              <p className="text-xs text-gray-400 text-center py-4">No flat units on this floor.</p>
+                            ) : (
+                              <div className="grid grid-cols-4 gap-3">
+                                {flats.map(flat => (
+                                  <div
+                                    key={flat.id}
+                                    className={`p-3 rounded-xl border text-center ${
+                                      flat.status === 'AVAILABLE' ? 'border-emerald-100 bg-emerald-50/40' :
+                                      flat.status === 'BOOKED' ? 'border-blue-100 bg-blue-50/40' :
+                                      'border-amber-100 bg-amber-50/40'
+                                    }`}
+                                  >
+                                    <p className="font-black text-gray-900 text-sm">Unit {flat.flatNumber}</p>
+                                    <p className="text-[10px] text-gray-500 mt-0.5">{flat.type} · {flat.sizeSqFt} sqft</p>
+                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full mt-1.5 block ${FLAT_STATUS_COLORS[flat.status]}`}>
+                                      {flat.status}
+                                    </span>
+                                    <p className="text-[10px] font-bold text-gray-700 mt-1.5">₹{(flat.price / 10000000).toFixed(2)} Cr</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )
                           ) : (
-                            <div className="grid grid-cols-4 gap-3">
-                              {flats.map(flat => (
-                                <div
-                                  key={flat.id}
-                                  className={`p-3 rounded-xl border text-center ${
-                                    flat.status === 'AVAILABLE' ? 'border-emerald-100 bg-emerald-50/40' :
-                                    flat.status === 'BOOKED' ? 'border-blue-100 bg-blue-50/40' :
-                                    'border-amber-100 bg-amber-50/40'
-                                  }`}
-                                >
-                                  <p className="font-black text-gray-900 text-sm">Unit {flat.flatNumber}</p>
-                                  <p className="text-[10px] text-gray-500 mt-0.5">{flat.type} · {flat.sizeSqFt} sqft</p>
-                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full mt-1.5 block ${FLAT_STATUS_COLORS[flat.status]}`}>
-                                    {flat.status}
-                                  </span>
-                                  <p className="text-[10px] font-bold text-gray-700 mt-1.5">₹{(flat.price / 10000000).toFixed(2)} Cr</p>
+                            // Settings Form
+                            <div className="max-w-xl bg-white border border-gray-100 rounded-2xl p-4 space-y-4 shadow-sm">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Floor Height (meters)</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    min="2.0"
+                                    max="6.0"
+                                    value={floorSettings[floor.id]?.floorHeight || 3.0}
+                                    onChange={e => setFloorSettings(prev => ({
+                                      ...prev,
+                                      [floor.id]: { ...prev[floor.id], floorHeight: Number(e.target.value) }
+                                    }))}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-gray-900"
+                                  />
                                 </div>
-                              ))}
+                                <div>
+                                  <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Primary Flat Type</label>
+                                  <select
+                                    value={floorSettings[floor.id]?.flatType || '2BHK'}
+                                    onChange={e => setFloorSettings(prev => ({
+                                      ...prev,
+                                      [floor.id]: { ...prev[floor.id], flatType: e.target.value }
+                                    }))}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:border-gray-950"
+                                  >
+                                    <option value="1BHK">1 BHK</option>
+                                    <option value="2BHK">2 BHK</option>
+                                    <option value="3BHK">3 BHK</option>
+                                    <option value="PENTHOUSE">Penthouse</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Associated Floor Plan</label>
+                                <select
+                                  value={floorSettings[floor.id]?.floorplanId || ''}
+                                  onChange={e => setFloorSettings(prev => ({
+                                    ...prev,
+                                    [floor.id]: { ...prev[floor.id], floorplanId: e.target.value }
+                                  }))}
+                                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:border-gray-950"
+                                >
+                                  <option value="">No Plan Linked</option>
+                                  {floorplans.map(fp => (
+                                    <option key={fp.id} value={fp.id}>
+                                      📋 {fp.name} ({fp.status})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div className="flex justify-end pt-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveFloorSettings(floor.id)}
+                                  disabled={saving}
+                                  className="px-4 py-2 bg-gray-950 text-white rounded-lg text-xs font-bold hover:bg-gray-850 transition disabled:opacity-50"
+                                >
+                                  {saving ? 'Saving...' : 'Save Settings'}
+                                </button>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -284,6 +463,60 @@ export default function FloorsPage() {
                 />
               </div>
               <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Floor Height (meters)</label>
+                <input
+                  required
+                  type="number"
+                  step="0.1"
+                  min="2.0"
+                  max="6.0"
+                  value={formData.floorHeight}
+                  onChange={e => setFormData(f => ({ ...f, floorHeight: Number(e.target.value) }))}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-gray-900 transition"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Associated Floor Plan</label>
+                <select
+                  value={formData.floorplanId}
+                  onChange={e => setFormData(f => ({ ...f, floorplanId: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-gray-900 transition"
+                >
+                  <option value="">No Plan Linked</option>
+                  {floorplans.map(fp => (
+                    <option key={fp.id} value={fp.id}>
+                      📋 {fp.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Primary Flat Type</label>
+                  <select
+                    value={formData.flatType}
+                    onChange={e => setFormData(f => ({ ...f, flatType: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-gray-900 transition"
+                  >
+                    <option value="1BHK">1 BHK</option>
+                    <option value="2BHK">2 BHK</option>
+                    <option value="3BHK">3 BHK</option>
+                    <option value="PENTHOUSE">Penthouse</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Units Per Floor</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={formData.unitsPerFloor}
+                    onChange={e => setFormData(f => ({ ...f, unitsPerFloor: Number(e.target.value), flatsCount: Number(e.target.value) }))}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-gray-900 transition"
+                  />
+                </div>
+              </div>
+              <div>
                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Description</label>
                 <input
                   type="text"
@@ -292,20 +525,6 @@ export default function FloorsPage() {
                   placeholder="e.g. Penthouse Level"
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-gray-900 transition"
                 />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
-                  Auto-seed Flat Units
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  max={20}
-                  value={formData.flatsCount}
-                  onChange={e => setFormData(f => ({ ...f, flatsCount: Number(e.target.value) }))}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-gray-900 transition"
-                />
-                <p className="text-[10px] text-gray-400 mt-1">Will auto-create {formData.flatsCount} available flat units</p>
               </div>
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-sm font-semibold text-gray-400 hover:bg-gray-50 rounded-xl transition">Cancel</button>

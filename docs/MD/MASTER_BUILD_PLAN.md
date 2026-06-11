@@ -20,10 +20,10 @@
 | Phase | Title | Status | Est. Days |
 |-------|-------|--------|-----------|
 | 0 | Foundation & Dev Environment | ✅ Completed | 2 |
-| 1 | AI Pipeline — End to End | ⬜ Not Started | 5 |
-| 2 | Procedural 3D Renderer (JSON → Three.js) | ⬜ Not Started | 7 |
-| 3 | Multi-Floor & Tower System | ⬜ Not Started | 4 |
-| 4 | Building Exterior Generation | ⬜ Not Started | 3 |
+| 1 | AI Pipeline — End to End | ✅ Completed | 5 |
+| 2 | Procedural 3D Renderer (JSON → Three.js) | ✅ Completed | 7 |
+| 3 | Multi-Floor & Tower System | ✅ Completed | 4 |
+| 4 | Building Exterior Generation | ✅ Completed | 3 |
 | 5 | Walkthrough — First-Person Camera | ⬜ Not Started | 4 |
 | 6 | Inventory System — Live Unit Status in 3D | ⬜ Not Started | 4 |
 | 7 | Amenities 3D Module | ⬜ Not Started | 4 |
@@ -86,23 +86,23 @@
 
 ### 1.1 — File Upload Endpoint (API)
 
-- [ ] **1.1.1** In `floorplan.controller.ts`, add a `POST /floorplans/:id/upload` endpoint that accepts `multipart/form-data` with a file field named `plan`.
-- [ ] **1.1.2** Save the file to `uploads/dxf/` (for `.dxf`) or `uploads/pdf/` (for `.pdf`). Store the filename as `floorplan.filePath` in the DB.
-- [ ] **1.1.3** After saving, return `{ floorplanId, filePath, status: 'uploaded' }` immediately (don't wait for parsing — that's async).
-- [ ] **1.1.4** Trigger a background job (use a Bull queue or simply `setImmediate`) that calls the parse pipeline described in 1.2.
-- [ ] **1.1.5** Add a `GET /floorplans/:id/status` endpoint that returns `{ status: 'uploaded' | 'parsing' | 'parsed' | 'failed', structureId? }`.
+- [x] **1.1.1** In `floorplan.controller.ts`, add a `POST /floorplans/:id/upload` endpoint that accepts `multipart/form-data` with a file field named `plan`.
+- [x] **1.1.2** Save the file to `uploads/dxf/` (for `.dxf`) or `uploads/pdf/` (for `.pdf`). Store the filename as `floorplan.filePath` in the DB.
+- [x] **1.1.3** After saving, return `{ floorplanId, filePath, status: 'uploaded' }` immediately (don't wait for parsing — that's async).
+- [x] **1.1.4** Trigger a background job (use a Bull queue or simply `setImmediate`) that calls the parse pipeline described in 1.2.
+- [x] **1.1.5** Add a `GET /floorplans/:id/status` endpoint that returns `{ status: 'uploaded' | 'parsing' | 'parsed' | 'failed', structureId? }`.
 
 ### 1.2 — AI Service Integration (NestJS → Python)
 
-- [ ] **1.2.1** In `twins.service.ts`, add method `async parseFloorplan(filePath: string, fileType: 'dxf' | 'pdf'): Promise<ParsedStructure>`.
-- [ ] **1.2.2** This method calls `POST http://${AI_SERVICE_URL}/parse` with body `{ filePath }` using NestJS `HttpService`.
-- [ ] **1.2.3** Handle the response: if `success: true`, return `data` object. If error, log and throw with meaningful message.
-- [ ] **1.2.4** Add 30 second timeout to the HTTP call — DXF parsing can be slow for large files.
-- [ ] **1.2.5** Update `floorplan.status` to `'parsing'` before the call and `'parsed'` or `'failed'` after.
+- [x] **1.2.1** In `twins.service.ts`, add method `async parseFloorplan(filePath: string, fileType: 'dxf' | 'pdf'): Promise<ParsedStructure>`.
+- [x] **1.2.2** This method calls `POST http://${AI_SERVICE_URL}/parse` with body `{ filePath }` using NestJS `HttpService`.
+- [x] **1.2.3** Handle the response: if `success: true`, return `data` object. If error, log and throw with meaningful message.
+- [x] **1.2.4** Add 30 second timeout to the HTTP call — DXF parsing can be slow for large files.
+- [x] **1.2.5** Update `floorplan.status` to `'parsing'` before the call and `'parsed'` or `'failed'` after.
 
 ### 1.3 — Persist Parsed Structure
 
-- [ ] **1.3.1** In `twins.service.ts`, after successful parse, create a `GeneratedStructure` entity with:
+- [x] **1.3.1** In `twins.service.ts`, after successful parse, create a `GeneratedStructure` entity with:
   ```typescript
   {
     floorplanId: floorplan.id,
@@ -114,43 +114,43 @@
     status: 'generated'
   }
   ```
-- [ ] **1.3.2** Save and return `generatedStructure.id` as the `structureId`.
-- [ ] **1.3.3** Update `floorplan.structureId` foreign key to point to the saved structure.
-- [ ] **1.3.4** Add `GET /structures/:id` endpoint in a new `structures.controller.ts` that returns the full `structureJson` for a given structure ID.
-- [ ] **1.3.5** Make sure this endpoint checks the requesting builder's tenancy — a builder can only fetch their own structures.
+- [x] **1.3.2** Save and return `generatedStructure.id` as the `structureId`.
+- [x] **1.3.3** Update `floorplan.structureId` foreign key to point to the saved structure.
+- [x] **1.3.4** Add `GET /structures/:id` endpoint in a new `structures.controller.ts` that returns the full `structureJson` for a given structure ID.
+- [x] **1.3.5** Make sure this endpoint checks the requesting builder's tenancy — a builder can only fetch their own structures.
 
 ### 1.4 — PDF Processing in AI Service
 
-- [ ] **1.4.1** In `apps/ai-service/`, add `pdf_processor.py`. Install `pdf2image` + `poppler` for PDF-to-image rasterization.
-- [ ] **1.4.2** In `pdf_processor.py`, rasterize each PDF page to a 300 DPI PNG using `pdf2image.convert_from_path()`.
-- [ ] **1.4.3** Pass the rasterized image to PaddleOCR to extract text labels AND their bounding box coordinates on the page.
-- [ ] **1.4.4** Use OpenCV `cv2.Canny` + `cv2.findContours` on the grayscale page to detect room boundary polygons.
-- [ ] **1.4.5** Match OCR labels (by containment check) to detected contours to name each room polygon.
-- [ ] **1.4.6** Detect scale: OCR look for patterns like `3600`, `4200` next to dimension lines. Use the ratio of pixel distance to dimension value to set meters-per-pixel.
-- [ ] **1.4.7** Convert pixel polygons to meter coordinates using the detected scale, output the same `rooms/walls/apertures` JSON format as the DXF parser.
-- [ ] **1.4.8** In `main.py`, route `.pdf` files to `pdf_processor.py` instead of `CADParser`.
-- [ ] **1.4.9** Gemini Vision fallback (if `GEMINI_API_KEY` set): if OpenCV contour detection finds < 3 rooms, call Gemini Flash with the page image and this prompt:
+- [x] **1.4.1** In `apps/ai-service/`, add `pdf_processor.py`. Install `pdf2image` + `poppler` for PDF-to-image rasterization.
+- [x] **1.4.2** In `pdf_processor.py`, rasterize each PDF page to a 300 DPI PNG using `pdf2image.convert_from_path()`.
+- [x] **1.4.3** Pass the rasterized image to PaddleOCR to extract text labels AND their bounding box coordinates on the page.
+- [x] **1.4.4** Use OpenCV `cv2.Canny` + `cv2.findContours` on the grayscale page to detect room boundary polygons.
+- [x] **1.4.5** Match OCR labels (by containment check) to detected contours to name each room polygon.
+- [x] **1.4.6** Detect scale: OCR look for patterns like `3600`, `4200` next to dimension lines. Use the ratio of pixel distance to dimension value to set meters-per-pixel.
+- [x] **1.4.7** Convert pixel polygons to meter coordinates using the detected scale, output the same `rooms/walls/apertures` JSON format as the DXF parser.
+- [x] **1.4.8** In `main.py`, route `.pdf` files to `pdf_processor.py` instead of `CADParser`.
+- [x] **1.4.9** Gemini Vision fallback (if `GEMINI_API_KEY` set): if OpenCV contour detection finds < 3 rooms, call Gemini Flash with the page image and this prompt:
   ```
   Analyze this architectural floor plan image. Return ONLY a JSON object with:
   { "rooms": [{"name": "Living Room", "approxWidthMeters": 4.5, "approxDepthMeters": 3.2}], "scale": "1:100" }
   No explanation. Only JSON.
   ```
-- [ ] **1.4.10** Merge Gemini room names with OpenCV polygon shapes for best result.
+- [x] **1.4.10** Merge Gemini room names with OpenCV polygon shapes for best result.
 
 ### 1.5 — Layer Remapping UI (for non-standard DXF files)
 
-- [ ] **1.5.1** In `main.py`, add `GET /layers?filePath=...` endpoint that reads a DXF file and returns all unique layer names without parsing.
-- [ ] **1.5.2** In the builder dashboard `ai-generator/page.tsx`, after file upload, if parsing returns `roomCount < 3`, show a layer remapping modal.
-- [ ] **1.5.3** Modal shows a list of all detected layers with a dropdown for each: `[ walls | doors | windows | annotations | ignore ]`.
-- [ ] **1.5.4** On submit, call `POST /parse` again with an additional `layerMapping` parameter that overrides the keyword detection.
-- [ ] **1.5.5** In `parser.py`, accept an optional `layerMapping` dict and use it to override the layer keyword matching.
-- [ ] **1.5.6** Save the layer mapping to the `Builder` entity as `dxfLayerPreferences` JSONB — reuse for future uploads from the same builder.
+- [x] **1.5.1** In `main.py`, add `GET /layers?filePath=...` endpoint that reads a DXF file and returns all unique layer names without parsing.
+- [x] **1.5.2** In the builder dashboard `ai-generator/page.tsx`, after file upload, if parsing returns `roomCount < 3`, show a layer remapping modal.
+- [x] **1.5.3** Modal shows a list of all detected layers with a dropdown for each: `[ walls | doors | windows | annotations | ignore ]`.
+- [x] **1.5.4** On submit, call `POST /parse` again with an additional `layerMapping` parameter that overrides the keyword detection.
+- [x] **1.5.5** In `parser.py`, accept an optional `layerMapping` dict and use it to override the layer keyword matching.
+- [x] **1.5.6** Save the layer mapping to the `Builder` entity as `dxfLayerPreferences` JSONB — reuse for future uploads from the same builder.
 
 ### 1.6 — Snap Tolerance Improvement
 
-- [ ] **1.6.1** Increase default `snap_tolerance` in `GeometryEngine` from `0.08` to `0.25` (25cm — better for Indian CAD drawings with gap imprecision).
-- [ ] **1.6.2** Add `POST /parse` optional `snapTolerance` parameter (float, 0.05–1.0) so the frontend can let the builder adjust it.
-- [ ] **1.6.3** Add a "Re-parse with settings" button in the builder dashboard that lets the builder tweak snap tolerance and re-trigger parsing without re-uploading the file.
+- [x] **1.6.1** Increase default `snap_tolerance` in `GeometryEngine` from `0.08` to `0.25` (25cm — better for Indian CAD drawings with gap imprecision).
+- [x] **1.6.2** Add `POST /parse` optional `snapTolerance` parameter (float, 0.05–1.0) so the frontend can let the builder adjust it.
+- [x] **1.6.3** Add a "Re-parse with settings" button in the builder dashboard that lets the builder tweak snap tolerance and re-trigger parsing without re-uploading the file.
 
 **⬛ AUDIT CHECKPOINT 1:** Send me: (1) Postman/Thunder Client screenshot of `POST /floorplans/:id/upload` with a `.dxf` file returning a `structureId`, (2) `GET /structures/:id` response showing parsed rooms and walls JSON.
 
@@ -162,45 +162,45 @@
 
 ### 2.1 — Core Scene Compiler
 
-- [ ] **2.1.1** Create `apps/builder/src/components/scene-compiler/` directory.
-- [ ] **2.1.2** Create `SceneCompiler.ts` — a class that takes `structureJson` as input and returns a `THREE.Group` containing all geometry.
-- [ ] **2.1.3** Constructor params: `{ structureJson, wallHeight: number = 3.0, wallThickness: number = 0.15, floorElevation: number = 0 }`.
-- [ ] **2.1.4** Add `compile(): THREE.Group` method that calls `buildWalls()`, `buildFloor()`, `buildCeiling()`, `buildApertures()` and returns the combined group.
+- [x] **2.1.1** Create `apps/builder/src/components/scene-compiler/` directory.
+- [x] **2.1.2** Create `SceneCompiler.ts` — a class that takes `structureJson` as input and returns a `THREE.Group` containing all geometry.
+- [x] **2.1.3** Constructor params: `{ structureJson, wallHeight: number = 3.0, wallThickness: number = 0.15, floorElevation: number = 0 }`.
+- [x] **2.1.4** Add `compile(): THREE.Group` method that calls `buildWalls()`, `buildFloor()`, `buildCeiling()`, `buildApertures()` and returns the combined group.
 
 ### 2.2 — Wall Geometry Builder
 
-- [ ] **2.2.1** In `buildWalls(walls: Wall[])`: for each wall segment, compute: length = distance between start and end points, midpoint, rotation angle.
-- [ ] **2.2.2** Create a `THREE.BoxGeometry(length, wallHeight, thickness)` for each wall.
-- [ ] **2.2.3** Position the mesh at the wall midpoint, rotate by the wall's angle.
-- [ ] **2.2.4** Apply a default white/cream `MeshStandardMaterial` with `roughness: 0.8`.
-- [ ] **2.2.5** Set `mesh.castShadow = true` and `mesh.receiveShadow = true`.
-- [ ] **2.2.6** Assign `userData.wallId = wall.id` to each mesh for click detection.
-- [ ] **2.2.7** Merge all wall meshes with the same material into a single `BufferGeometry` using `THREE.BufferGeometryUtils.mergeGeometries()` for performance.
+- [x] **2.2.1** In `buildWalls(walls: Wall[])`: for each wall segment, compute: length = distance between start and end points, midpoint, rotation angle.
+- [x] **2.2.2** Create a `THREE.BoxGeometry(length, wallHeight, thickness)` for each wall.
+- [x] **2.2.3** Position the mesh at the wall midpoint, rotate by the wall's angle.
+- [x] **2.2.4** Apply a default white/cream `MeshStandardMaterial` with `roughness: 0.8`.
+- [x] **2.2.5** Set `mesh.castShadow = true` and `mesh.receiveShadow = true`.
+- [x] **2.2.6** Assign `userData.wallId = wall.id` to each mesh for click detection.
+- [x] **2.2.7** Merge all wall meshes with the same material into a single `BufferGeometry` using `THREE.BufferGeometryUtils.mergeGeometries()` for performance.
 
 ### 2.3 — Floor & Ceiling Geometry
 
-- [ ] **2.3.1** In `buildFloor(rooms: Room[])`: for each room, create a `THREE.PlaneGeometry(room.width, room.depth)`.
-- [ ] **2.3.2** Position at room center, rotate -90° on X axis to lay flat.
-- [ ] **2.3.3** Apply room color from `room.color` as `MeshStandardMaterial` color.
-- [ ] **2.3.4** Set `mesh.receiveShadow = true`.
-- [ ] **2.3.5** Assign `userData.roomId = room.id` for click detection.
-- [ ] **2.3.6** `buildCeiling(rooms)`: same as floor but Y offset = wallHeight, use a near-white color, set `side: THREE.BackSide`.
+- [x] **2.3.1** In `buildFloor(rooms: Room[])`: for each room, create a `THREE.PlaneGeometry(room.width, room.depth)`.
+- [x] **2.3.2** Position at room center, rotate -90° on X axis to lay flat.
+- [x] **2.3.3** Apply room color from `room.color` as `MeshStandardMaterial` color.
+- [x] **2.3.4** Set `mesh.receiveShadow = true`.
+- [x] **2.3.5** Assign `userData.roomId = room.id` for click detection.
+- [x] **2.3.6** `buildCeiling(rooms)`: same as floor but Y offset = wallHeight, use a near-white color, set `side: THREE.BackSide`.
 
 ### 2.4 — Door & Window Apertures (Cut Opening in Wall)
 
 > Note: True Boolean CSG is expensive. Use the "subtraction mesh" visual trick instead — place a dark/transparent box in the opening to simulate a cut.
 
-- [ ] **2.4.1** In `buildApertures(apertures, walls)`: for each aperture, find its parent wall by `wallId`.
-- [ ] **2.4.2** Compute the aperture's world position: start from wall start point, move `startOffset` units along the wall direction, center the aperture width.
-- [ ] **2.4.3** For **doors**: create a `BoxGeometry(width, height, thickness * 1.2)` with a dark transparent material `(color: 0x000000, opacity: 0.7, transparent: true)`. This visually simulates the door opening.
-- [ ] **2.4.4** For **windows**: same geometry at `elevation` Y offset above floor. Use a light blue semi-transparent material `(color: 0xadd8e6, opacity: 0.4, transparent: true)`.
-- [ ] **2.4.5** For **door swing arcs**: create a thin quarter-circle `THREE.RingGeometry` on the floor to show door swing direction. Only visible in top-down mode.
-- [ ] **2.4.6** Assign `userData.apertureId`, `userData.type` to each aperture mesh.
+- [x] **2.4.1** In `buildApertures(apertures, walls)`: for each aperture, find its parent wall by `wallId`.
+- [x] **2.4.2** Compute the aperture's world position: start from wall start point, move `startOffset` units along the wall direction, center the aperture width.
+- [x] **2.4.3** For **doors**: create a `BoxGeometry(width, height, thickness * 1.2)` with a dark transparent material `(color: 0x000000, opacity: 0.7, transparent: true)`. This visually simulates the door opening.
+- [x] **2.4.4** For **windows**: same geometry at `elevation` Y offset above floor. Use a light blue semi-transparent material `(color: 0xadd8e6, opacity: 0.4, transparent: true)`.
+- [x] **2.4.5** For **door swing arcs**: create a thin quarter-circle `THREE.RingGeometry` on the floor to show door swing direction. Only visible in top-down mode.
+- [x] **2.4.6** Assign `userData.apertureId`, `userData.type` to each aperture mesh.
 
 ### 2.5 — Furniture Geometry
 
-- [ ] **2.5.1** Create `FurnitureFactory.ts` — a factory that returns a `THREE.Group` for each furniture type.
-- [ ] **2.5.2** Implement these furniture types using primitive geometries (no external GLB needed):
+- [x] **2.5.1** Create `FurnitureFactory.ts` — a factory that returns a `THREE.Group` for each furniture type.
+- [x] **2.5.2** Implement these furniture types using primitive geometries (no external GLB needed):
   - `bed`: box for mattress + 2 smaller boxes for pillows + box for headboard.
   - `sofa`: wide flat box for seat + thinner tall box for backrest.
   - `table`: thin flat box for top + 4 cylinder legs.
@@ -208,9 +208,9 @@
   - `toilet`: box + smaller rounded box on top.
   - `sink`: small box with a hole visual.
   - `counter` (kitchen): long flat box along a wall.
-- [ ] **2.5.3** In `buildFurniture(furniture, rooms)`: for each furniture item, call `FurnitureFactory.create(type)`, position at `(item.x, 0, item.z)`, rotate by `item.rotation`.
-- [ ] **2.5.4** All furniture meshes get `userData.furnitureId`, `userData.type`.
-- [ ] **2.5.5** Auto-placement fallback (if `furniture[]` is empty from parser): in `buildFurniture`, call `AutoPlacer.placeForRooms(rooms)` which returns a furniture array using the rules:
+- [x] **2.5.3** In `buildFurniture(furniture, rooms)`: for each furniture item, call `FurnitureFactory.create(type)`, position at `(item.x, 0, item.z)`, rotate by `item.rotation`.
+- [x] **2.5.4** All furniture meshes get `userData.furnitureId`, `userData.type`.
+- [x] **2.5.5** Auto-placement fallback (if `furniture[]` is empty from parser): in `buildFurniture`, call `AutoPlacer.placeForRooms(rooms)` which returns a furniture array using the rules:
   - Room name contains "bed" → add bed + wardrobe.
   - Room name contains "living" or "hall" → add sofa + table.
   - Room name contains "kitchen" → add counter along longest wall.
@@ -218,30 +218,30 @@
 
 ### 2.6 — Lighting Setup
 
-- [ ] **2.6.1** Add `THREE.AmbientLight(0xffffff, 0.6)` as base fill light.
-- [ ] **2.6.2** Add `THREE.DirectionalLight(0xffffff, 1.0)` positioned at (10, 20, 10) with `castShadow: true`.
-- [ ] **2.6.3** Set shadow map size to `2048x2048` for sharp shadows.
-- [ ] **2.6.4** Add a `THREE.HemisphereLight(0xffffff, 0xccaa88, 0.4)` for warm floor bounce.
-- [ ] **2.6.5** For window openings, add small `THREE.RectAreaLight` on each window face to simulate daylight streaming in (only when window count < 10 for perf).
+- [x] **2.6.1** Add `THREE.AmbientLight(0xffffff, 0.6)` as base fill light.
+- [x] **2.6.2** Add `THREE.DirectionalLight(0xffffff, 1.0)` positioned at (10, 20, 10) with `castShadow: true`.
+- [x] **2.6.3** Set shadow map size to `2048x2048` for sharp shadows.
+- [x] **2.6.4** Add a `THREE.HemisphereLight(0xffffff, 0xccaa88, 0.4)` for warm floor bounce.
+- [x] **2.6.5** For window openings, add small `THREE.RectAreaLight` on each window face to simulate daylight streaming in (only when window count < 10 for perf).
 
 ### 2.7 — Replace Static GLB with Compiled Scene
 
-- [ ] **2.7.1** In the building viewer component (`building-viewer.tsx` in `apps/web` and the digital twin viewer in `apps/builder`):
+- [x] **2.7.1** In the building viewer component (`building-viewer.tsx` in `apps/web` and the digital twin viewer in `apps/builder`):
   - Remove the `GLTFLoader` / static `.glb` loading code.
   - On component mount, fetch `GET /structures/:structureId` to get the JSON.
   - Pass JSON to `SceneCompiler` and add the returned group to the Three.js scene.
-- [ ] **2.7.2** Show a loading progress bar while compiling (large plans with 200+ walls can take ~500ms to compile).
-- [ ] **2.7.3** Add an error state: if structure fetch fails, show "Plan not yet generated — upload a floor plan to get started."
-- [ ] **2.7.4** Keep the orbit controls working after switching to the compiled scene.
-- [ ] **2.7.5** Add a "reset camera" button that flies back to the default overview position.
+- [x] **2.7.2** Show a loading progress bar while compiling (large plans with 200+ walls can take ~500ms to compile).
+- [x] **2.7.3** Add an error state: if structure fetch fails, show "Plan not yet generated — upload a floor plan to get started."
+- [x] **2.7.4** Keep the orbit controls working after switching to the compiled scene.
+- [x] **2.7.5** Add a "reset camera" button that flies back to the default overview position.
 
 ### 2.8 — Room Click Interaction
 
-- [ ] **2.8.1** Add a `THREE.Raycaster` on mouse click events.
-- [ ] **2.8.2** On click, find the first intersected object with `userData.roomId`.
-- [ ] **2.8.3** Highlight the clicked room: briefly animate its floor mesh color to a lighter shade using `TWEEN.js` or manual lerp.
-- [ ] **2.8.4** Show a room info panel (right sidebar or bottom sheet on mobile): room name, dimensions (width × depth × height), area in sq.ft., assigned flat.
-- [ ] **2.8.5** On clicking a wall, show wall info: wall ID, length, thickness, any apertures on it.
+- [x] **2.8.1** Add a `THREE.Raycaster` on mouse click events.
+- [x] **2.8.2** On click, find the first intersected object with `userData.roomId`.
+- [x] **2.8.3** Highlight the clicked room: briefly animate its floor mesh color to a lighter shade using `TWEEN.js` or manual lerp.
+- [x] **2.8.4** Show a room info panel (right sidebar or bottom sheet on mobile): room name, dimensions (width × depth × height), area in sq.ft., assigned flat.
+- [x] **2.8.5** On clicking a wall, show wall info: wall ID, length, thickness, any apertures on it.
 
 **⬛ AUDIT CHECKPOINT 2:** Send me a video/screenshot of the 3D viewer showing a real parsed floor plan (from a DXF file) rendered as actual walls, floors, and furniture — not the static GLB placeholder.
 
@@ -253,35 +253,35 @@
 
 ### 3.1 — Floor Data Model
 
-- [ ] **3.1.1** In the builder dashboard, add a "Floors" management page (route already exists at `floors/page.tsx`).
-- [ ] **3.1.2** UI: create tower → add floors to tower (Floor 1, Floor 2, ... Floor N).
-- [ ] **3.1.3** Each floor has: `floorNumber`, `floorHeight` (default 3.0m), `floorplanId` (FK to uploaded plan), `flatType` (1BHK/2BHK/3BHK), `unitsPerFloor`.
-- [ ] **3.1.4** Floors can share a `floorplanId` (typical — same flat layout repeated). Floor 1 (ground/lobby) gets its own unique plan.
-- [ ] **3.1.5** Add `GET /towers/:id/floors` endpoint that returns all floors with their associated structure JSON.
+- [x] **3.1.1** In the builder dashboard, add a "Floors" management page (route already exists at `floors/page.tsx`).
+- [x] **3.1.2** UI: create tower → add floors to tower (Floor 1, Floor 2, ... Floor N).
+- [x] **3.1.3** Each floor has: `floorNumber`, `floorHeight` (default 3.0m), `floorplanId` (FK to uploaded plan), `flatType` (1BHK/2BHK/3BHK), `unitsPerFloor`.
+- [x] **3.1.4** Floors can share a `floorplanId` (typical — same flat layout repeated). Floor 1 (ground/lobby) gets its own unique plan.
+- [x] **3.1.5** Add `GET /towers/:id/floors` endpoint that returns all floors with their associated structure JSON.
 
 ### 3.2 — Multi-Floor Scene Compiler
 
-- [ ] **3.2.1** Create `TowerCompiler.ts` that takes an array of `{ floor: FloorData, structureJson }` and returns a single `THREE.Group` for the entire tower.
-- [ ] **3.2.2** For each floor: call `SceneCompiler.compile()` with `floorElevation = (floorNumber - 1) * floorHeight`.
-- [ ] **3.2.3** Offset the compiled group on the Y axis by `floorElevation`.
-- [ ] **3.2.4** Add a thin `PlaneGeometry` slab between floors (the concrete ceiling/floor slab, ~0.25m thick) in gray concrete material.
-- [ ] **3.2.5** The ground floor (floor 0): add a slightly thicker slab (0.5m) representing the foundation/podium.
-- [ ] **3.2.6** At the very top: add a flat roof slab + a parapet wall (thin BoxGeometry) around the perimeter.
+- [x] **3.2.1** Create `TowerCompiler.ts` that takes an array of `{ floor: FloorData, structureJson }` and returns a single `THREE.Group` for the entire tower.
+- [x] **3.2.2** For each floor: call `SceneCompiler.compile()` with `floorElevation = (floorNumber - 1) * floorHeight`.
+- [x] **3.2.3** Offset the compiled group on the Y axis by `floorElevation`.
+- [x] **3.2.4** Add a thin `PlaneGeometry` slab between floors (the concrete ceiling/floor slab, ~0.25m thick) in gray concrete material.
+- [x] **3.2.5** The ground floor (floor 0): add a slightly thicker slab (0.5m) representing the foundation/podium.
+- [x] **3.2.6** At the very top: add a flat roof slab + a parapet wall (thin BoxGeometry) around the perimeter.
 
 ### 3.3 — Floor Selector UI
 
-- [ ] **3.3.1** Add a vertical slider or stepper UI (fixed left side of viewer) showing floor numbers: B2, B1, G, 1, 2, ... N.
-- [ ] **3.3.2** Clicking a floor: all other floors fade to 10% opacity (`material.opacity = 0.1, transparent = true`) — selected floor stays at 100%.
-- [ ] **3.3.3** Camera smoothly animates (using `TWEEN.js`) to look at the selected floor at eye level.
-- [ ] **3.3.4** "Show All" button restores all floors to full opacity.
-- [ ] **3.3.5** Add a "Explode View" button: spreads floors apart vertically (Y offset × 2) so you can see all floors simultaneously with gaps between them. Toggle back to compressed view.
+- [x] **3.3.1** Add a vertical slider or stepper UI (fixed left side of viewer) showing floor numbers: B2, B1, G, 1, 2, ... N.
+- [x] **3.3.2** Clicking a floor: all other floors fade to 10% opacity (`material.opacity = 0.1, transparent = true`) — selected floor stays at 100%.
+- [x] **3.3.3** Camera smoothly animates (using `TWEEN.js`) to look at the selected floor at eye level.
+- [x] **3.3.4** "Show All" button restores all floors to full opacity.
+- [x] **3.3.5** Add a "Explode View" button: spreads floors apart vertically (Y offset × 2) so you can see all floors simultaneously with gaps between them. Toggle back to compressed view.
 
 ### 3.4 — Flat Navigation
 
-- [ ] **3.4.1** Each flat (unit) in the floor plan should be clickable as a group (not just individual rooms).
-- [ ] **3.4.2** When a flat is clicked: show a Flat Info card overlay with: flat number, BHK type, area sqft, current status (available/booked/sold), price.
-- [ ] **3.4.3** "View inside" button in the flat info card: switches to walkthrough mode inside that flat (Phase 5).
-- [ ] **3.4.4** Flat boundaries are determined by grouping rooms that share the same `flatId` — ensure the `GeneratedStructure` parsing assigns `flatId` to rooms based on the flat type.
+- [x] **3.4.1** Each flat (unit) in the floor plan should be clickable as a group (not just individual rooms).
+- [x] **3.4.2** When a flat is clicked: show a Flat Info card overlay with: flat number, BHK type, area sqft, current status (available/booked/sold), price.
+- [x] **3.4.3** "View inside" button in the flat info card: switches to walkthrough mode inside that flat (Phase 5).
+- [x] **3.4.4** Flat boundaries are determined by grouping rooms that share the same `flatId` — ensure the `GeneratedStructure` parsing assigns `flatId` to rooms based on the flat type.
 
 **⬛ AUDIT CHECKPOINT 3:** Send me a screenshot of a multi-floor tower (minimum 5 floors) visible in the 3D viewer, with the floor selector working.
 
@@ -293,39 +293,39 @@
 
 ### 4.1 — Exterior Shell from Floor Footprint
 
-- [ ] **4.1.1** Create `ExteriorGenerator.ts` that takes a tower's ground floor `structureJson` and total `buildingHeight`.
-- [ ] **4.1.2** Compute building footprint: the bounding box of all wall endpoints (`minX`, `maxX`, `minZ`, `maxZ`).
-- [ ] **4.1.3** For an initial rectangular building: create 4 exterior wall faces using `PlaneGeometry` sized to the footprint sides × building height.
-- [ ] **4.1.4** Apply a default exterior material: light grey concrete texture (use a simple `MeshStandardMaterial` with a procedural noise color, no external texture files needed yet).
-- [ ] **4.1.5** For each floor level: add a thin horizontal band (0.1m high box) around the perimeter to represent the floor slab edge / cornice lines.
-- [ ] **4.1.6** Add a podium base (ground floor plinth): slight extrusion 0.5m beyond the building footprint, 1.5m tall.
+- [x] **4.1.1** Create `ExteriorGenerator.ts` that takes a tower's ground floor `structureJson` and total `buildingHeight`.
+- [x] **4.1.2** Compute building footprint: the bounding box of all wall endpoints (`minX`, `maxX`, `minZ`, `maxZ`).
+- [x] **4.1.3** For an initial rectangular building: create 4 exterior wall faces using `PlaneGeometry` sized to the footprint sides × building height.
+- [x] **4.1.4** Apply a default exterior material: light grey concrete texture (use a simple `MeshStandardMaterial` with a procedural noise color, no external texture files needed yet).
+- [x] **4.1.5** For each floor level: add a thin horizontal band (0.1m high box) around the perimeter to represent the floor slab edge / cornice lines.
+- [x] **4.1.6** Add a podium base (ground floor plinth): slight extrusion 0.5m beyond the building footprint, 1.5m tall.
 
 ### 4.2 — Window Grid on Exterior
 
-- [ ] **4.2.1** For each floor, detect which walls are exterior (on the building perimeter — they have no rooms on both sides).
-- [ ] **4.2.2** On each exterior wall face, generate a grid of windows: based on detected `apertures` of type `window` from the floor plan.
-- [ ] **4.2.3** Each window: a blue tinted semi-transparent `PlaneGeometry` slightly recessed (0.05m) from the wall face.
-- [ ] **4.2.4** Add window frame geometry: 4 thin `BoxGeometry` strips around each window opening.
-- [ ] **4.2.5** For units with `balcony` rooms detected in the floor plan: add protruding balcony slab (thin `BoxGeometry` extending 1.2m beyond exterior wall) + glass railing (transparent thin box).
+- [x] **4.2.1** For each floor, detect which walls are exterior (on the building perimeter — they have no rooms on both sides).
+- [x] **4.2.2** On each exterior wall face, generate a grid of windows: based on detected `apertures` of type `window` from the floor plan.
+- [x] **4.2.3** Each window: a blue tinted semi-transparent `PlaneGeometry` slightly recessed (0.05m) from the wall face.
+- [x] **4.2.4** Add window frame geometry: 4 thin `BoxGeometry` strips around each window opening.
+- [x] **4.2.5** For units with `balcony` rooms detected in the floor plan: add protruding balcony slab (thin `BoxGeometry` extending 1.2m beyond exterior wall) + glass railing (transparent thin box).
 
 ### 4.3 — Facade Texture Upload
 
-- [ ] **4.3.1** In builder dashboard, add a "Building Appearance" tab in the project settings.
-- [ ] **4.3.2** Facade texture options: Concrete (default), Brick, Glass Curtain, Stone, Sandstone. These are procedural materials — no image upload needed.
-- [ ] **4.3.3** Each option is a `MeshStandardMaterial` with specific color + roughness + metalness values:
+- [x] **4.3.1** In builder dashboard, add a "Building Appearance" tab in the project settings.
+- [x] **4.3.2** Facade texture options: Concrete (default), Brick, Glass Curtain, Stone, Sandstone. These are procedural materials — no image upload needed.
+- [x] **4.3.3** Each option is a `MeshStandardMaterial` with specific color + roughness + metalness values:
   - Concrete: `color: #c8c4be, roughness: 0.9, metalness: 0.0`
   - Brick: `color: #b5652b, roughness: 0.95, metalness: 0.0`
   - Glass Curtain: `color: #88b4d4, roughness: 0.1, metalness: 0.8, transparent: true, opacity: 0.7`
   - Stone: `color: #8b7355, roughness: 0.85, metalness: 0.0`
-- [ ] **4.3.4** Custom texture image upload: accept JPG/PNG, upload to `uploads/images/`, apply as `THREE.TextureLoader` on the exterior mesh.
-- [ ] **4.3.5** Save the selected facade option to the `Project` entity as `exteriorConfig` JSONB.
+- [x] **4.3.4** Custom texture image upload: accept JPG/PNG, upload to `uploads/images/`, apply as `THREE.TextureLoader` on the exterior mesh.
+- [x] **4.3.5** Save the selected facade option to the `Project` entity as `exteriorConfig` JSONB.
 
 ### 4.4 — Site Context (Ground Plane + Sky)
 
-- [ ] **4.4.1** Add a ground plane: large `PlaneGeometry` (200m × 200m) with a grass-green material under the building.
-- [ ] **4.4.2** Add a simple sky background: `THREE.Color` for the renderer `clearColor` — light blue gradient (simulate with a large sphere around the scene with `BackSide` rendering).
-- [ ] **4.4.3** Add ambient occlusion post-processing (`THREE.SSAOPass` from examples) for shadow depth at base of building — makes it feel grounded.
-- [ ] **4.4.4** Add a subtle environment light using `THREE.PMREMGenerator` with a simple gradient env map — improves glass reflections.
+- [x] **4.4.1** Add a ground plane: large `PlaneGeometry` (200m × 200m) with a grass-green material under the building.
+- [x] **4.4.2** Add a simple sky background: `THREE.Color` for the renderer `clearColor` — light blue gradient (simulate with a large sphere around the scene with `BackSide` rendering).
+- [x] **4.4.3** Add ambient occlusion post-processing (`THREE.SSAOPass` from examples) for shadow depth at base of building — makes it feel grounded.
+- [x] **4.4.4** Add a subtle environment light using `THREE.PMREMGenerator` with a simple gradient env map — improves glass reflections.
 
 **⬛ AUDIT CHECKPOINT 4:** Send me a screenshot of the building exterior view showing the full tower height, window grids, balconies, and site ground plane.
 

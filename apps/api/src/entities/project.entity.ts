@@ -28,6 +28,9 @@ export class Project {
   @Column({ type: 'varchar', length: 50, default: 'PLANNING' })
   status!: 'PLANNING' | 'UNDER_CONSTRUCTION' | 'READY' | 'SOLD_OUT';
 
+  @Column({ type: 'jsonb', nullable: true })
+  exteriorConfig?: Record<string, any>;
+
   @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt!: Date;
 

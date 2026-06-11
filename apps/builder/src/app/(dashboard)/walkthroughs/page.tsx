@@ -7,6 +7,7 @@ import gsap from 'gsap';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { SceneCompiler } from '@/components/scene-compiler/SceneCompiler';
 
 interface Project {
   id: string;
@@ -50,6 +51,80 @@ interface TourRoute {
   routeJson: any[];
 }
 
+const defaultLayoutData = {
+  rooms: [
+    { id: 'room-lobby-2bhk', name: 'Lobby Corridor', x: -8, z: 4, width: 16, depth: 2, color: '#374151', node: { x: 0, z: 5.0 } },
+    { id: 'room-living-a-2bhk', name: 'Flat A - Living Room', x: -8, z: -1, width: 8, depth: 5, color: '#f5efe6', node: { x: -4, z: 1.5 } },
+    { id: 'room-kitchen-a-2bhk', name: 'Flat A - Kitchen', x: -8, z: -5, width: 4, depth: 4, color: '#f4ece1', node: { x: -6, z: -3.0 } },
+    { id: 'room-bedroom-a-2bhk', name: 'Flat A - Bedroom', x: -4, z: -5, width: 4, depth: 4, color: '#ece8f2', node: { x: -2, z: -3.0 } },
+    { id: 'room-balcony-a-2bhk', name: 'Flat A - Balcony', x: -4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: -2, z: -5.75 } },
+    { id: 'room-living-b-2bhk', name: 'Flat B - Living Room', x: 0, z: -1, width: 8, depth: 5, color: '#f5efe6', node: { x: 4, z: 1.5 } },
+    { id: 'room-kitchen-b-2bhk', name: 'Flat B - Kitchen', x: 0, z: -5, width: 4, depth: 4, color: '#f4ece1', node: { x: 2, z: -3.0 } },
+    { id: 'room-bedroom-b-2bhk', name: 'Flat B - Bedroom', x: 4, z: -5, width: 4, depth: 4, color: '#ece8f2', node: { x: 6, z: -3.0 } },
+    { id: 'room-balcony-b-2bhk', name: 'Flat B - Balcony', x: 4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: 6, z: -5.75 } }
+  ],
+  walls: [
+    { id: 'w-2bhk-out-top', startX: -8, startZ: -5, endX: 8, endZ: -5, thickness: 0.2, height: 3.0 },
+    { id: 'w-2bhk-out-right', startX: 8, startZ: -5, endX: 8, endZ: 6, thickness: 0.2, height: 3.0 },
+    { id: 'w-2bhk-out-bottom', startX: 8, startZ: 6, endX: -8, endZ: 6, thickness: 0.2, height: 3.0 },
+    { id: 'w-2bhk-out-left', startX: -8, startZ: 6, endX: -8, endZ: -5, thickness: 0.2, height: 3.0 },
+    { id: 'w-2bhk-int-mid', startX: 0, startZ: -5, endX: 0, endZ: 4, thickness: 0.15, height: 3.0 },
+    { id: 'w-2bhk-int-lobby', startX: -8, startZ: 4, endX: 8, endZ: 4, thickness: 0.15, height: 3.0 },
+    { id: 'w-2bhk-int-flat-a-horiz', startX: -8, startZ: -1, endX: 0, endZ: -1, thickness: 0.15, height: 3.0 },
+    { id: 'w-2bhk-int-flat-b-horiz', startX: 0, startZ: -1, endX: 8, endZ: -1, thickness: 0.15, height: 3.0 },
+    { id: 'w-2bhk-int-flat-a-vert', startX: -4, startZ: -5, endX: -4, endZ: -1, thickness: 0.15, height: 3.0 },
+    { id: 'w-2bhk-int-flat-b-vert', startX: 4, startZ: -5, endX: 4, endZ: -1, thickness: 0.15, height: 3.0 }
+  ],
+  apertures: [
+    { id: 'ap-entrance-a-2bhk', wallId: 'w-2bhk-int-lobby', type: 'door', startOffset: 3.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
+    { id: 'ap-entrance-b-2bhk', wallId: 'w-2bhk-int-lobby', type: 'door', startOffset: 11.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
+    { id: 'ap-door-bedroom-a-2bhk', wallId: 'w-2bhk-int-flat-a-horiz', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
+    { id: 'ap-arch-kitchen-a-2bhk', wallId: 'w-2bhk-int-flat-a-horiz', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 },
+    { id: 'ap-door-bedroom-b-2bhk', wallId: 'w-2bhk-int-flat-b-horiz', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
+    { id: 'ap-arch-kitchen-b-2bhk', wallId: 'w-2bhk-int-flat-b-horiz', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 },
+    { id: 'ap-balcony-door-a-2bhk', wallId: 'w-2bhk-out-top', type: 'door', startOffset: 5.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
+    { id: 'ap-balcony-door-b-2bhk', wallId: 'w-2bhk-out-top', type: 'door', startOffset: 13.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
+    { id: 'ap-win-kitchen-a-2bhk', wallId: 'w-2bhk-out-top', type: 'window', startOffset: 1.5, width: 1.2, height: 1.2, elevation: 0.9 },
+    { id: 'ap-win-kitchen-b-2bhk', wallId: 'w-2bhk-out-top', type: 'window', startOffset: 9.5, width: 1.2, height: 1.2, elevation: 0.9 },
+    { id: 'ap-win-living-a-2bhk', wallId: 'w-2bhk-out-left', type: 'window', startOffset: 4.0, width: 1.5, height: 1.2, elevation: 0.9 },
+    { id: 'ap-win-living-b-2bhk', wallId: 'w-2bhk-out-right', type: 'window', startOffset: 6.0, width: 1.5, height: 1.2, elevation: 0.9 }
+  ],
+  furniture: [
+    { id: 'f-sofa-a-2bhk', type: 'sofa', roomId: 'room-living-a-2bhk', x: -4.0, z: 1.5, rotation: 0 },
+    { id: 'f-table-a-2bhk', type: 'table', roomId: 'room-living-a-2bhk', x: -4.0, z: 2.5, rotation: 0 },
+    { id: 'f-bed-a-2bhk', type: 'bed', roomId: 'room-bedroom-a-2bhk', x: -2.0, z: -3.5, rotation: 90 },
+    { id: 'f-sofa-b-2bhk', type: 'sofa', roomId: 'room-living-b-2bhk', x: 4.0, z: 1.5, rotation: 0 },
+    { id: 'f-table-b-2bhk', type: 'table', roomId: 'room-living-b-2bhk', x: 4.0, z: 2.5, rotation: 0 },
+    { id: 'f-bed-b-2bhk', type: 'bed', roomId: 'room-bedroom-b-2bhk', x: 6.0, z: -3.5, rotation: 90 }
+  ]
+};
+
+const getLayoutForFloor = (layout: any, floorIndex: number): any => {
+  if (!layout) return defaultLayoutData;
+  if (layout.rooms && Array.isArray(layout.rooms)) return layout;
+  
+  if (layout.floors && (layout.floors[floorIndex] || layout.floors[floorIndex + 1])) {
+    return layout.floors[floorIndex] || layout.floors[floorIndex + 1];
+  }
+  
+  const configFloors = layout.floorsConfig || [];
+  const floorConf = configFloors.find((fc: any) => fc.floorNumber === floorIndex + 1 || fc.floorNumber === floorIndex);
+  const type = floorConf ? floorConf.type : '2BHK';
+  
+  if (layout.templates && layout.templates[type]) {
+    return layout.templates[type];
+  }
+  
+  if (layout.templates) {
+    const available = Object.keys(layout.templates);
+    if (available.length > 0) {
+      return layout.templates[available[0]];
+    }
+  }
+  
+  return defaultLayoutData;
+};
+
 export default function WalkthroughsPage() {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
@@ -64,6 +139,11 @@ export default function WalkthroughsPage() {
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [cameraPoints, setCameraPoints] = useState<CameraPoint[]>([]);
   const [tours, setTours] = useState<TourRoute[]>([]);
+
+  const [localLayout, setLocalLayout] = useState<any>(null);
+  const [structureFetchError, setStructureFetchError] = useState<string | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<any | null>(null);
+  const [selectedWall, setSelectedWall] = useState<any | null>(null);
   
   // Modals / Overlays
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -127,6 +207,55 @@ export default function WalkthroughsPage() {
       })
       .catch((err) => console.error('Error fetching projects:', err));
   }, [token, tenantId]);
+
+  // Fetch LayoutData and structureJson dynamically for the project
+  useEffect(() => {
+    if (!selectedProjectId || !token || !tenantId) return;
+
+    setStructureFetchError(null);
+    fetch(`http://localhost:3001/floorplans`, {
+      headers: { 
+        'x-tenant-id': tenantId,
+        'Authorization': `Bearer ${token}`
+      },
+    })
+      .then((r) => r.json())
+      .then(async (data) => {
+        if (data && Array.isArray(data)) {
+          // Find floorplan for the selected project
+          const projFp = data.find((fp) => fp.projectId === selectedProjectId);
+          if (projFp) {
+            if (projFp.status === 'parsed' || projFp.status === 'GENERATED' || projFp.status === 'generated') {
+              try {
+                const resStruct = await fetch(`http://localhost:3001/structures/${projFp.structureId}`, {
+                  headers: { 
+                    'x-tenant-id': tenantId,
+                    'Authorization': `Bearer ${token}`
+                  },
+                });
+                if (resStruct.ok) {
+                  const sJson = await resStruct.json();
+                  setLocalLayout(sJson);
+                  return;
+                }
+              } catch (err) {
+                console.error('Failed to fetch structureJson:', err);
+                setStructureFetchError('Failed to fetch structure details from server.');
+              }
+            }
+            if (projFp.layoutData) {
+              setLocalLayout(projFp.layoutData);
+              return;
+            }
+          }
+        }
+        setLocalLayout(defaultLayoutData);
+      })
+      .catch((err) => {
+        console.error('Error fetching floorplans:', err);
+        setLocalLayout(defaultLayoutData);
+      });
+  }, [selectedProjectId, token, tenantId]);
 
   // Load Models when Project changes
   useEffect(() => {
@@ -320,29 +449,101 @@ export default function WalkthroughsPage() {
     const pinsGroup = new THREE.Group();
     scene.add(pinsGroup);
 
-    // ── Load GLTF model (if it exists) ────────────────────────────────
+    // ── Load / Compile Scene (procedural compiler with GLTF fallback) ─
     let loadedModel: THREE.Group | null = null;
-    const loader = new GLTFLoader();
-    loader.load(
-      selectedModel.modelUrl,
-      (gltf) => {
-        loadedModel = gltf.scene;
-        // Tag floor meshes in loaded GLTF for teleportation
-        loadedModel.traverse(child => {
-          if (child instanceof THREE.Mesh) {
-            const nameLC = child.name.toLowerCase();
-            if (nameLC.includes('floor') || nameLC.includes('ground') || nameLC.includes('tile')) {
-              child.userData.isFloor = true;
+    const proceduralGroup = new THREE.Group();
+    proceduralGroup.name = "procedural_building";
+
+    const activeFloor = 0;
+    const floorOffset = activeFloor * 3.2;
+    const floorLayout = getLayoutForFloor(localLayout, activeFloor);
+
+    if (!localLayout || !localLayout.rooms || localLayout.rooms.length === 0) {
+      // Fallback: Load GLTF model
+      const loader = new GLTFLoader();
+      loader.load(
+        selectedModel.modelUrl,
+        (gltf) => {
+          loadedModel = gltf.scene;
+          loadedModel.traverse(child => {
+            if (child instanceof THREE.Mesh) {
+              const nameLC = child.name.toLowerCase();
+              if (nameLC.includes('floor') || nameLC.includes('ground') || nameLC.includes('tile')) {
+                child.userData.isFloor = true;
+              }
             }
+          });
+          scene.add(loadedModel);
+          if (threeRef.current) threeRef.current.loadedModel = loadedModel;
+          setLoading3D(false);
+        },
+        undefined,
+        () => { setLoading3D(false); }
+      );
+    } else {
+      loadedModel = proceduralGroup;
+      // Procedural scene compiler
+      if (!isInterior) {
+        const configFloors = localLayout?.floorsConfig || [];
+        const numFloors = configFloors.length || 10;
+        for (let fNum = 0; fNum < numFloors; fNum++) {
+          const fOffset = fNum * 3.2;
+          const fLayout = getLayoutForFloor(localLayout, fNum);
+          
+          try {
+            const compiler = new SceneCompiler({
+              structureJson: fLayout,
+              wallHeight: 3.0,
+              wallThickness: 0.15,
+              floorElevation: fOffset,
+            });
+            const compiledGroup = compiler.compile();
+            proceduralGroup.add(compiledGroup);
+          } catch (err) {
+            console.error(`Error compiling floor ${fNum} scene:`, err);
           }
-        });
-        scene.add(loadedModel);
-        if (threeRef.current) threeRef.current.loadedModel = loadedModel;
+        }
+        scene.add(proceduralGroup);
+        if (threeRef.current) threeRef.current.loadedModel = proceduralGroup;
         setLoading3D(false);
-      },
-      undefined,
-      () => { setLoading3D(false); } // model missing – still show scene
-    );
+      } else {
+        try {
+          const compiler = new SceneCompiler({
+            structureJson: floorLayout,
+            wallHeight: 3.0,
+            wallThickness: 0.15,
+            floorElevation: floorOffset,
+          });
+          const compiledGroup = compiler.compile();
+          proceduralGroup.add(compiledGroup);
+        } catch (err) {
+          console.error('Error compiling walkthrough scene:', err);
+        }
+
+        // Add walkable nodes
+        if (floorLayout?.rooms) {
+          floorLayout.rooms.forEach((r: any) => {
+            if (!r.node) return;
+            const nodeGeo = new THREE.RingGeometry(0.3, 0.4, 32);
+            nodeGeo.rotateX(-Math.PI / 2);
+            const nodeMat = new THREE.MeshBasicMaterial({
+              color: 0x00f5d4,
+              transparent: true,
+              opacity: 0.8,
+              side: THREE.DoubleSide
+            });
+            const nodeMesh = new THREE.Mesh(nodeGeo, nodeMat);
+            nodeMesh.name = `node_${r.id}`;
+            nodeMesh.position.set(r.node.x, 0.05 + floorOffset, r.node.z);
+            proceduralGroup.add(nodeMesh);
+          });
+        }
+
+        scene.add(proceduralGroup);
+        if (threeRef.current) threeRef.current.loadedModel = proceduralGroup;
+        setLoading3D(false);
+      }
+    }
 
     // ── Click vs Drag detection ───────────────────────────────────────
     // We track where mousedown started. Only if the mouse barely moved
@@ -371,34 +572,6 @@ export default function WalkthroughsPage() {
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(mouse, camera);
 
-      if (isInterior && !isPlacingHotspot) {
-        // Clean click on floor → GSAP teleport
-        const floorMeshes: THREE.Mesh[] = [];
-        scene.traverse(o => { if (o instanceof THREE.Mesh && o.userData.isFloor) floorMeshes.push(o); });
-        const hits = raycaster.intersectObjects(floorMeshes, false);
-        if (hits.length > 0) {
-          const pt = hits[0].point;
-          const lookDir = new THREE.Vector3();
-          camera.getWorldDirection(lookDir);
-          lookDir.y = 0; lookDir.normalize();
-          const destPos = new THREE.Vector3(pt.x, 1.6, pt.z);
-          const destLook = destPos.clone().add(lookDir.multiplyScalar(0.05));
-          controls.enabled = false;
-          gsap.to(camera.position, { x: destPos.x, y: destPos.y, z: destPos.z, duration: 1.4, ease: 'power2.inOut' });
-          gsap.to(controls.target, {
-            x: destLook.x, y: destLook.y, z: destLook.z, duration: 1.4, ease: 'power2.inOut',
-            onComplete: () => {
-              controls.enabled = true;
-              controls.enableZoom = false;
-              controls.enablePan = false;
-              controls.minDistance = 0.01;
-              controls.maxDistance = 0.1;
-            },
-          });
-          return;
-        }
-      }
-
       if (isPlacingHotspot) {
         const intersects = raycaster.intersectObjects(scene.children, true);
         if (intersects.length > 0) {
@@ -407,6 +580,96 @@ export default function WalkthroughsPage() {
           setHotspotName(''); setHotspotDesc(''); setHotspotLink('');
           setShowHotspotDrawer(true);
           setIsPlacingHotspot(false);
+        }
+        return;
+      }
+
+      // Selection & Teleportation
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      if (intersects.length > 0) {
+        // Find if we hit a wall first
+        const wallHit = intersects.find(h => h.object.userData?.type === 'wall');
+        const floorHit = intersects.find(h => h.object.userData?.isFloor || h.object.userData?.type === 'floor');
+        
+        const wallDist = wallHit ? wallHit.distance : Infinity;
+        const floorDist = floorHit ? floorHit.distance : Infinity;
+
+        if (wallHit && wallDist < floorDist) {
+          const wallData = wallHit.object.userData;
+          const parentFloorLayout = getLayoutForFloor(localLayout, 0);
+          const apCount = (parentFloorLayout?.apertures || []).filter((ap: any) => ap.wallId === wallData.wallId).length;
+          
+          setSelectedWall({
+            wallId: wallData.wallId,
+            length: wallData.length,
+            thickness: wallData.thickness,
+            height: wallData.height,
+            aperturesCount: apCount
+          });
+          setSelectedRoom(null);
+          return;
+        }
+
+        if (floorHit) {
+          const roomData = floorHit.object.userData;
+          if (roomData && roomData.roomId) {
+            setSelectedRoom({
+              id: roomData.roomId,
+              name: roomData.name || 'Unnamed Room',
+              width: roomData.width || 0,
+              depth: roomData.depth || 0,
+              areaSqFt: roomData.areaSqFt || Math.round((roomData.width * roomData.depth * 10.7639 * 10) / 10) || 0,
+              color: roomData.color || '#cbd5e1',
+              flatId: roomData.flatId || 'Standard Unit'
+            });
+            setSelectedWall(null);
+
+            // Animate floor mesh color using GSAP!
+            const mesh = floorHit.object as THREE.Mesh;
+            if (mesh.material && 'color' in mesh.material) {
+              const origColor = (mesh.material as any).color.clone();
+              const highlightColor = new THREE.Color(0x00f5d4);
+              
+              gsap.to((mesh.material as any).color, {
+                r: highlightColor.r,
+                g: highlightColor.g,
+                b: highlightColor.b,
+                duration: 0.3,
+                yoyo: true,
+                repeat: 1,
+                onComplete: () => {
+                  gsap.to((mesh.material as any).color, {
+                    r: origColor.r,
+                    g: origColor.g,
+                    b: origColor.b,
+                    duration: 0.5
+                  });
+                }
+              });
+            }
+          }
+
+          if (isInterior) {
+            const pt = floorHit.point;
+            const lookDir = new THREE.Vector3();
+            camera.getWorldDirection(lookDir);
+            lookDir.y = 0; lookDir.normalize();
+            const destPos = new THREE.Vector3(pt.x, 1.6, pt.z);
+            const destLook = destPos.clone().add(lookDir.multiplyScalar(0.05));
+            controls.enabled = false;
+            gsap.to(camera.position, { x: destPos.x, y: destPos.y, z: destPos.z, duration: 1.4, ease: 'power2.inOut' });
+            gsap.to(controls.target, {
+              x: destLook.x, y: destLook.y, z: destLook.z, duration: 1.4, ease: 'power2.inOut',
+              onComplete: () => {
+                controls.enabled = true;
+                controls.enableZoom = false;
+                controls.enablePan = false;
+                controls.minDistance = 0.01;
+                controls.maxDistance = 0.1;
+              },
+            });
+          }
+          return;
         }
       }
     };
@@ -558,7 +821,7 @@ export default function WalkthroughsPage() {
     };
 
     return cleanup;
-  }, [selectedModel, isPlacingHotspot]);
+  }, [selectedModel, isPlacingHotspot, localLayout]);
 
   // Sync Hotspot Pins in the 3D canvas
   useEffect(() => {
@@ -867,6 +1130,35 @@ export default function WalkthroughsPage() {
     });
   };
 
+  const resetCamera = () => {
+    if (!threeRef.current || !selectedModel) return;
+    const { camera, controls } = threeRef.current;
+    const isInterior = selectedModel.modelType === 'interior';
+    
+    controls.enabled = false;
+    if (isInterior) {
+      gsap.to(camera.position, { x: 0, y: 1.6, z: 5.0, duration: 1.5, ease: 'power2.inOut' });
+      gsap.to(controls.target, {
+        x: 0, y: 1.6, z: 5.05,
+        duration: 1.5,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          controls.enabled = true;
+        }
+      });
+    } else {
+      gsap.to(camera.position, { x: 0, y: 35, z: 35, duration: 1.5, ease: 'power2.inOut' });
+      gsap.to(controls.target, {
+        x: 0, y: 10, z: 0,
+        duration: 1.5,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          controls.enabled = true;
+        }
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -972,6 +1264,13 @@ export default function WalkthroughsPage() {
                   <Icon icon="solar:camera-bold" className="text-sm" />
                   <span>Capture View</span>
                 </button>
+                <button
+                  onClick={resetCamera}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-bold bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <Icon icon="solar:refresh-circle-bold" className="text-sm" />
+                  <span>Reset Camera</span>
+                </button>
               </div>
             )}
           </div>
@@ -987,6 +1286,16 @@ export default function WalkthroughsPage() {
                   <Icon icon="eos-icons:loading" className={`text-3xl animate-spin ${selectedModel.modelType === 'interior' ? 'text-[#00f5d4]' : 'text-indigo-600'}`} />
                   <p className={`text-[10px] font-black uppercase tracking-widest ${selectedModel.modelType === 'interior' ? 'text-[#00f5d4]' : 'text-gray-400'}`}>
                     {selectedModel.modelType === 'interior' ? 'Initialising walkthrough environment...' : 'Loading 3D asset scene...'}
+                  </p>
+                </div>
+              )}
+
+              {/* Error overlay */}
+              {structureFetchError && (
+                <div className="absolute inset-0 flex flex-col justify-center items-center gap-3 bg-[#0c0f16]/90 text-center px-6 z-20">
+                  <Icon icon="solar:info-circle-bold-duotone" className="text-4xl text-red-400" />
+                  <p className="text-sm font-bold text-white max-w-sm">
+                    {structureFetchError}
                   </p>
                 </div>
               )}
@@ -1035,6 +1344,64 @@ export default function WalkthroughsPage() {
 
         {/* Right: Asset Managers (3 Cols) */}
         <div className="lg:col-span-3 space-y-6 flex flex-col">
+          {/* Section: Room & Wall Inspector */}
+          {(selectedRoom || selectedWall) && (
+            <div className="bg-white p-5 rounded-2xl border border-indigo-100 shadow-md flex flex-col gap-4 animate-fadeIn">
+              <div className="flex justify-between items-center border-b border-gray-150 pb-2">
+                <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Inspector</h3>
+                <button
+                  onClick={() => { setSelectedRoom(null); setSelectedWall(null); }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <Icon icon="solar:close-circle-bold" className="text-base" />
+                </button>
+              </div>
+
+              {selectedRoom && (
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedRoom.color || '#cbd5e1' }} />
+                    <p className="font-bold text-gray-900 text-sm">{selectedRoom.name}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-gray-50 text-gray-500">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider text-gray-400">Dimensions</p>
+                      <p className="font-bold text-gray-800">{selectedRoom.width}m × {selectedRoom.depth}m</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider text-gray-400">Area</p>
+                      <p className="font-bold text-gray-800">{selectedRoom.areaSqFt} sq. ft.</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-[9px] uppercase tracking-wider text-gray-400">Type / Flat</p>
+                      <p className="font-bold text-gray-800 capitalize">{selectedRoom.flatId || 'Standard Unit'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedWall && (
+                <div className="space-y-2 text-xs">
+                  <p className="font-bold text-gray-900 text-sm">Wall: {selectedWall.wallId}</p>
+                  <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-gray-50 text-gray-500">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider text-gray-400">Length</p>
+                      <p className="font-bold text-gray-800">{selectedWall.length.toFixed(2)}m</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider text-gray-400">Thickness</p>
+                      <p className="font-bold text-gray-800">{selectedWall.thickness.toFixed(2)}m</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-[9px] uppercase tracking-wider text-gray-400">Apertures Count</p>
+                      <p className="font-bold text-gray-800">{selectedWall.aperturesCount}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Section A: Hotspots */}
           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex-1 flex flex-col justify-between min-h-[260px]">
             <div>

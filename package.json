@@ -15,6 +15,7 @@
     "dev:all": "concurrently \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:admin\" \"npm run dev:builder\" \"npm run dev:ai\""
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "playwright": "^1.60.0"
   }
 }

@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { SceneCompiler } from '@/components/scene-compiler/SceneCompiler';
+import { AmenityFactory } from '@/components/scene-compiler/AmenityFactory';
 
 interface Project {
   id: string;
@@ -125,6 +126,36 @@ const getLayoutForFloor = (layout: any, floorIndex: number): any => {
   return defaultLayoutData;
 };
 
+const createRoomLabelSprite = (text: string): THREE.Sprite => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+  
+  // Base rounded rectangle
+  ctx.fillStyle = 'rgba(12, 15, 22, 0.85)';
+  ctx.roundRect ? ctx.roundRect(0, 0, 256, 64, 12) : ctx.rect(0, 0, 256, 64);
+  ctx.fill();
+  
+  // Neon cyan border
+  ctx.strokeStyle = '#00f5d4';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Text content
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 32);
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(2.0, 0.5, 1.0);
+  return sprite;
+};
+
 export default function WalkthroughsPage() {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
@@ -144,6 +175,8 @@ export default function WalkthroughsPage() {
   const [structureFetchError, setStructureFetchError] = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<any | null>(null);
   const [selectedWall, setSelectedWall] = useState<any | null>(null);
+  const [selectedAmenity, setSelectedAmenity] = useState<any | null>(null);
+  const [amenitiesList, setAmenitiesList] = useState<any[]>([]);
   
   // Modals / Overlays
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -207,6 +240,25 @@ export default function WalkthroughsPage() {
       })
       .catch((err) => console.error('Error fetching projects:', err));
   }, [token, tenantId]);
+
+  // Fetch amenities list for selectedProject
+  useEffect(() => {
+    if (!selectedProjectId || !token || !tenantId) return;
+
+    fetch(`http://localhost:3001/projects/${selectedProjectId}/amenities`, {
+      headers: {
+        'x-tenant-id': tenantId,
+        'Authorization': `Bearer ${token}`
+      },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setAmenitiesList(data);
+        }
+      })
+      .catch((err) => console.error('Error fetching project amenities:', err));
+  }, [selectedProjectId, token, tenantId]);
 
   // Fetch LayoutData and structureJson dynamically for the project
   useEffect(() => {
@@ -503,6 +555,58 @@ export default function WalkthroughsPage() {
             console.error(`Error compiling floor ${fNum} scene:`, err);
           }
         }
+
+        // Render Amenities in 3D Site View
+        if (amenitiesList && amenitiesList.length > 0) {
+          amenitiesList.forEach((amenity: any) => {
+            try {
+              const amenityGroup = AmenityFactory.create(amenity.type);
+              const ax = Number(amenity.x);
+              const az = Number(amenity.z);
+              amenityGroup.position.set(ax, 0.05, az);
+              
+              const rotDeg = Number(amenity.rotation || 0);
+              amenityGroup.rotation.y = (rotDeg * Math.PI) / 180;
+              
+              const metadata = {
+                id: amenity.id,
+                type: 'amenity',
+                amenityType: amenity.type,
+                label: amenity.label,
+                description: amenity.description || '',
+                timings: amenity.timings || '',
+                imageUrl: amenity.imageUrl || '',
+                x: ax,
+                z: az,
+              };
+              amenityGroup.userData = metadata;
+              
+              amenityGroup.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                  child.userData = metadata;
+                }
+              });
+
+              // Floating label sprite above the amenity
+              const labelSprite = createRoomLabelSprite(amenity.label);
+              labelSprite.name = `amenity_label_${amenity.id}`;
+              let labelHeight = 1.2;
+              if (amenity.type === 'gym') labelHeight = 3.8;
+              else if (amenity.type === 'clubhouse') labelHeight = 5.2;
+              else if (amenity.type === 'kids_play_area') labelHeight = 2.4;
+              else if (amenity.type === 'garden') labelHeight = 2.8;
+              
+              labelSprite.position.set(ax, labelHeight, az);
+              labelSprite.userData = metadata;
+              proceduralGroup.add(labelSprite);
+              
+              proceduralGroup.add(amenityGroup);
+            } catch (err) {
+              console.error('Error rendering amenity in 3D:', err);
+            }
+          });
+        }
+
         scene.add(proceduralGroup);
         if (threeRef.current) threeRef.current.loadedModel = proceduralGroup;
         setLoading3D(false);
@@ -587,6 +691,16 @@ export default function WalkthroughsPage() {
       // Selection & Teleportation
       const intersects = raycaster.intersectObjects(scene.children, true);
       if (intersects.length > 0) {
+        // 0. Check if we clicked an amenity mesh
+        const amenityHit = intersects.find(h => h.object.userData?.type === 'amenity');
+        if (amenityHit) {
+          const amenityData = amenityHit.object.userData;
+          setSelectedAmenity(amenityData);
+          setSelectedRoom(null);
+          setSelectedWall(null);
+          return;
+        }
+
         // Find if we hit a wall first
         const wallHit = intersects.find(h => h.object.userData?.type === 'wall');
         const floorHit = intersects.find(h => h.object.userData?.isFloor || h.object.userData?.type === 'floor');
@@ -821,7 +935,7 @@ export default function WalkthroughsPage() {
     };
 
     return cleanup;
-  }, [selectedModel, isPlacingHotspot, localLayout]);
+  }, [selectedModel, isPlacingHotspot, localLayout, amenitiesList]);
 
   // Sync Hotspot Pins in the 3D canvas
   useEffect(() => {
@@ -1130,6 +1244,22 @@ export default function WalkthroughsPage() {
     });
   };
 
+  const handleSiteView = () => {
+    if (!threeRef.current) return;
+    const { camera, controls } = threeRef.current;
+    
+    controls.enabled = false;
+    gsap.to(camera.position, { x: 0, y: 45, z: 65, duration: 1.8, ease: 'power2.inOut' });
+    gsap.to(controls.target, {
+      x: 0, y: 0, z: 0,
+      duration: 1.8,
+      ease: 'power2.inOut',
+      onComplete: () => {
+        controls.enabled = true;
+      }
+    });
+  };
+
   const resetCamera = () => {
     if (!threeRef.current || !selectedModel) return;
     const { camera, controls } = threeRef.current;
@@ -1271,6 +1401,15 @@ export default function WalkthroughsPage() {
                   <Icon icon="solar:refresh-circle-bold" className="text-sm" />
                   <span>Reset Camera</span>
                 </button>
+                {selectedModel && selectedModel.modelType !== 'interior' && (
+                  <button
+                    onClick={handleSiteView}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-bold bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <Icon icon="solar:globus-bold-duotone" className="text-sm text-[#00f5d4]" />
+                    <span>Site View</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -1345,12 +1484,12 @@ export default function WalkthroughsPage() {
         {/* Right: Asset Managers (3 Cols) */}
         <div className="lg:col-span-3 space-y-6 flex flex-col">
           {/* Section: Room & Wall Inspector */}
-          {(selectedRoom || selectedWall) && (
+          {(selectedRoom || selectedWall || selectedAmenity) && (
             <div className="bg-white p-5 rounded-2xl border border-indigo-100 shadow-md flex flex-col gap-4 animate-fadeIn">
               <div className="flex justify-between items-center border-b border-gray-150 pb-2">
                 <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Inspector</h3>
                 <button
-                  onClick={() => { setSelectedRoom(null); setSelectedWall(null); }}
+                  onClick={() => { setSelectedRoom(null); setSelectedWall(null); setSelectedAmenity(null); }}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <Icon icon="solar:close-circle-bold" className="text-base" />
@@ -1396,6 +1535,30 @@ export default function WalkthroughsPage() {
                       <p className="text-[9px] uppercase tracking-wider text-gray-400">Apertures Count</p>
                       <p className="font-bold text-gray-800">{selectedWall.aperturesCount}</p>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedAmenity && (
+                <div className="space-y-4 text-xs font-semibold text-gray-500">
+                  <div className="flex items-center gap-2">
+                    <Icon icon="solar:globus-bold-duotone" className="text-lg text-indigo-600" />
+                    <p className="font-bold text-gray-900 text-sm">{selectedAmenity.label}</p>
+                  </div>
+                  <div className="space-y-3 pt-2 border-t border-gray-50 text-gray-500">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider text-gray-400">Timings</p>
+                      <p className="font-bold text-gray-800">{selectedAmenity.timings || 'Open 24 Hours'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] uppercase tracking-wider text-gray-400">Description</p>
+                      <p className="font-medium text-gray-600 leading-relaxed mt-0.5">{selectedAmenity.description || 'Enjoy premium spatial utility.'}</p>
+                    </div>
+                    {selectedAmenity.imageUrl && (
+                      <div className="rounded-xl overflow-hidden aspect-video border border-gray-100 bg-gray-50">
+                        <img src={selectedAmenity.imageUrl} alt={selectedAmenity.label} className="w-full h-full object-cover" />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

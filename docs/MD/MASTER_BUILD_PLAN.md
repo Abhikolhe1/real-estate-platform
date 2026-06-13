@@ -24,9 +24,9 @@
 | 2 | Procedural 3D Renderer (JSON → Three.js) | ✅ Completed | 7 |
 | 3 | Multi-Floor & Tower System | ✅ Completed | 4 |
 | 4 | Building Exterior Generation | ✅ Completed | 3 |
-| 5 | Walkthrough — First-Person Camera | ⬜ Not Started | 4 |
-| 6 | Inventory System — Live Unit Status in 3D | ⬜ Not Started | 4 |
-| 7 | Amenities 3D Module | ⬜ Not Started | 4 |
+| 5 | Walkthrough — First-Person Camera | ✅ Completed | 4 |
+| 6 | Inventory System — Live Unit Status in 3D | ✅ Completed | 4 |
+| 7 | Amenities 3D Module | ✅ Completed | 4 |
 | 8 | Multi-Tenant Subdomain Routing | ⬜ Not Started | 3 |
 | 9 | Website Section Builder | ⬜ Not Started | 6 |
 | 10 | CRM & Buyer Journey Analytics | ⬜ Not Started | 4 |
@@ -337,44 +337,44 @@
 
 ### 5.1 — PointerLock First-Person Controller
 
-- [ ] **5.1.1** Import `PointerLockControls` from `three/examples/jsm/controls/PointerLockControls`.
-- [ ] **5.1.2** On entering walkthrough mode: call `controls.lock()` to capture the pointer.
-- [ ] **5.1.3** Show an overlay instruction: "Click to start walking · WASD to move · Mouse to look · ESC to exit".
-- [ ] **5.1.4** Keyboard controls: W/S = forward/backward, A/D = strafe left/right.
-- [ ] **5.1.5** Set camera height to `1.65m` (average eye level).
-- [ ] **5.1.6** Movement speed: 2m/s walking, 4m/s when Shift is held (running).
-- [ ] **5.1.7** On `Escape`: release pointer lock, return to orbit camera mode.
+- [x] **5.1.1** Import `PointerLockControls` from `three/examples/jsm/controls/PointerLockControls`.
+- [x] **5.1.2** On entering walkthrough mode: call `controls.lock()` to capture the pointer.
+- [x] **5.1.3** Show an overlay instruction: "Click to start walking · WASD to move · Mouse to look · ESC to exit".
+- [x] **5.1.4** Keyboard controls: W/S = forward/backward, A/D = strafe left/right.
+- [x] **5.1.5** Set camera height to `1.65m` (average eye level).
+- [x] **5.1.6** Movement speed: 2m/s walking, 4m/s when Shift is held (running).
+- [x] **5.1.7** On `Escape`: release pointer lock, return to orbit camera mode.
 
 ### 5.2 — Collision Detection
 
-- [ ] **5.2.1** Collect all wall meshes into a `collisionObjects[]` array.
-- [ ] **5.2.2** On each frame, cast 4 horizontal rays from the camera position in the 4 movement directions (forward, back, left, right) — ray length = 0.4m (body radius).
-- [ ] **5.2.3** If any ray hits a wall mesh: prevent movement in that direction.
-- [ ] **5.2.4** Cast 1 downward ray (length = 2m) to keep the camera on the floor — prevents falling through gaps.
-- [ ] **5.2.5** Cast 1 upward ray (length = 0.5m) to prevent camera clipping through ceiling.
+- [x] **5.2.1** Collect all wall meshes into a `collisionObjects[]` array.
+- [x] **5.2.2** On each frame, cast 4 horizontal rays from the camera position in the 4 movement directions (forward, back, left, right) — ray length = 0.4m (body radius).
+- [x] **5.2.3** If any ray hits a wall mesh: prevent movement in that direction.
+- [x] **5.2.4** Cast 1 downward ray (length = 2m) to keep the camera on the floor — prevents falling through gaps.
+- [x] **5.2.5** Cast 1 upward ray (length = 0.5m) to prevent camera clipping through ceiling.
 
 ### 5.3 — Teleport Points
 
-- [ ] **5.3.1** In walkthrough mode, show floating circular "teleport pads" at the center of each room (the `room.node` coordinates from the structure JSON).
-- [ ] **5.3.2** On clicking a teleport pad: smoothly animate the camera to that room's center position (using `TWEEN.js` lerp over 0.5 seconds).
-- [ ] **5.3.3** Teleport pads show the room name label above them (use `THREE.Sprite` with canvas-rendered text).
-- [ ] **5.3.4** In the builder dashboard, allow setting "custom camera points" at specific positions — saved as `CameraPoint` entities (entity already exists).
+- [x] **5.3.1** In walkthrough mode, show floating circular "teleport pads" at the center of each room (the `room.node` coordinates from the structure JSON).
+- [x] **5.3.2** On clicking a teleport pad: smoothly animate the camera to that room's center position (using `TWEEN.js` lerp over 0.5 seconds).
+- [x] **5.3.3** Teleport pads show the room name label above them (use `THREE.Sprite` with canvas-rendered text).
+- [x] **5.3.4** In the builder dashboard, allow setting "custom camera points" at specific positions — saved as `CameraPoint` entities (entity already exists).
 
 ### 5.4 — Mobile Touch Walkthrough
 
-- [ ] **5.4.1** Detect mobile (`navigator.maxTouchPoints > 0`).
-- [ ] **5.4.2** On mobile: show an on-screen joystick (left side) for movement and a drag area (right side) for looking.
-- [ ] **5.4.3** Use `DeviceOrientationEvent` (gyroscope) for looking when permission is granted — feels most natural on mobile.
-- [ ] **5.4.4** Add a "Tap to walk forward" mode for simplest interaction: tap in front of you to move toward that point.
-- [ ] **5.4.5** Reduce shadow map resolution to `512x512` and disable post-processing on mobile for performance.
+- [x] **5.4.1** Detect mobile (`navigator.maxTouchPoints > 0`).
+- [x] **5.4.2** On mobile: show an on-screen joystick (left side) for movement and a drag area (right side) for looking.
+- [x] **5.4.3** Use `DeviceOrientationEvent` (gyroscope) for looking when permission is granted — feels most natural on mobile.
+- [x] **5.4.4** Add a "Tap to walk forward" mode for simplest interaction: tap in front of you to move toward that point.
+- [x] **5.4.5** Reduce shadow map resolution to `512x512` and disable post-processing on mobile for performance.
 
 ### 5.5 — Guided Tour Playback (Connect Existing UI)
 
-- [ ] **5.5.1** The tour player UI already exists. Wire it to the first-person camera: each `TourRoute` waypoint moves the camera to a `CameraPoint` position.
-- [ ] **5.5.2** Between waypoints: smoothly interpolate camera position and look direction (slerp for rotation).
-- [ ] **5.5.3** Each waypoint can have a dwell time (seconds to pause at that point) and an audio narration URL.
-- [ ] **5.5.4** Add a "Record Tour" mode in the builder dashboard: builder walks through the flat in first-person and clicks "Add Waypoint" at each interesting stop — saves `CameraPoint` automatically.
-- [ ] **5.5.5** Export tour as a shareable link that auto-plays on the buyer-facing website.
+- [x] **5.5.1** The tour player UI already exists. Wire it to the first-person camera: each `TourRoute` waypoint moves the camera to a `CameraPoint` position.
+- [x] **5.5.2** Between waypoints: smoothly interpolate camera position and look direction (slerp for rotation).
+- [x] **5.5.3** Each waypoint can have a dwell time (seconds to pause at that point) and an audio narration URL.
+- [x] **5.5.4** Add a "Record Tour" mode in the builder dashboard: builder walks through the flat in first-person and clicks "Add Waypoint" at each interesting stop — saves `CameraPoint` automatically.
+- [x] **5.5.5** Export tour as a shareable link that auto-plays on the buyer-facing website.
 
 **⬛ AUDIT CHECKPOINT 5:** Send me a screen recording of walking through a flat in first-person mode with collision detection working (camera doesn't pass through walls).
 
@@ -386,29 +386,29 @@
 
 ### 6.1 — Unit Status Color System
 
-- [ ] **6.1.1** Define a color scheme for unit status:
+- [x] **6.1.1** Define a color scheme for unit status:
   - Available: `#22c55e` (green)
   - Booked / Under Negotiation: `#f59e0b` (amber)
   - Sold: `#ef4444` (red)
   - Not Released / Locked: `#6b7280` (gray)
-- [ ] **6.1.2** In the 3D building exterior view: color each floor's flat sections using these colors. Create a flat-to-mesh mapping so each unit can be individually colored.
-- [ ] **6.1.3** For the floor plan walkthrough view: color the floor `PlaneGeometry` of each flat with its status color (at 30% opacity as a tint overlay).
-- [ ] **6.1.4** Status data comes from `GET /flats?projectId=X&towerId=Y` — fetch on viewer load and refresh every 60 seconds.
+- [x] **6.1.2** In the 3D building exterior view: color each floor's flat sections using these colors. Create a flat-to-mesh mapping so each unit can be individually colored.
+- [x] **6.1.3** For the floor plan walkthrough view: color the floor `PlaneGeometry` of each flat with its status color (at 30% opacity as a tint overlay).
+- [x] **6.1.4** Status data comes from `GET /flats?projectId=X&towerId=Y` — fetch on viewer load and refresh every 60 seconds.
 
 ### 6.2 — Inventory Filter Panel
 
-- [ ] **6.2.1** Add a collapsible filter panel (left drawer in the 3D viewer) with:
+- [x] **6.2.1** Add a collapsible filter panel (left drawer in the 3D viewer) with:
   - BHK Type: checkboxes for 1BHK, 2BHK, 3BHK, 4BHK, Penthouse.
   - Status: checkboxes for Available, Booked, Sold.
   - Floor Range: min/max slider.
   - Price Range: min/max slider (in ₹ lakhs / crores).
   - Facing: East, West, North, South.
-- [ ] **6.2.2** When filters are applied: unhighlighted flats fade to 10% opacity; matching flats pulse briefly in their status color.
-- [ ] **6.2.3** Show a count: "12 units match your criteria."
+- [x] **6.2.2** When filters are applied: unhighlighted flats fade to 10% opacity; matching flats pulse briefly in their status color.
+- [x] **6.2.3** Show a count: "12 units match your criteria."
 
 ### 6.3 — Flat Detail Card
 
-- [ ] **6.3.1** On clicking a flat in the 3D view: show a slide-in card with:
+- [x] **6.3.1** On clicking a flat in the 3D view: show a slide-in card with:
   - Flat number, tower name, floor.
   - BHK type, carpet area (sq.ft.), super built-up area.
   - Facing direction.
@@ -417,16 +417,16 @@
   - "View Flat" button → launches walkthrough of this flat's interior.
   - "Enquire" button → opens lead capture form.
   - "Add to Shortlist" button → saves to buyer's shortlist (stored in localStorage).
-- [ ] **6.3.2** Flat detail data comes from `GET /flats/:id` endpoint.
-- [ ] **6.3.3** In the builder dashboard, add an inventory table view (`inventory/page.tsx` — already exists) with bulk status update (select multiple flats → mark as Sold/Booked/Available).
+- [x] **6.3.2** Flat detail data comes from `GET /flats/:id` endpoint.
+- [x] **6.3.3** In the builder dashboard, add an inventory table view (`inventory/page.tsx` — already exists) with bulk status update (select multiple flats → mark as Sold/Booked/Available).
 
 ### 6.4 — 2D Floor Plan Mode
 
-- [ ] **6.4.1** Add a toggle "3D View / 2D Plan" in the viewer toolbar.
-- [ ] **6.4.2** 2D mode: switch the camera to top-down orthographic (`THREE.OrthographicCamera`), hide ceiling meshes, show door swing arcs.
-- [ ] **6.4.3** In 2D mode: flat boundaries are clearly visible as room outlines with the status color fill.
-- [ ] **6.4.4** 2D mode is especially useful for very large projects — no 3D performance cost.
-- [ ] **6.4.5** Allow panning and zooming in 2D mode using `MapControls` instead of `OrbitControls`.
+- [x] **6.4.1** Add a toggle "3D View / 2D Plan" in the viewer toolbar.
+- [x] **6.4.2** 2D mode: switch the camera to top-down orthographic (`THREE.OrthographicCamera`), hide ceiling meshes, show door swing arcs.
+- [x] **6.4.3** In 2D mode: flat boundaries are clearly visible as room outlines with the status color fill.
+- [x] **6.4.4** 2D mode is especially useful for very large projects — no 3D performance cost.
+- [x] **6.4.5** Allow panning and zooming in 2D mode using `MapControls` instead of `OrbitControls`.
 
 **⬛ AUDIT CHECKPOINT 6:** Send me a screenshot of the 3D building with some units colored green (available), amber (booked), red (sold), and a flat detail card visible on click.
 
@@ -440,8 +440,8 @@
 
 > All assets are built from Three.js primitives — no external GLB files needed.
 
-- [ ] **7.1.1** Create `AmenityFactory.ts` with a `create(type: AmenityType): THREE.Group` factory method.
-- [ ] **7.1.2** Implement these amenity types:
+- [x] **7.1.1** Create `AmenityFactory.ts` with a `create(type: AmenityType): THREE.Group` factory method.
+- [x] **7.1.2** Implement these amenity types:
   - `swimming_pool`: a large flat PlaneGeometry with blue water material + tile border edges + a few cylinder poolside lights.
   - `gym`: a room box with small cylinder/box "equipment" primitives inside.
   - `clubhouse`: a building box (smaller than the main tower) with pitched roof (pyramid geometry).
@@ -450,24 +450,24 @@
   - `kids_play_area`: colorful small box shapes (slide, swing frames using thin cylinders).
   - `jogging_track`: an oval/path shape using `THREE.TubeGeometry` along a CatmullRom curve.
   - `tennis_court`: a flat plane with court lines + net (thin BoxGeometry).
-- [ ] **7.1.3** Each amenity type has a default `footprint` (width × depth in meters) for placement purposes.
+- [x] **7.1.3** Each amenity type has a default `footprint` (width × depth in meters) for placement purposes.
 
 ### 7.2 — Site Plan Editor (2D Drag & Drop)
 
-- [ ] **7.2.1** In builder dashboard, add an "Amenities" tab with a 2D site plan editor.
-- [ ] **7.2.2** The site plan is a top-down canvas showing the building footprint as a gray rectangle.
-- [ ] **7.2.3** Builders drag amenity icons from a left panel and drop them onto the site plan at desired positions.
-- [ ] **7.2.4** Amenities snap to a 1m grid. Overlap detection prevents placing two amenities at the same location.
-- [ ] **7.2.5** Each placed amenity is saved as an `Amenity` entity: `{ type, x, z, rotation, label, description }`. Add this entity to the API if not already present.
-- [ ] **7.2.6** Save button: `POST /projects/:id/amenities` saves the full amenity layout.
+- [x] **7.2.1** In builder dashboard, add an "Amenities" tab with a 2D site plan editor.
+- [x] **7.2.2** The site plan is a top-down canvas showing the building footprint as a gray rectangle.
+- [x] **7.2.3** Builders drag amenity icons from a left panel and drop them onto the site plan at desired positions.
+- [x] **7.2.4** Amenities snap to a 1m grid. Overlap detection prevents placing two amenities at the same location.
+- [x] **7.2.5** Each placed amenity is saved as an `Amenity` entity: `{ type, x, z, rotation, label, description }`. Add this entity to the API if not already present.
+- [x] **7.2.6** Save button: `POST /projects/:id/amenities` saves the full amenity layout.
 
 ### 7.3 — Amenities in 3D Site View
 
-- [ ] **7.3.1** In the exterior 3D viewer, add a "Site View" camera mode: camera zooms out to show the entire site including the building + surrounding amenities.
-- [ ] **7.3.2** On loading, fetch `GET /projects/:id/amenities` and call `AmenityFactory.create()` for each, positioned at `(amenity.x, 0, amenity.z)`.
-- [ ] **7.3.3** Add amenity labels using `THREE.Sprite` floating above each amenity.
-- [ ] **7.3.4** Clicking an amenity: show an info card with name, description, image (if uploaded), timings.
-- [ ] **7.3.5** Amenity hotspots: reuse existing `Hotspot` entity — add hotspots of type `amenity` that can contain description + photo gallery.
+- [x] **7.3.1** In the exterior 3D viewer, add a "Site View" camera mode: camera zooms out to show the entire site including the building + surrounding amenities.
+- [x] **7.3.2** On loading, fetch `GET /projects/:id/amenities` and call `AmenityFactory.create()` for each, positioned at `(amenity.x, 0, amenity.z)`.
+- [x] **7.3.3** Add amenity labels using `THREE.Sprite` floating above each amenity.
+- [x] **7.3.4** Clicking an amenity: show an info card with name, description, image (if uploaded), timings.
+- [x] **7.3.5** Amenity hotspots: reuse existing `Hotspot` entity — add hotspots of type `amenity` that can contain description + photo gallery.
 
 **⬛ AUDIT CHECKPOINT 7:** Send me a screenshot of the site view showing the building + at least 3 amenities (pool, gym, garden) placed and visible in 3D.
 

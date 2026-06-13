@@ -57,7 +57,7 @@ class PDFProcessor:
 
         return default_scale
 
-    def detect_rooms_opencv(self, img_gray: np.ndarray, labels: List[Dict[str, Any]], meters_per_pixel: float) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]:
+    def detect_rooms_opencv(self, img_gray: np.ndarray, labels: List[Dict[str, Any]], meters_per_pixel: float) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
         """
         Uses OpenCV Canny edge detection, morph closing, and findContours to find room polygons.
         Returns (rooms, walls, apertures) in layout coordinates.

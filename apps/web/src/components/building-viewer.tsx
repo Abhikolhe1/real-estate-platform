@@ -5,7 +5,10 @@ import * as THREE from 'three';
 import { SceneCompiler } from './scene-compiler/SceneCompiler';
 import { TowerCompiler, TowerFloorInfo } from './scene-compiler/TowerCompiler';
 import { ExteriorGenerator } from './scene-compiler/ExteriorGenerator';
+import { AmenityFactory } from './scene-compiler/AmenityFactory';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
+import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 import { gsap } from 'gsap';
 import { Icon } from '@iconify/react';
 
@@ -796,6 +799,8 @@ interface CameraPoint {
   targetX: number;
   targetY: number;
   targetZ: number;
+  dwellSeconds?: number;
+  audioNarrationUrl?: string;
 }
 
 interface TourRoute {
@@ -848,6 +853,36 @@ const getFlatDbInfo = (flatId: string, floorFlats: any[]): any => {
   return matched;
 };
 
+const createRoomLabelSprite = (text: string): THREE.Sprite => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+  
+  // Base rounded rectangle
+  ctx.fillStyle = 'rgba(12, 15, 22, 0.85)';
+  ctx.roundRect ? ctx.roundRect(0, 0, 256, 64, 12) : ctx.rect(0, 0, 256, 64);
+  ctx.fill();
+  
+  // Neon cyan border
+  ctx.strokeStyle = '#00f5d4';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Text content
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 32);
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(2.0, 0.5, 1.0);
+  return sprite;
+};
+
 export default function BuildingViewer({
   activeFloor,
   setActiveFloor,
@@ -871,6 +906,35 @@ export default function BuildingViewer({
   // 2. Refs
   const containerRef = useRef<HTMLDivElement>(null);
   const minimapCanvasRef = useRef<HTMLCanvasElement>(null);
+  const tourTweenRef = useRef<any>(null);
+  const tourTimeoutRef = useRef<any>(null);
+  const tourAudioRef = useRef<HTMLAudioElement | null>(null);
+  const tourAutoplayStartedRef = useRef(false);
+
+  // Phase 6 Inventory and Filtering States
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [is2DMode, setIs2DMode] = useState(false);
+  const [flatsList, setFlatsList] = useState<any[]>([]);
+  const [filters, setFilters] = useState({
+    bhk: [] as string[],
+    status: [] as string[],
+    floorMin: 1,
+    floorMax: 20,
+    priceMin: 0,
+    priceMax: 100000000,
+    facing: [] as string[]
+  });
+  const [shortlist, setShortlist] = useState<string[]>([]);
+  const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+  const [leadForm, setLeadForm] = useState({ name: '', email: '', phone: '' });
+  const [leadSubmitting, setLeadSubmitting] = useState(false);
+  const [leadSuccess, setLeadSuccess] = useState(false);
+
+  // Phase 6 Cameras & Controls Refs
+  const perspCameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const orthoCameraRef = useRef<THREE.OrthographicCamera | null>(null);
+  const orbitControlsRef = useRef<OrbitControls | null>(null);
+  const mapControlsRef = useRef<MapControls | null>(null);
   
   // 3. Effects for state sync
   useEffect(() => {
@@ -897,6 +961,36 @@ export default function BuildingViewer({
   const [selectedFurnId, setSelectedFurnId] = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<any | null>(null);
   const [selectedWall, setSelectedWall] = useState<any | null>(null);
+  const [selectedAmenity, setSelectedAmenity] = useState<any | null>(null);
+  const [amenitiesList, setAmenitiesList] = useState<any[]>([]);
+
+  // First person / mobile / gyro states
+  const [isLocked, setIsLocked] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [gyroEnabled, setGyroEnabled] = useState(false);
+  
+  const walkRef = useRef({
+    w: false, a: false, s: false, d: false,
+    ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false,
+    shift: false
+  });
+  
+  const gyroRef = useRef({ alpha: 0, beta: 0, gamma: 0, hasData: false });
+  const gyroEnabledRef = useRef(false);
+  const joystickRef = useRef({ x: 0, y: 0 });
+  const lookTouchRef = useRef<{ x: number; y: number } | null>(null);
+  const [joystickActive, setJoystickActive] = useState(false);
+  const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    gyroEnabledRef.current = gyroEnabled;
+  }, [gyroEnabled]);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      setIsMobile(navigator.maxTouchPoints > 0);
+    }
+  }, []);
 
   // Tower and floor-specific state variables
   const [towerFloors, setTowerFloors] = useState<any[]>([]);
@@ -906,13 +1000,235 @@ export default function BuildingViewer({
   const [isolatedFloorId, setIsolatedFloorId] = useState<string | null>(null);
   const [selectedFlat, setSelectedFlat] = useState<any>(null);
 
+  // Phase 6 Shortlist Loader and Toggle Action
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('shortlistedFlats');
+      if (stored) {
+        try {
+          setShortlist(JSON.parse(stored));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  }, []);
+
+  const toggleShortlist = (flatId: string) => {
+    let updated: string[];
+    if (shortlist.includes(flatId)) {
+      updated = shortlist.filter(id => id !== flatId);
+    } else {
+      updated = [...shortlist, flatId];
+    }
+    setShortlist(updated);
+    localStorage.setItem('shortlistedFlats', JSON.stringify(updated));
+    trackEvent('flat_shortlist_toggle', { flatId, shortlisted: updated.includes(flatId) });
+  };
+
+  // Fetch flats list on selectedTower / tenantId change and setup 60s polling
+  useEffect(() => {
+    if (!selectedTower || !tenantId) return;
+    const fetchFlats = () => {
+      fetch(`http://localhost:3001/inventory/flats?towerId=${selectedTower.id}`, {
+        headers: { 'x-tenant-id': tenantId }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setFlatsList(data);
+          }
+        })
+        .catch(err => console.error("Error fetching flats list:", err));
+    };
+    fetchFlats();
+    const interval = setInterval(fetchFlats, 60000);
+    return () => clearInterval(interval);
+  }, [selectedTower, tenantId]);
+
+  // Check if flat matches active filters
+  const matchesFilter = useCallback((flat: any) => {
+    // BHK Type
+    if (filters.bhk.length > 0) {
+      const bhkType = flat.type || '2BHK';
+      const mappedBhk = bhkType.toUpperCase();
+      const match = filters.bhk.some(b => mappedBhk.includes(b.toUpperCase()));
+      if (!match) return false;
+    }
+
+    // Status
+    if (filters.status.length > 0) {
+      if (!filters.status.includes(flat.status)) return false;
+    }
+
+    // Floor Range
+    const floorNum = flat.floor?.floorNumber !== undefined ? Number(flat.floor.floorNumber) : (flat.floorNumber !== undefined ? Number(flat.floorNumber) : undefined);
+    if (floorNum !== undefined) {
+      if (floorNum < filters.floorMin || floorNum > filters.floorMax) return false;
+    }
+
+    // Price Range
+    if (flat.price !== undefined) {
+      const price = Number(flat.price);
+      if (price < filters.priceMin || price > filters.priceMax) return false;
+    }
+
+    // Facing
+    if (filters.facing.length > 0 && flat.orientation) {
+      const facingUpper = flat.orientation.toUpperCase();
+      const match = filters.facing.some(f => facingUpper.includes(f.toUpperCase()));
+      if (!match) return false;
+    }
+
+    return true;
+  }, [filters]);
+
+  // Apply colors & opacity settings to Three.js meshes
+  const applyInventoryColoring = useCallback(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    const hasBhkFilter = filters.bhk.length > 0;
+    const hasStatusFilter = filters.status.length > 0;
+    const hasFacingFilter = filters.facing.length > 0;
+    const hasFloorFilter = filters.floorMin > 1 || filters.floorMax < 20;
+    const hasPriceFilter = filters.priceMin > 0 || filters.priceMax < 100000000;
+    const filtersActive = hasBhkFilter || hasStatusFilter || hasFacingFilter || hasFloorFilter || hasPriceFilter;
+
+    scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        const userData = child.userData;
+        const type = userData?.type;
+        const flatId = userData?.flatId;
+
+        if (flatId) {
+          const flat = flatsList.find(f => f.flatNumber === String(flatId)) || getFlatDbInfo(String(flatId), flatsList);
+          if (flat) {
+            let isHighlighted = true;
+            if (filtersActive) {
+              isHighlighted = matchesFilter(flat);
+            }
+
+            if (!child.userData.hasClonedMaterial) {
+              child.material = child.material.clone();
+              child.userData.hasClonedMaterial = true;
+              child.userData.originalColor = (child.material as any).color?.clone();
+              child.userData.originalOpacity = (child.material as any).opacity;
+              child.userData.originalTransparent = (child.material as any).transparent;
+            }
+
+            const mat = child.material as any;
+            let colorHex = '#6b7280';
+            if (flat.status === 'AVAILABLE') colorHex = '#22c55e';
+            else if (flat.status === 'HOLD') colorHex = '#f59e0b';
+            else if (flat.status === 'BOOKED') colorHex = '#ef4444';
+
+            const targetColor = new THREE.Color(colorHex);
+
+            if (type === 'windowGlass') {
+              mat.color.copy(targetColor);
+              mat.transparent = true;
+              mat.opacity = isHighlighted ? 0.8 : 0.1;
+            } else if (type === 'balconySlab') {
+              mat.color.copy(targetColor);
+              mat.transparent = !isHighlighted;
+              mat.opacity = isHighlighted ? 1.0 : 0.1;
+            } else if (type === 'floor' || child.userData.isFloor) {
+              mat.color.copy(targetColor);
+              mat.transparent = true;
+              mat.opacity = isHighlighted ? 0.35 : 0.1;
+            }
+          }
+        }
+      }
+    });
+
+    if (filtersActive) {
+      scene.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.userData?.flatId) {
+          const flat = flatsList.find(f => f.flatNumber === String(child.userData.flatId)) || getFlatDbInfo(String(child.userData.flatId), flatsList);
+          if (flat && matchesFilter(flat)) {
+            const mat = child.material as any;
+            if (mat) {
+              const isFloor = child.userData?.type === 'floor' || child.userData.isFloor;
+              const targetOpacity = isFloor ? 0.35 : (child.userData.type === 'windowGlass' ? 0.8 : 1.0);
+              gsap.fromTo(mat, 
+                { opacity: 0.1 }, 
+                { 
+                  opacity: targetOpacity, 
+                  duration: 0.4, 
+                  repeat: 1, 
+                  yoyo: true, 
+                  ease: 'power2.inOut' 
+                }
+              );
+            }
+          }
+        }
+      });
+    }
+  }, [flatsList, filters, matchesFilter]);
+
+  // Run coloring on flats / filters / viewMode changes
+  useEffect(() => {
+    applyInventoryColoring();
+  }, [flatsList, filters, viewMode, applyInventoryColoring]);
+
+  // Dynamic Camera & Controls Swapping on is2DMode change
+  useEffect(() => {
+    if (is2DMode) {
+      cameraRef.current = orthoCameraRef.current as any;
+      controlsRef.current = mapControlsRef.current as any;
+      if (orbitControlsRef.current) orbitControlsRef.current.enabled = false;
+      if (mapControlsRef.current) mapControlsRef.current.enabled = true;
+    } else {
+      cameraRef.current = perspCameraRef.current as any;
+      controlsRef.current = orbitControlsRef.current as any;
+      if (mapControlsRef.current) mapControlsRef.current.enabled = false;
+      if (orbitControlsRef.current) orbitControlsRef.current.enabled = true;
+    }
+
+    const scene = sceneRef.current;
+    if (scene) {
+      scene.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          if (child.userData?.type === 'ceiling' || child.name.includes('ceiling')) {
+            child.visible = !is2DMode;
+          }
+        }
+      });
+    }
+  }, [is2DMode]);
+
+  const toggle2DMode = () => {
+    const next2D = !is2DMode;
+    setIs2DMode(next2D);
+    trackEvent('toggle_2d_mode', { is2DMode: next2D });
+
+    if (next2D) {
+      if (orthoCameraRef.current && mapControlsRef.current) {
+        orthoCameraRef.current.position.set(0, 100, 0);
+        mapControlsRef.current.target.set(0, 0, 0);
+        mapControlsRef.current.update();
+      }
+    } else {
+      if (perspCameraRef.current && orbitControlsRef.current) {
+        perspCameraRef.current.position.set(40, 25, 45);
+        orbitControlsRef.current.target.set(0, 16, 0);
+        orbitControlsRef.current.update();
+      }
+    }
+  };
+
   const [showExteriorBuilding, setShowExteriorBuilding] = useState(true);
   const [projectData, setProjectData] = useState<any>(null);
 
   // Fetch project details for exterior configuration
   useEffect(() => {
-    if (!projectId || !tenantId) return;
-    fetch(`http://localhost:3001/projects/${projectId}`, {
+    const activeProjId = projectId || activeModel?.projectId || selectedTower?.projectId || towersList[0]?.projectId;
+    if (!activeProjId || !tenantId) return;
+    
+    fetch(`http://localhost:3001/projects/${activeProjId}`, {
       headers: { 'x-tenant-id': tenantId },
     })
       .then(r => r.json())
@@ -920,7 +1236,24 @@ export default function BuildingViewer({
         setProjectData(data);
       })
       .catch(err => console.error('Error fetching project details:', err));
-  }, [projectId, tenantId]);
+  }, [projectId, activeModel?.projectId, selectedTower?.projectId, towersList, tenantId]);
+
+  // Fetch project amenities dynamically
+  useEffect(() => {
+    const activeProjId = projectId || activeModel?.projectId || selectedTower?.projectId || towersList[0]?.projectId;
+    if (!activeProjId || !tenantId) return;
+    
+    fetch(`http://localhost:3001/projects/${activeProjId}/amenities`, {
+      headers: { 'x-tenant-id': tenantId },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setAmenitiesList(data);
+        }
+      })
+      .catch(err => console.error('Error fetching amenities:', err));
+  }, [projectId, activeModel?.projectId, selectedTower?.projectId, towersList, tenantId]);
 
   // Fetch towers first
   useEffect(() => {
@@ -1077,9 +1410,10 @@ export default function BuildingViewer({
 
   // Keep WebGL refs accessible across animation updates
   const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const cameraRef = useRef<THREE.Camera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const controlsRef = useRef<OrbitControls | null>(null);
+  const controlsRef = useRef<any>(null);
+  const pointerControlsRef = useRef<PointerLockControls | null>(null);
   const loadedModelRef = useRef<THREE.Group | null>(null);
   const originalMaterials = useRef<Map<string, THREE.Material>>(new Map());
   const highlightMaterial = useRef<THREE.MeshStandardMaterial | null>(null);
@@ -1087,6 +1421,26 @@ export default function BuildingViewer({
   // Dynamic navigation refs
   const targetCameraPosRef = useRef<THREE.Vector3>(new THREE.Vector3());
   const targetControlsTargetRef = useRef<THREE.Vector3>(new THREE.Vector3());
+
+  // Gyroscope orientation listener effect
+  useEffect(() => {
+    if (!gyroEnabled) {
+      gyroRef.current.hasData = false;
+      return;
+    }
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      if (e.alpha !== null && e.beta !== null) {
+        gyroRef.current = {
+          alpha: e.alpha,
+          beta: e.beta,
+          gamma: e.gamma ?? 0,
+          hasData: true,
+        };
+      }
+    };
+    window.addEventListener('deviceorientation', handleOrientation);
+    return () => window.removeEventListener('deviceorientation', handleOrientation);
+  }, [gyroEnabled]);
 
   // Event telemetry logging
   const trackEvent = (eventName: string, eventData: any = {}) => {
@@ -1307,26 +1661,75 @@ export default function BuildingViewer({
     sceneRef.current = scene;
     scene.background = new THREE.Color(0x0c0f16);
 
-    // 2. Camera
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    // 2. Perspective Camera
+    const perspCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    perspCameraRef.current = perspCamera;
+
+    // 2b. Orthographic Camera for 2D mode
+    const aspect = width / height;
+    const d = 15;
+    const orthoCamera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 1000);
+    orthoCamera.position.set(0, 100, 0); // Top-down look down
+    orthoCamera.lookAt(0, 0, 0);
+    orthoCameraRef.current = orthoCamera;
+
+    // Initial active camera
+    const camera = is2DMode ? orthoCamera : perspCamera;
     cameraRef.current = camera;
 
+    const isMobileDevice = navigator.maxTouchPoints > 0;
     // 3. Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = !isMobileDevice;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // 4. Controls
-    const controls = new OrbitControls(camera, renderer.domElement);
+    // 4. Orbit Controls (Perspective)
+    const orbitControls = new OrbitControls(perspCamera, renderer.domElement);
+    orbitControls.enableDamping = true;
+    orbitControls.dampingFactor = 0.05;
+    orbitControlsRef.current = orbitControls;
+
+    // 4b. Map Controls (Orthographic)
+    const mapControls = new MapControls(orthoCamera, renderer.domElement);
+    mapControls.enableDamping = true;
+    mapControls.dampingFactor = 0.05;
+    mapControls.screenSpacePanning = false; // pan X-Z
+    mapControls.maxPolarAngle = 0;
+    mapControls.minPolarAngle = 0;
+    mapControls.enableRotate = false;
+    mapControlsRef.current = mapControls;
+
+    // Initial active controls
+    const controls = is2DMode ? mapControls : orbitControls;
     controlsRef.current = controls;
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
+
+    orbitControls.enabled = !is2DMode;
+    mapControls.enabled = is2DMode;
+
+    // ── Pointer Lock Controls Setup ───────────────────────────────────
+    const pointerControls = new PointerLockControls(perspCamera, renderer.domElement);
+    pointerControlsRef.current = pointerControls;
+    scene.add(pointerControls.object);
+
+    pointerControls.addEventListener('lock', () => {
+      controls.enabled = false;
+      setIsLocked(true);
+    });
+
+    pointerControls.addEventListener('unlock', () => {
+      setIsLocked(false);
+      controls.enabled = true;
+      
+      const lookDir = new THREE.Vector3();
+      camera.getWorldDirection(lookDir);
+      controls.target.copy(camera.position).add(lookDir.multiplyScalar(0.05));
+    });
 
     // 5. Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
@@ -1334,9 +1737,9 @@ export default function BuildingViewer({
 
     const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.25);
     dirLight1.position.set(25, 40, 15);
-    dirLight1.castShadow = true;
-    dirLight1.shadow.mapSize.width = 1024;
-    dirLight1.shadow.mapSize.height = 1024;
+    dirLight1.castShadow = !isMobileDevice;
+    dirLight1.shadow.mapSize.width = isMobileDevice ? 512 : 1024;
+    dirLight1.shadow.mapSize.height = isMobileDevice ? 512 : 1024;
     scene.add(dirLight1);
 
     const dirLight2 = new THREE.DirectionalLight(0x00f5d4, 0.4); // Neon cyan fill light
@@ -1393,26 +1796,26 @@ export default function BuildingViewer({
     };
 
     if (viewMode === 'building') {
-      camera.fov = 45;
-      camera.updateProjectionMatrix();
-      camera.position.set(40, 25, 45);
-      controls.target.set(0, 16, 0);
-      controls.maxPolarAngle = Math.PI / 2 - 0.02;
-      controls.minDistance = 15;
-      controls.maxDistance = 80;
-      controls.enableZoom = true;
-      controls.enablePan = true;
+      perspCamera.fov = 45;
+      perspCamera.updateProjectionMatrix();
+      perspCamera.position.set(40, 25, 45);
+      orbitControls.target.set(0, 16, 0);
+      orbitControls.maxPolarAngle = Math.PI / 2 - 0.02;
+      orbitControls.minDistance = 15;
+      orbitControls.maxDistance = 80;
+      orbitControls.enableZoom = true;
+      orbitControls.enablePan = true;
     } else {
       const floorOffset = activeFloor * 3.2;
-      camera.fov = 70;
-      camera.updateProjectionMatrix();
-      camera.position.set(0, 1.6 + floorOffset, 4.0);
-      controls.target.set(0, 1.6 + floorOffset, 4.05);
-      controls.maxPolarAngle = Math.PI / 2 - 0.02;
-      controls.minDistance = 0.01;
-      controls.maxDistance = 0.1;
-      controls.enableZoom = false;
-      controls.enablePan = false;
+      perspCamera.fov = 70;
+      perspCamera.updateProjectionMatrix();
+      perspCamera.position.set(0, 1.6 + floorOffset, 4.0);
+      orbitControls.target.set(0, 1.6 + floorOffset, 4.05);
+      orbitControls.maxPolarAngle = Math.PI / 2 - 0.02;
+      orbitControls.minDistance = 0.01;
+      orbitControls.maxDistance = 0.1;
+      orbitControls.enableZoom = false;
+      orbitControls.enablePan = false;
     }
 
     // Generate Procedural Structure from Layout
@@ -1511,6 +1914,58 @@ export default function BuildingViewer({
           }
         }
       }
+
+      // Render Phase 7 Amenities in 3D Site View
+      if (viewMode === 'building' && amenitiesList && amenitiesList.length > 0) {
+        amenitiesList.forEach((amenity: any) => {
+          try {
+            const amenityGroup = AmenityFactory.create(amenity.type);
+            const ax = Number(amenity.x);
+            const az = Number(amenity.z);
+            amenityGroup.position.set(ax, 0.05, az);
+            
+            const rotDeg = Number(amenity.rotation || 0);
+            amenityGroup.rotation.y = (rotDeg * Math.PI) / 180;
+            
+            const metadata = {
+              id: amenity.id,
+              type: 'amenity',
+              amenityType: amenity.type,
+              label: amenity.label,
+              description: amenity.description || '',
+              timings: amenity.timings || '',
+              imageUrl: amenity.imageUrl || '',
+              x: ax,
+              z: az,
+            };
+            amenityGroup.userData = metadata;
+            
+            amenityGroup.traverse((child) => {
+              if (child instanceof THREE.Mesh) {
+                child.userData = metadata;
+              }
+            });
+
+            // Floating label sprite above the amenity
+            const labelSprite = createRoomLabelSprite(amenity.label);
+            labelSprite.name = `amenity_label_${amenity.id}`;
+            let labelHeight = 1.2;
+            if (amenity.type === 'gym') labelHeight = 3.8;
+            else if (amenity.type === 'clubhouse') labelHeight = 5.2;
+            else if (amenity.type === 'kids_play_area') labelHeight = 2.4;
+            else if (amenity.type === 'garden') labelHeight = 2.8;
+            
+            labelSprite.position.set(ax, labelHeight, az);
+            labelSprite.userData = metadata;
+            proceduralGroup.add(labelSprite);
+            
+            proceduralGroup.add(amenityGroup);
+          } catch (err) {
+            console.error('Error rendering amenity in 3D:', err);
+          }
+        });
+      }
+
       scene.add(proceduralGroup);
       setLoading(false);
     } else {
@@ -1565,6 +2020,12 @@ export default function BuildingViewer({
           nodeMesh.name = `node_${r.id}`;
           nodeMesh.position.set(r.node.x, 0.05 + floorOffset, r.node.z);
           proceduralGroup.add(nodeMesh);
+
+          // Floating name label above pad
+          const labelSprite = createRoomLabelSprite(r.name);
+          labelSprite.name = `label_${r.id}`;
+          labelSprite.position.set(r.node.x, 0.85 + floorOffset, r.node.z);
+          proceduralGroup.add(labelSprite);
         });
       }
 
@@ -1572,13 +2033,13 @@ export default function BuildingViewer({
 
       // Position camera appropriately
       if (activeRoom === null) {
-        camera.position.set(0, 1.6 + floorOffset, 5.0);
-        controls.target.set(0, 1.6 + floorOffset, 5.05);
+        perspCamera.position.set(0, 1.6 + floorOffset, 5.0);
+        orbitControls.target.set(0, 1.6 + floorOffset, 5.05);
       } else {
         const currentRoom = floorLayout.rooms?.find((r: any) => r.name === activeRoom);
         if (currentRoom && currentRoom.node) {
-          camera.position.set(currentRoom.node.x, 1.6 + floorOffset, currentRoom.node.z);
-          controls.target.set(currentRoom.node.x, 1.6 + floorOffset, currentRoom.node.z + 0.05);
+          perspCamera.position.set(currentRoom.node.x, 1.6 + floorOffset, currentRoom.node.z);
+          orbitControls.target.set(currentRoom.node.x, 1.6 + floorOffset, currentRoom.node.z + 0.05);
         }
       }
       setLoading(false);
@@ -1645,7 +2106,7 @@ export default function BuildingViewer({
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-      raycaster.setFromCamera(mouse, camera);
+      raycaster.setFromCamera(mouse, cameraRef.current || camera);
       const floorMeshes: THREE.Mesh[] = [];
       scene.traverse((obj) => {
         if (obj instanceof THREE.Mesh && obj.userData.isFloor) floorMeshes.push(obj);
@@ -1686,11 +2147,21 @@ export default function BuildingViewer({
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-      raycaster.setFromCamera(mouse, camera);
+      raycaster.setFromCamera(mouse, cameraRef.current || camera);
 
       if (viewMode === 'building') {
         const intersects = raycaster.intersectObjects(scene.children, true);
         
+        // 0. Check if we clicked an amenity mesh
+        const amenityHit = intersects.find(h => h.object.userData?.type === 'amenity');
+        if (amenityHit) {
+          const amenityData = amenityHit.object.userData;
+          setSelectedAmenity(amenityData);
+          setSelectedFlat(null);
+          trackEvent('amenity_click', { amenityId: amenityData.id, amenityType: amenityData.amenityType });
+          return;
+        }
+
         // 1. If we are in isolated floor mode, check if we clicked a floor mesh in that floor
         if (isolatedFloorId && intersects.length > 0) {
           const floorMeshHit = intersects.find(h => h.object.userData?.isFloor);
@@ -1704,6 +2175,15 @@ export default function BuildingViewer({
                 const matchedFlat = getFlatDbInfo(room.flatId, activeF.flats || []);
                 if (matchedFlat) {
                   setSelectedFlat(matchedFlat);
+                  fetch(`http://localhost:3001/inventory/flats/${matchedFlat.id}`, {
+                    headers: { 'x-tenant-id': tenantId || '' },
+                  })
+                    .then((response) => {
+                      if (!response.ok) throw new Error('Unable to load flat details');
+                      return response.json();
+                    })
+                    .then((flatDetails) => setSelectedFlat(flatDetails))
+                    .catch((error) => console.error('Flat detail fetch failed:', error));
                   
                   // Flash highlight all rooms of this flat
                   const flatId = room.flatId;
@@ -1812,14 +2292,14 @@ export default function BuildingViewer({
           
           let tempObj: THREE.Object3D | null = intersect.object;
           while (tempObj && tempObj !== scene) {
-            if (tempObj.name.startsWith('node_')) {
+            if (tempObj.name.startsWith('node_') || tempObj.name.startsWith('label_')) {
               nodeName = tempObj.name;
               clickedNodeObj = tempObj;
               break;
             }
             if ((tempObj as any).userData && (tempObj as any).userData.type === 'furniture') {
               setSelectedFurnId((tempObj as any).userData.id);
-              setActiveRoom(null); // clear room selection when furniture is picked
+              setActiveRoom(null);
               return;
             }
             tempObj = tempObj.parent;
@@ -1828,14 +2308,15 @@ export default function BuildingViewer({
         }
 
         if (nodeName && floorLayout.rooms) {
-          const roomId = nodeName.replace('node_', '');
+          const roomId = nodeName.replace('node_', '').replace('label_', '');
           const room = floorLayout.rooms.find((r: any) => r.id === roomId);
           if (room && room.node) {
             controls.enabled = false;
+            if (pointerControls) pointerControls.unlock();
             const floorOffset = activeFloor * 3.2;
 
-            const targetCam = new THREE.Vector3(room.node.x, 1.6 + floorOffset, room.node.z);
-            const targetLook = new THREE.Vector3(room.node.x, 1.6 + floorOffset, room.node.z + 0.05);
+            const targetCam = new THREE.Vector3(room.node.x, 1.65 + floorOffset, room.node.z);
+            const targetLook = new THREE.Vector3(room.node.x, 1.65 + floorOffset, room.node.z + 0.05);
 
             gsap.to(camera.position, {
               x: targetCam.x,
@@ -2055,43 +2536,25 @@ export default function BuildingViewer({
       }
     };
 
-    // Keyboard WASD walkthrough state tracker
-    const keysPressed = {
-      w: false,
-      a: false,
-      s: false,
-      d: false,
-      ArrowUp: false,
-      ArrowDown: false,
-      ArrowLeft: false,
-      ArrowRight: false
-    };
-
+    // ── WASD Keyboard Walkthrough ─────────────────────────────────────
     const handleKeyDown = (e: KeyboardEvent) => {
       if (viewMode !== 'walkthrough') return;
-      
-      const activeEl = document.activeElement;
-      if (activeEl && (
-        activeEl.tagName === 'INPUT' || 
-        activeEl.tagName === 'TEXTAREA' || 
-        activeEl.getAttribute('contenteditable') === 'true'
-      )) {
+      const el = document.activeElement;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
+      if (e.key === 'Shift') {
+        walkRef.current.shift = true;
         return;
       }
-
-      if (['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key.toLowerCase()) || ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        e.preventDefault();
-        const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-        (keysPressed as any)[key] = true;
-      }
+      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      if (k in walkRef.current) { e.preventDefault(); (walkRef.current as any)[k] = true; }
     };
-
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (viewMode !== 'walkthrough') return;
-      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      if (key in keysPressed) {
-        (keysPressed as any)[key] = false;
+      if (e.key === 'Shift') {
+        walkRef.current.shift = false;
+        return;
       }
+      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      if (k in walkRef.current) (walkRef.current as any)[k] = false;
     };
 
     const handleWheel = (event: WheelEvent) => {
@@ -2109,127 +2572,182 @@ export default function BuildingViewer({
     window.addEventListener('keyup', handleKeyUp);
 
     // Animation Loop
+    const clock = new THREE.Clock();
     let animationFrameId: number;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
+      const delta = clock.getDelta();
 
-      // Keyboard WASD / Arrows Walkthrough movement
-      if (viewMode === 'walkthrough' && cameraRef.current && controlsRef.current) {
-        const cam = cameraRef.current;
-        const ctrls = controlsRef.current;
-        
-        // Calculate move vector
-        const moveVector = new THREE.Vector3();
-        const lookDir = new THREE.Vector3();
-        cam.getWorldDirection(lookDir);
-        lookDir.y = 0;
-        lookDir.normalize();
-        
-        const sideDir = new THREE.Vector3();
-        sideDir.crossVectors(lookDir, cam.up).normalize();
-        
-        const moveSpeed = 0.05;
-        
-        if (keysPressed.w || keysPressed.ArrowUp) {
-          moveVector.add(lookDir);
-        }
-        if (keysPressed.s || keysPressed.ArrowDown) {
-          moveVector.sub(lookDir);
-        }
-        if (keysPressed.a || keysPressed.ArrowLeft) {
-          moveVector.sub(sideDir);
-        }
-        if (keysPressed.d || keysPressed.ArrowRight) {
-          moveVector.add(sideDir);
-        }
-        
-        if (moveVector.lengthSq() > 0) {
-          moveVector.normalize().multiplyScalar(moveSpeed);
+      const activeCamera = cameraRef.current || camera;
+      const activeControls = controlsRef.current || controls;
 
-          // ---------------------------------------------------------------
-          // SLIDING COLLISION DETECTION – Orientational sliding raycasts
-          // ---------------------------------------------------------------
-          const wallMeshes = getWallMeshes();
-          const playerRadius = 0.4; // player collision envelope radius
-          let finalMove = moveVector.clone();
+      activeControls.update();
 
-          const probeDir = finalMove.clone().normalize();
-          collisionRaycaster.set(cam.position, probeDir);
-          collisionRaycaster.far = playerRadius + moveSpeed;
-
-          const hits = collisionRaycaster.intersectObjects(wallMeshes, false);
-
-          if (hits.length > 0) {
-            const hit = hits[0];
-            const normal = hit.face ? hit.face.normal.clone() : new THREE.Vector3(0, 0, 1);
-            
-            // Transform local face normal to world space
-            const normalMatrix = new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld);
-            normal.applyMatrix3(normalMatrix).normalize();
-            
-            // Flatten to horizontal plane (X-Z)
-            normal.y = 0;
-            normal.normalize();
-
-            // Slide projection
-            const dot = finalMove.dot(normal);
-            if (dot < 0) {
-              finalMove.sub(normal.multiplyScalar(dot));
-
-              // Corner/second wall check
-              if (finalMove.lengthSq() > 0.0001) {
-                const slideDir = finalMove.clone().normalize();
-                collisionRaycaster.set(cam.position, slideDir);
-                collisionRaycaster.far = playerRadius + finalMove.length();
-                
-                const slideHits = collisionRaycaster.intersectObjects(wallMeshes, false);
-                if (slideHits.length > 0) {
-                  // Double collision blocked (corners), freeze movement
-                  finalMove.set(0, 0, 0);
-                }
-              }
-            }
-          }
-
-          // Safety clamp check to enforce building flat walls & balcony railings boundary constraints
-          const nextX = cam.position.x + finalMove.x;
-          const nextZ = cam.position.z + finalMove.z;
-
-          if (isPosWalkable(nextX, nextZ)) {
-            cam.position.x = nextX;
-            cam.position.z = nextZ;
-          } else {
-            // Slide along X-axis
-            if (isPosWalkable(nextX, cam.position.z)) {
-              cam.position.x = nextX;
-            } else if (isPosWalkable(cam.position.x, nextZ)) {
-              // Slide along Z-axis
-              cam.position.z = nextZ;
-            }
-          }
-          
-          const floorOffset = activeFloor * 3.2;
-          cam.position.y = 1.6 + floorOffset;
-          ctrls.target.y = 1.6 + floorOffset;
-
-          // Sync look-target controls target
-          const targetOffset = ctrls.target.clone().sub(cam.position);
-          ctrls.target.copy(cam.position).add(targetOffset);
-
-          const floorLayout = getLayoutForFloor(localLayout, activeFloor);
-          if (floorLayout.rooms) {
-            const currentRoom = floorLayout.rooms.find((r: any) => {
-              return cam.position.x >= r.x && cam.position.x <= r.x + r.width &&
-                     cam.position.z >= r.z && cam.position.z <= r.z + r.depth;
-            });
-            if (currentRoom && currentRoom.name !== activeRoom) {
-              setActiveRoom(currentRoom.name);
-            }
-          }
-        }
+      // Gyroscope Look Update
+      if (viewMode === 'walkthrough' && gyroEnabledRef.current && gyroRef.current.hasData) {
+        const alphaRad = THREE.MathUtils.degToRad(gyroRef.current.alpha);
+        const betaRad = THREE.MathUtils.degToRad(gyroRef.current.beta - 90);
+        activeCamera.rotation.set(betaRad, alphaRad, 0, 'YXZ');
+        const lookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(activeCamera.quaternion);
+        activeControls.target.copy(activeCamera.position).add(lookDir.multiplyScalar(0.05));
       }
+
+      // Keyboard / Mobile walkthrough movement
+      if (viewMode === 'walkthrough') {
+        const keys = walkRef.current;
+        let fwdIntent = 0;
+        let sideIntent = 0;
+
+        if (isMobile) {
+          fwdIntent = joystickRef.current.y;
+          sideIntent = joystickRef.current.x;
+        } else {
+          if (keys.w || keys.ArrowUp) fwdIntent += 1;
+          if (keys.s || keys.ArrowDown) fwdIntent -= 1;
+          if (keys.d || keys.ArrowRight) sideIntent += 1;
+          if (keys.a || keys.ArrowLeft) sideIntent -= 1;
+        }
+
+        if (fwdIntent !== 0 || sideIntent !== 0) {
+          const baseSpeed = keys.shift ? 4.0 : 2.0; // 4m/s run, 2m/s walk
+          const moveStep = baseSpeed * delta;
+
+          // Normalize diagonal intent
+          const intentLen = Math.hypot(fwdIntent, sideIntent);
+          let normFwd = fwdIntent;
+          let normSide = sideIntent;
+          if (intentLen > 1) {
+            normFwd /= intentLen;
+            normSide /= intentLen;
+          }
+
+          const forward = new THREE.Vector3();
+          activeCamera.getWorldDirection(forward);
+          forward.y = 0;
+          forward.normalize();
+
+          const right = new THREE.Vector3().crossVectors(forward, activeCamera.up).normalize();
+
+          // Collect wall and doors meshes
+          const collisionObjects = getWallMeshes();
+
+          // Define collision check helper
+          const checkCollision = (dir: THREE.Vector3, distance: number) => {
+            collisionRaycaster.set(activeCamera.position, dir);
+            collisionRaycaster.far = distance;
+            const hits = collisionRaycaster.intersectObjects(collisionObjects, true);
+            return hits.length > 0;
+          };
+
+          let moveForwardAmount = 0;
+          let moveRightAmount = 0;
+
+          if (normFwd > 0) {
+            if (!checkCollision(forward, 0.4 + moveStep)) moveForwardAmount += moveStep * normFwd;
+          } else if (normFwd < 0) {
+            const backward = forward.clone().negate();
+            if (!checkCollision(backward, 0.4 + moveStep)) moveForwardAmount += moveStep * normFwd;
+          }
+
+          if (normSide > 0) {
+            if (!checkCollision(right, 0.4 + moveStep)) moveRightAmount += moveStep * normSide;
+          } else if (normSide < 0) {
+            const left = right.clone().negate();
+            if (!checkCollision(left, 0.4 + moveStep)) moveRightAmount += moveStep * normSide;
+          }
+
+          if (moveForwardAmount !== 0 || moveRightAmount !== 0) {
+            const prevPos = activeCamera.position.clone();
+            
+            if (pointerControls && pointerControls.isLocked) {
+              pointerControls.moveForward(moveForwardAmount);
+              pointerControls.moveRight(moveRightAmount);
+            } else {
+              activeCamera.position.addScaledVector(forward, moveForwardAmount);
+              activeCamera.position.addScaledVector(right, moveRightAmount);
+            }
+
+            // Downward raycast (Gravity grounding check)
+            const floorObjects: THREE.Object3D[] = [];
+            scene.traverse((child) => {
+              if (child instanceof THREE.Mesh && (child.userData?.isFloor || child.name.includes('floor'))) {
+                floorObjects.push(child);
+              }
+            });
+
+            const downDir = new THREE.Vector3(0, -1, 0);
+            collisionRaycaster.set(activeCamera.position, downDir);
+            collisionRaycaster.far = 2.0;
+            const floorHits = collisionRaycaster.intersectObjects(floorObjects, true);
+
+            if (floorHits.length > 0) {
+              const hitPoint = floorHits[0].point;
+              activeCamera.position.y = hitPoint.y + 1.65;
+            } else {
+              // No floor under camera - gap or out of bounds - revert position
+              activeCamera.position.copy(prevPos);
+            }
+
+            // Upward raycast (Ceiling check)
+            const ceilingObjects: THREE.Object3D[] = [];
+            scene.traverse((child) => {
+              if (child instanceof THREE.Mesh && (child.userData?.type === 'ceiling' || child.name.includes('ceiling'))) {
+                ceilingObjects.push(child);
+              }
+            });
+
+            const upDir = new THREE.Vector3(0, 1, 0);
+            collisionRaycaster.set(activeCamera.position, upDir);
+            collisionRaycaster.far = 0.5;
+            const ceilingHits = collisionRaycaster.intersectObjects(ceilingObjects, true);
+            if (ceilingHits.length > 0) {
+              activeCamera.position.copy(prevPos);
+            }
+
+            // Update OrbitControls target for visual tracking if not locked
+            if (!pointerControls || !pointerControls.isLocked) {
+              const targetOffset = activeControls.target.clone().sub(prevPos);
+              activeControls.target.copy(activeCamera.position).add(targetOffset);
+            }
+          }
+        }
+
+        const floorLayout = getLayoutForFloor(localLayout, activeFloor);
+        if (floorLayout.rooms) {
+          const currentRoom = floorLayout.rooms.find((r: any) => {
+            return activeCamera.position.x >= r.x && activeCamera.position.x <= r.x + r.width &&
+                   activeCamera.position.z >= r.z && activeCamera.position.z <= r.z + r.depth;
+          });
+          if (currentRoom && currentRoom.name !== activeRoom) {
+            setActiveRoom(currentRoom.name);
+          }
+        }
+
+        drawMinimap();
+      }
+
+      // Always enforce eye-height + bounds (catches WASD, OrbitControls drift, GSAP, everything)
+      if (viewMode === 'walkthrough') {
+        let floorOffset = 0;
+        if (towerFloors && towerFloors.length > 0) {
+          const sorted = [...towerFloors].sort((a, b) => a.floorNumber - b.floorNumber);
+          for (const f of sorted) {
+            if (f.floorNumber === activeFloor) break;
+            floorOffset += (Number(f.floorHeight) || 3.0) + 0.25;
+          }
+        } else {
+          floorOffset = activeFloor * 3.2;
+        }
+
+        activeCamera.position.y = 1.65 + floorOffset;
+        activeControls.target.y = 1.65 + floorOffset;
+        activeCamera.position.x = Math.max(-19, Math.min(19, activeCamera.position.x));
+        activeCamera.position.z = Math.max(-19, Math.min(19, activeCamera.position.z));
+        activeControls.target.x = Math.max(-19, Math.min(19, activeControls.target.x));
+        activeControls.target.z = Math.max(-19, Math.min(19, activeControls.target.z));
+      }
+
+      renderer.render(scene, activeCamera);
 
       // Animate walkable node rings pulsing
       scene.traverse((child) => {
@@ -2251,9 +2769,20 @@ export default function BuildingViewer({
     // Resize Handler
     const handleResize = () => {
       const w = container.clientWidth;
-      camera.aspect = w / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, height);
+      const h = container.clientHeight || height;
+      const aspect = w / h;
+
+      perspCamera.aspect = aspect;
+      perspCamera.updateProjectionMatrix();
+
+      const orthoHalfHeight = 15;
+      orthoCamera.left = -orthoHalfHeight * aspect;
+      orthoCamera.right = orthoHalfHeight * aspect;
+      orthoCamera.top = orthoHalfHeight;
+      orthoCamera.bottom = -orthoHalfHeight;
+      orthoCamera.updateProjectionMatrix();
+
+      renderer.setSize(w, h);
     };
     window.addEventListener('resize', handleResize);
 
@@ -2411,7 +2940,6 @@ export default function BuildingViewer({
     setIsPlayingTour(true);
     controlsRef.current.enabled = false;
     
-    let currentStep = tourIndex;
     const camera = cameraRef.current;
     const controls = controlsRef.current;
 
@@ -2420,50 +2948,103 @@ export default function BuildingViewer({
         setIsPlayingTour(false);
         controls.enabled = true;
         setTourIndex(0);
+        tourAudioRef.current?.pause();
+        tourAudioRef.current = null;
         return;
       }
 
       setTourIndex(index);
       const pt = activeRoute[index];
 
-      gsap.to(camera.position, {
-        x: pt.posX,
-        y: pt.posY,
-        z: pt.posZ,
-        duration: 3.0,
-        ease: 'power2.inOut',
-      });
+      const startPos = camera.position.clone();
+      const startQuat = camera.quaternion.clone();
 
-      gsap.to(controls.target, {
-        x: pt.targetX,
-        y: pt.targetY,
-        z: pt.targetZ,
+      const targetPos = new THREE.Vector3(pt.posX, pt.posY, pt.posZ);
+      const targetLook = new THREE.Vector3(pt.targetX, pt.targetY, pt.targetZ);
+
+      // Determine target orientation
+      const dummy = new THREE.Object3D();
+      dummy.position.copy(targetPos);
+      dummy.lookAt(targetLook);
+      const targetQuat = dummy.quaternion.clone();
+
+      const animObj = { progress: 0 };
+      
+      // Kill any existing tour tweens
+      if (tourTweenRef.current) {
+        tourTweenRef.current.kill();
+      }
+      
+      tourTweenRef.current = gsap.to(animObj, {
+        progress: 1,
         duration: 3.0,
         ease: 'power2.inOut',
+        onUpdate: () => {
+          camera.position.lerpVectors(startPos, targetPos, animObj.progress);
+          camera.quaternion.slerpQuaternions(startQuat, targetQuat, animObj.progress);
+          
+          // Keep OrbitControls target updated to match camera rotation direction
+          const lookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+          controls.target.copy(camera.position).add(lookDir.multiplyScalar(0.05));
+        },
         onComplete: () => {
-          // Pause for 2s at each point before gliding next
-          setTimeout(() => {
-            if (isPlayingTour) {
-              playNext(index + 1);
-            }
-          }, 2000);
+          tourAudioRef.current?.pause();
+          tourAudioRef.current = null;
+          if (pt.audioNarrationUrl) {
+            const audio = new Audio(pt.audioNarrationUrl);
+            tourAudioRef.current = audio;
+            audio.play().catch(() => {
+              tourAudioRef.current = null;
+            });
+          }
+
+          const dwellMilliseconds = Math.max(0, Number(pt.dwellSeconds ?? 2)) * 1000;
+          tourTimeoutRef.current = setTimeout(() => {
+            tourAudioRef.current?.pause();
+            tourAudioRef.current = null;
+            playNext(index + 1);
+          }, dwellMilliseconds);
         },
       });
     };
 
-    playNext(currentStep);
+    playNext(tourIndex);
   };
 
   const handlePauseTour = () => {
     setIsPlayingTour(false);
-    if (cameraRef.current) {
-      gsap.killTweensOf(cameraRef.current.position);
+    if (tourTweenRef.current) {
+      tourTweenRef.current.kill();
+      tourTweenRef.current = null;
     }
+    if (tourTimeoutRef.current) {
+      clearTimeout(tourTimeoutRef.current);
+      tourTimeoutRef.current = null;
+    }
+    tourAudioRef.current?.pause();
+    tourAudioRef.current = null;
     if (controlsRef.current) {
-      gsap.killTweensOf(controlsRef.current.target);
       controlsRef.current.enabled = true;
     }
   };
+
+  useEffect(() => {
+    if (
+      tourAutoplayStartedRef.current ||
+      tours.length === 0 ||
+      viewMode !== 'walkthrough' ||
+      typeof window === 'undefined'
+    ) {
+      return;
+    }
+
+    const shouldAutoplay = new URLSearchParams(window.location.search).get('autoplayTour') === '1';
+    if (!shouldAutoplay) return;
+
+    tourAutoplayStartedRef.current = true;
+    const timeout = window.setTimeout(handlePlayTour, 800);
+    return () => window.clearTimeout(timeout);
+  }, [tours, viewMode]);
 
   const handleMinimapClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = minimapCanvasRef.current;
@@ -2537,6 +3118,24 @@ export default function BuildingViewer({
     }
   };
 
+  const handleSiteView = () => {
+    if (!cameraRef.current || !controlsRef.current) return;
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    
+    controls.enabled = false;
+    gsap.to(camera.position, { x: 0, y: 45, z: 65, duration: 1.8, ease: 'power2.inOut' });
+    gsap.to(controls.target, {
+      x: 0, y: 0, z: 0,
+      duration: 1.8,
+      ease: 'power2.inOut',
+      onComplete: () => {
+        controls.enabled = true;
+      }
+    });
+    trackEvent('site_view_activated', {});
+  };
+
   const resetCamera = () => {
     if (!cameraRef.current || !controlsRef.current) return;
     const camera = cameraRef.current;
@@ -2576,11 +3175,18 @@ export default function BuildingViewer({
     if (!cameraRef.current || !controlsRef.current) return;
     const camera = cameraRef.current;
     const factor = direction === 'in' ? 0.9 : 1.1;
-    
-    if (viewMode === 'building') {
+
+    if (camera instanceof THREE.OrthographicCamera) {
+      camera.zoom = THREE.MathUtils.clamp(
+        camera.zoom * (direction === 'in' ? 1.15 : 1 / 1.15),
+        0.5,
+        8,
+      );
+      camera.updateProjectionMatrix();
+    } else if (camera instanceof THREE.PerspectiveCamera && viewMode === 'building') {
       camera.position.sub(controlsRef.current.target).multiplyScalar(factor).add(controlsRef.current.target);
-    } else {
-      let fov = camera.fov * factor;
+    } else if (camera instanceof THREE.PerspectiveCamera) {
+      const fov = camera.fov * factor;
       camera.fov = Math.max(35, Math.min(85, fov));
       camera.updateProjectionMatrix();
     }
@@ -2624,6 +3230,393 @@ export default function BuildingViewer({
     <div className="relative w-full h-full min-h-[550px] bg-black/20 rounded-3xl overflow-hidden group/viewer border border-white/5">
       {/* 3D Canvas element */}
       <div ref={containerRef} className="w-full h-full absolute inset-0" />
+
+      {/* Filter Toggle Button */}
+      <button
+        onClick={() => setIsFilterOpen(!isFilterOpen)}
+        className={`absolute left-6 top-6 z-20 w-11 h-11 bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-white rounded-full flex items-center justify-center transition-all active:scale-95 shadow-xl group`}
+        title="Toggle Filters"
+      >
+        <Icon icon="solar:filter-bold-duotone" className="text-xl group-hover:scale-110 transition-transform text-[#00f5d4]" />
+      </button>
+
+      {/* Collapsible Left Filter Drawer */}
+      <div className={`absolute top-20 left-6 z-20 w-80 max-h-[calc(100%-120px)] bg-[#0c0f16]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-5 flex flex-col gap-4 shadow-2xl text-stone-100 transition-all duration-300 overflow-y-auto ${
+        isFilterOpen ? 'translate-x-0 opacity-100' : '-translate-x-96 opacity-0 pointer-events-none'
+      }`}>
+        <div className="flex justify-between items-center border-b border-white/5 pb-2">
+          <span className="text-[10px] font-black text-[#00f5d4] uppercase tracking-widest">Filters</span>
+          <button
+            onClick={() => setIsFilterOpen(false)}
+            className="text-white/40 hover:text-white"
+          >
+            <Icon icon="solar:close-circle-bold" className="text-base" />
+          </button>
+        </div>
+
+        <div className="text-stone-400 text-[11px] leading-relaxed border border-[#00f5d4]/10 bg-[#00f5d4]/5 rounded-xl px-3 py-2">
+          <span className="font-extrabold text-[#00f5d4]">{towerFloors?.length * 4 || 0}</span> units matching criteria.
+        </div>
+
+        {/* BHK Type */}
+        <div className="flex flex-col gap-2">
+          <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider">BHK Type</span>
+          <div className="flex flex-wrap gap-2">
+            {['1BHK', '2BHK', '3BHK', '4BHK', 'PENTHOUSE'].map(bhk => {
+              const selected = filters.bhk.includes(bhk);
+              return (
+                <button
+                  key={bhk}
+                  onClick={() => {
+                    const newBhk = selected ? filters.bhk.filter(x => x !== bhk) : [...filters.bhk, bhk];
+                    setFilters({ ...filters, bhk: newBhk });
+                  }}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                    selected ? 'bg-[#00f5d4] text-[#0c0f16] border-[#00f5d4]' : 'bg-white/5 border-white/5 text-white/60 hover:border-white/15'
+                  }`}
+                >
+                  {bhk}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Status */}
+        <div className="flex flex-col gap-2">
+          <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider">Status</span>
+          <div className="flex flex-col gap-1.5">
+            {[
+              { id: 'AVAILABLE', label: 'Available', color: '#22c55e' },
+              { id: 'HOLD', label: 'Hold / Reserved', color: '#f59e0b' },
+              { id: 'BOOKED', label: 'Booked / Sold', color: '#ef4444' }
+            ].map(st => {
+              const selected = filters.status.includes(st.id);
+              return (
+                <button
+                  key={st.id}
+                  onClick={() => {
+                    const newSt = selected ? filters.status.filter(x => x !== st.id) : [...filters.status, st.id];
+                    setFilters({ ...filters, status: newSt });
+                  }}
+                  className={`flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
+                    selected ? 'bg-white/10 border-[#00f5d4]/40 text-white' : 'bg-white/5 border-white/5 text-white/60'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: st.color }} />
+                    <span>{st.label}</span>
+                  </div>
+                  {selected && <Icon icon="solar:check-circle-bold" className="text-[#00f5d4] text-base" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Facing / Orientation */}
+        <div className="flex flex-col gap-2">
+          <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider">Facing Orientation</span>
+          <div className="grid grid-cols-2 gap-2">
+            {['North', 'South', 'East', 'West'].map(dir => {
+              const selected = filters.facing.includes(dir);
+              return (
+                <button
+                  key={dir}
+                  onClick={() => {
+                    const newFacing = selected ? filters.facing.filter(x => x !== dir) : [...filters.facing, dir];
+                    setFilters({ ...filters, facing: newFacing });
+                  }}
+                  className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                    selected ? 'bg-[#00f5d4] text-[#0c0f16] border-[#00f5d4]' : 'bg-white/5 border-white/5 text-white/60'
+                  }`}
+                >
+                  {dir}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Floor Range */}
+        <div className="flex flex-col gap-2">
+          <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider">Floor Range</span>
+          <div className="flex gap-2 items-center">
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={filters.floorMin}
+              onChange={(e) => setFilters({ ...filters, floorMin: Math.max(1, parseInt(e.target.value) || 1) })}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#00f5d4] text-white"
+              placeholder="Min"
+            />
+            <span className="text-white/40">to</span>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={filters.floorMax}
+              onChange={(e) => setFilters({ ...filters, floorMax: Math.min(20, parseInt(e.target.value) || 20) })}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#00f5d4] text-white"
+              placeholder="Max"
+            />
+          </div>
+        </div>
+
+        {/* Price Range */}
+        <div className="flex flex-col gap-2">
+          <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider">Price Range (Cr)</span>
+          <div className="flex gap-2 items-center">
+            <input
+              type="number"
+              step="0.1"
+              min={0}
+              value={filters.priceMin / 10000000}
+              onChange={(e) => setFilters({ ...filters, priceMin: Math.max(0, parseFloat(e.target.value) || 0) * 10000000 })}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#00f5d4] text-white"
+              placeholder="Min Cr"
+            />
+            <span className="text-white/40">to</span>
+            <input
+              type="number"
+              step="0.1"
+              min={0}
+              value={filters.priceMax / 10000000}
+              onChange={(e) => setFilters({ ...filters, priceMax: Math.max(0, parseFloat(e.target.value) || 10) * 10000000 })}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#00f5d4] text-white"
+              placeholder="Max Cr"
+            />
+          </div>
+        </div>
+
+        {/* Clear Filters Button */}
+        <button
+          onClick={() => setFilters({
+            bhk: [],
+            status: [],
+            floorMin: 1,
+            floorMax: 20,
+            priceMin: 0,
+            priceMax: 100000000,
+            facing: []
+          })}
+          className="w-full mt-2 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold transition-all"
+        >
+          Reset Filters
+        </button>
+      </div>
+
+      {/* Lead Capture Form Modal */}
+      {isLeadModalOpen && selectedFlat && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-40 flex justify-center items-center p-6">
+          <div className="bg-[#0c0f16]/95 border border-white/15 max-w-sm w-full rounded-3xl p-6 shadow-2xl relative text-stone-100 animate-fadeIn">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <span className="text-[9px] font-black text-[#00f5d4] uppercase tracking-widest block">Inquire Unit</span>
+                <h4 className="text-lg font-light text-white leading-tight">Flat {selectedFlat.flatNumber}</h4>
+              </div>
+              <button
+                onClick={() => {
+                  setIsLeadModalOpen(false);
+                  setLeadSuccess(false);
+                  setLeadForm({ name: '', email: '', phone: '' });
+                }}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+              >
+                <Icon icon="solar:close-circle-bold" className="text-lg" />
+              </button>
+            </div>
+
+            {leadSuccess ? (
+              <div className="flex flex-col items-center justify-center py-6 text-center gap-3">
+                <span className="text-4xl">🎉</span>
+                <p className="text-sm font-bold text-[#00f5d4]">Inquiry Submitted Successfully!</p>
+                <p className="text-xs text-white/60">Our sales representative will contact you shortly.</p>
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setLeadSubmitting(true);
+                  fetch('http://localhost:3001/leads', {
+                    method: 'POST',
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      'x-tenant-id': tenantId || ''
+                    },
+                    body: JSON.stringify({
+                      name: leadForm.name,
+                      email: leadForm.email,
+                      phone: leadForm.phone,
+                      flatId: selectedFlat.id,
+                      projectId: projectId || selectedFlat.projectId
+                    })
+                  })
+                    .then(res => {
+                      if (res.ok) {
+                        setLeadSuccess(true);
+                        trackEvent('lead_captured', { flatId: selectedFlat.id });
+                      } else {
+                        throw new Error('Failed to submit inquiry');
+                      }
+                    })
+                    .catch(err => {
+                      alert(err.message || 'Error submitting lead. Please try again.');
+                    })
+                    .finally(() => {
+                      setLeadSubmitting(false);
+                    });
+                }}
+                className="flex flex-col gap-3.5 mt-2"
+              >
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] text-stone-500 font-bold uppercase tracking-wider">Your Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={leadForm.name}
+                    onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#00f5d4] text-white"
+                    placeholder="Enter full name"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] text-stone-500 font-bold uppercase tracking-wider">Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={leadForm.email}
+                    onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#00f5d4] text-white"
+                    placeholder="Enter email address"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] text-stone-500 font-bold uppercase tracking-wider">Phone Number</label>
+                  <input
+                    type="tel"
+                    required
+                    value={leadForm.phone}
+                    onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#00f5d4] text-white"
+                    placeholder="Enter phone number"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={leadSubmitting}
+                  className="w-full mt-2 py-3 bg-[#00f5d4] hover:bg-[#00f5d4]/90 disabled:opacity-50 text-[#0c0f16] font-bold rounded-xl text-xs transition shadow-lg shadow-[#00f5d4]/10 uppercase tracking-wider"
+                >
+                  {leadSubmitting ? 'Submitting...' : 'Send Inquiry'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Instructions Overlay */}
+      {viewMode === 'walkthrough' && !isMobile && !isLocked && (
+        <div 
+          onClick={() => {
+            if (pointerControlsRef.current) {
+              pointerControlsRef.current.lock();
+            }
+          }}
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col justify-center items-center gap-4 cursor-pointer z-10 select-none text-center px-4"
+        >
+          <div className="bg-indigo-600/10 border border-indigo-500/20 text-[#00f5d4] px-4 py-2 rounded-full text-xs font-black tracking-widest uppercase animate-pulse">
+            Click to Walk Inside Flat
+          </div>
+          <p className="text-white/60 text-xs max-w-xs leading-relaxed">
+            Click anywhere to lock pointer<br />
+            Use <span className="font-extrabold text-white">WASD</span> to walk • <span className="font-extrabold text-white">Mouse</span> to look around<br />
+            Press <span className="font-extrabold text-[#00f5d4]">ESC</span> to unlock and exit look mode.
+          </p>
+        </div>
+      )}
+
+      {/* Mobile Joystick Overlay */}
+      {isMobile && viewMode === 'walkthrough' && (
+        <div
+          className="absolute inset-y-0 right-0 w-1/2 z-[5] touch-none"
+          onTouchStart={(event) => {
+            const touch = event.touches[0];
+            lookTouchRef.current = { x: touch.clientX, y: touch.clientY };
+          }}
+          onTouchMove={(event) => {
+            const previous = lookTouchRef.current;
+            const touch = event.touches[0];
+            const camera = perspCameraRef.current;
+            if (!previous || !camera) return;
+
+            const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
+            euler.y -= (touch.clientX - previous.x) * 0.004;
+            euler.x = THREE.MathUtils.clamp(
+              euler.x - (touch.clientY - previous.y) * 0.004,
+              -Math.PI / 2 + 0.1,
+              Math.PI / 2 - 0.1,
+            );
+            camera.quaternion.setFromEuler(euler);
+
+            const lookDirection = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            orbitControlsRef.current?.target.copy(camera.position).add(lookDirection.multiplyScalar(0.05));
+            lookTouchRef.current = { x: touch.clientX, y: touch.clientY };
+          }}
+          onTouchEnd={() => {
+            lookTouchRef.current = null;
+          }}
+          aria-label="Drag to look around"
+        />
+      )}
+
+      {isMobile && viewMode === 'walkthrough' && (
+        <div 
+          className="absolute bottom-16 left-4 w-32 h-32 flex items-center justify-center bg-transparent z-10 touch-none pointer-events-auto"
+          onTouchStart={(e) => {
+            setJoystickActive(true);
+            const touch = e.touches[0];
+            const rect = e.currentTarget.getBoundingClientRect();
+            const startX = rect.left + rect.width / 2;
+            const startY = rect.top + rect.height / 2;
+            (e.currentTarget as any)._startX = startX;
+            (e.currentTarget as any)._startY = startY;
+          }}
+          onTouchMove={(e) => {
+            const touch = e.touches[0];
+            const startX = (e.currentTarget as any)._startX;
+            const startY = (e.currentTarget as any)._startY;
+            const dx = touch.clientX - startX;
+            const dy = touch.clientY - startY;
+            const MathHypot = Math.hypot || ((x, y) => Math.sqrt(x*x + y*y));
+            const dist = MathHypot(dx, dy);
+            const maxRadius = 40;
+            const angle = Math.atan2(dy, dx);
+            const finalX = dist > maxRadius ? Math.cos(angle) * maxRadius : dx;
+            const finalY = dist > maxRadius ? Math.sin(angle) * maxRadius : dy;
+            joystickRef.current = { x: finalX / maxRadius, y: -finalY / maxRadius };
+            setJoystickPos({ x: finalX, y: finalY });
+          }}
+          onTouchEnd={(e) => {
+            setJoystickActive(false);
+            joystickRef.current = { x: 0, y: 0 };
+            setJoystickPos({ x: 0, y: 0 });
+          }}
+        >
+          <div className="w-24 h-24 rounded-full bg-white/5 border border-white/20 flex items-center justify-center relative shadow-inner">
+            <div 
+              className="w-10 h-10 rounded-full bg-[#00f5d4] absolute transition-all duration-75 shadow-lg shadow-[#00f5d4]/40"
+              style={{
+                transform: `translate(${joystickPos.x}px, ${joystickPos.y}px)`
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Dynamic Hotspots HTML Projection Overlay */}
       <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
@@ -2748,12 +3741,32 @@ export default function BuildingViewer({
       {/* Floating Viewport Controls widget (Top-Right) */}
       <div className="absolute top-6 right-6 z-10 flex flex-col gap-2 pointer-events-auto">
         <button
+          onClick={toggle2DMode}
+          className={`w-11 h-11 rounded-full flex items-center justify-center border transition-all active:scale-95 shadow-xl group ${
+            is2DMode 
+              ? 'bg-[#00f5d4] text-black border-[#00f5d4] shadow-lg shadow-[#00f5d4]/25 scale-110' 
+              : 'bg-black/60 text-white border-white/10 hover:bg-black/80 hover:border-white/20 hover:scale-105'
+          }`}
+          title="Toggle 2D Plan / 3D Building"
+        >
+          <Icon icon={is2DMode ? "solar:map-bold" : "solar:map-linear"} className="text-xl" />
+        </button>
+        <button
           onClick={resetCamera}
           className="w-11 h-11 bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-white rounded-full flex items-center justify-center transition-all active:scale-95 shadow-xl group"
           title="Reset Camera"
         >
           <Icon icon="solar:refresh-circle-bold" className="text-xl group-hover:scale-110 transition-transform" />
         </button>
+        {viewMode === 'building' && (
+          <button
+            onClick={handleSiteView}
+            className="w-11 h-11 bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-white rounded-full flex items-center justify-center transition-all active:scale-95 shadow-xl group"
+            title="Site View"
+          >
+            <Icon icon="solar:globus-bold-duotone" className="text-xl text-[#00f5d4] group-hover:scale-110 transition-transform" />
+          </button>
+        )}
         <button
           onClick={toggleFullscreen}
           className="w-11 h-11 bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-white rounded-full flex items-center justify-center transition-all active:scale-95 shadow-xl group"
@@ -2775,6 +3788,29 @@ export default function BuildingViewer({
         >
           <Icon icon="solar:minimize-bold-duotone" className="text-xl text-primary group-hover:scale-110 transition-transform" />
         </button>
+        {viewMode === 'walkthrough' && (
+          <button
+            onClick={() => {
+              if (typeof DeviceOrientationEvent !== 'undefined' && typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+                (DeviceOrientationEvent as any).requestPermission()
+                  .then((state: string) => {
+                    if (state === 'granted') setGyroEnabled(!gyroEnabled);
+                  })
+                  .catch((err: any) => console.error(err));
+              } else {
+                setGyroEnabled(!gyroEnabled);
+              }
+            }}
+            className={`w-11 h-11 rounded-full flex items-center justify-center border transition-all active:scale-95 shadow-xl group ${
+              gyroEnabled 
+                ? 'bg-[#00f5d4] text-black border-[#00f5d4] shadow-lg shadow-[#00f5d4]/20' 
+                : 'bg-black/60 text-white border-white/10 hover:bg-black/80 hover:border-white/20'
+            }`}
+            title="Toggle Gyroscope Look"
+          >
+            <Icon icon="solar:compass-bold" className="text-xl group-hover:scale-110 transition-transform" />
+          </button>
+        )}
         {viewMode === 'building' && (
           <>
             <button
@@ -3057,6 +4093,42 @@ export default function BuildingViewer({
         </div>
       )}
 
+      {/* Amenity Detail Card Overlay */}
+      {selectedAmenity && (
+        <div className="absolute bottom-24 right-6 z-20 w-80 bg-[#0c0f16]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl animate-slideInRight text-stone-100">
+          <div className="flex justify-between items-start border-b border-white/5 pb-3 mb-4">
+            <div>
+              <span className="text-[9px] font-black text-[#00f5d4] uppercase tracking-widest block">Amenity Details</span>
+              <h4 className="text-lg font-black text-white mt-1">{selectedAmenity.label}</h4>
+            </div>
+            <button
+              onClick={() => setSelectedAmenity(null)}
+              className="text-white/40 hover:text-white transition-colors"
+            >
+              <Icon icon="solar:close-circle-bold" className="text-xl" />
+            </button>
+          </div>
+
+          <div className="space-y-4 text-xs text-stone-300 font-body-md">
+            <div>
+              <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider block">Timings</span>
+              <span className="text-white font-semibold">{selectedAmenity.timings || 'Open 24 Hours'}</span>
+            </div>
+
+            <div>
+              <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider block">Description</span>
+              <p className="text-stone-400 leading-relaxed mt-1">{selectedAmenity.description || 'Enjoy premium spatial utility.'}</p>
+            </div>
+
+            {selectedAmenity.imageUrl && (
+              <div className="rounded-xl overflow-hidden aspect-video border border-white/10 bg-neutral-900 mt-2">
+                <img src={selectedAmenity.imageUrl} alt={selectedAmenity.label} className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Flat Info Card Overlay */}
       {selectedFlat && (
         <div className="absolute bottom-24 right-6 z-20 w-80 bg-black/70 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl animate-slideInRight text-stone-100">
@@ -3113,12 +4185,43 @@ export default function BuildingViewer({
               <button
                 onClick={() => {
                   if (setViewMode) setViewMode('walkthrough');
-                  if (setActiveRoom) setActiveRoom(null);
+                  const flatFloor = towerFloors.find(tf => tf.id === selectedFlat.floorId || tf.floorNumber === selectedFlat.floorNumber);
+                  if (flatFloor) {
+                    setIsolatedFloorId(flatFloor.id);
+                    if (setActiveFloor) setActiveFloor(flatFloor.floorNumber);
+                    
+                    const rooms = flatFloor.structureJson?.rooms || [];
+                    const flatRoom = rooms.find((r: any) => String(r.flatId) === String(selectedFlat.flatNumber));
+                    if (flatRoom) {
+                      if (setActiveRoom) setActiveRoom(flatRoom.name);
+                    } else {
+                      if (setActiveRoom) setActiveRoom(null);
+                    }
+                  }
                   setSelectedFlat(null);
                 }}
-                className="flex-1 py-3 text-center bg-[#00f5d4] hover:bg-[#00f5d4]/90 text-[#0c0f16] font-bold rounded-xl text-xs transition shadow-lg shadow-[#00f5d4]/10"
+                className="flex-1 py-3 text-center bg-[#00f5d4] hover:bg-[#00f5d4]/90 text-[#0c0f16] font-bold rounded-xl text-[10px] transition shadow-lg shadow-[#00f5d4]/10"
               >
-                🚶 Walk Inside
+                🚶 Walk
+              </button>
+
+              <button
+                onClick={() => setIsLeadModalOpen(true)}
+                className="flex-1 py-3 text-center bg-white hover:bg-neutral-100 text-[#0c0f16] font-bold rounded-xl text-[10px] transition shadow-lg"
+              >
+                📩 Enquire
+              </button>
+
+              <button
+                onClick={() => toggleShortlist(selectedFlat.id)}
+                className={`px-3 py-3 rounded-xl border flex items-center justify-center transition-all ${
+                  shortlist.includes(selectedFlat.id)
+                    ? 'bg-rose-500/10 border-rose-500 text-rose-500'
+                    : 'bg-white/5 border-white/10 text-white/60 hover:text-rose-400'
+                }`}
+                title="Add to Shortlist"
+              >
+                <Icon icon={shortlist.includes(selectedFlat.id) ? "solar:heart-bold" : "solar:heart-linear"} className="text-base" />
               </button>
             </div>
           </div>

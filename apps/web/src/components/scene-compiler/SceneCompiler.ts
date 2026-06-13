@@ -152,6 +152,7 @@ export class SceneCompiler {
         name: room.name,
         type: 'floor',
         isFloor: true,
+        flatId: room.flatId || room.id,
         width,
         depth,
         areaSqFt: Math.round(width * depth * 10.7639 * 10) / 10,

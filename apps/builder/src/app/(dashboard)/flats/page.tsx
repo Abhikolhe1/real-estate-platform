@@ -47,6 +47,7 @@ export default function FlatsInventoryPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFlat, setSelectedFlat] = useState<Flat | null>(null);
+  const [selectedFlatIds, setSelectedFlatIds] = useState<string[]>([]);
   const [statusInput, setStatusInput] = useState<'AVAILABLE' | 'BOOKED' | 'HOLD'>('AVAILABLE');
   const [priceInput, setPriceInput] = useState(0);
   const [typeInput, setTypeInput] = useState<Flat['type']>('2BHK');
@@ -73,10 +74,11 @@ export default function FlatsInventoryPage() {
       if (flatsRes.ok) setFlats(await flatsRes.json());
       if (towersRes.ok) setTowers(await towersRes.json());
       if (projRes.ok) {
-        const proj = await projRes.json();
-        setProjects(proj);
-        if (proj.length > 0) setSelectedProjId(proj[0].id);
+         const proj = await projRes.json();
+         setProjects(proj);
+         if (proj.length > 0) setSelectedProjId(proj[0].id);
       }
+      setSelectedFlatIds([]);
       setLoading(false);
     } catch { setLoading(false); }
   };
@@ -253,8 +255,23 @@ export default function FlatsInventoryPage() {
                 className={`flat-unit border rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden ${styles.card}`}
               >
                 <div className="flex justify-between items-start mb-3">
-                  <span className="text-xl">{TYPE_ICONS[flat.type]}</span>
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${styles.badge}`}>{flat.status}</span>
+                  <input
+                    type="checkbox"
+                    checked={selectedFlatIds.includes(flat.id)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      if (selectedFlatIds.includes(flat.id)) {
+                        setSelectedFlatIds(selectedFlatIds.filter(id => id !== flat.id));
+                      } else {
+                        setSelectedFlatIds([...selectedFlatIds, flat.id]);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-gray-950 focus:ring-gray-900 cursor-pointer"
+                  />
+                  <div className="flex gap-2 items-center">
+                    <span className="text-xl">{TYPE_ICONS[flat.type]}</span>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${styles.badge}`}>{flat.status}</span>
+                  </div>
                 </div>
                 <h4 className="text-base font-black text-gray-950">Unit {flat.flatNumber}</h4>
                 <p className="text-[10px] text-gray-500 font-bold uppercase mt-0.5 tracking-wider">{flat.type} • {flat.sizeSqFt} sqft</p>
@@ -276,6 +293,20 @@ export default function FlatsInventoryPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                <th className="py-3 px-5 text-left w-10">
+                  <input
+                    type="checkbox"
+                    checked={filteredFlats.length > 0 && selectedFlatIds.length === filteredFlats.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedFlatIds(filteredFlats.map(f => f.id));
+                      } else {
+                        setSelectedFlatIds([]);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-gray-950 focus:ring-gray-900 cursor-pointer"
+                  />
+                </th>
                 <th className="py-3 px-5 text-left">Unit</th>
                 <th className="py-3 px-5 text-left">Type</th>
                 <th className="py-3 px-5 text-left">Tower / Floor</th>
@@ -287,6 +318,20 @@ export default function FlatsInventoryPage() {
             <tbody className="divide-y divide-gray-50">
               {filteredFlats.map(flat => (
                 <tr key={flat.id} className="hover:bg-gray-50/40 transition text-sm">
+                  <td className="py-3.5 px-5">
+                    <input
+                      type="checkbox"
+                      checked={selectedFlatIds.includes(flat.id)}
+                      onChange={(e) => {
+                        if (selectedFlatIds.includes(flat.id)) {
+                          setSelectedFlatIds(selectedFlatIds.filter(id => id !== flat.id));
+                        } else {
+                          setSelectedFlatIds([...selectedFlatIds, flat.id]);
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-gray-950 focus:ring-gray-900 cursor-pointer"
+                    />
+                  </td>
                   <td className="py-3.5 px-5 font-bold text-gray-900">Unit {flat.flatNumber}</td>
                   <td className="py-3.5 px-5 text-gray-600">{TYPE_ICONS[flat.type]} {flat.type} · {flat.sizeSqFt} sqft</td>
                   <td className="py-3.5 px-5 text-gray-500 text-xs">
@@ -403,6 +448,56 @@ export default function FlatsInventoryPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Bulk actions floating bar */}
+      {selectedFlatIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 border border-gray-800 text-white px-6 py-4 rounded-2xl flex items-center gap-6 shadow-2xl animate-slideInUp">
+          <span className="text-xs font-bold">{selectedFlatIds.length} flats selected</span>
+          <div className="h-4 w-px bg-white/20" />
+          <div className="flex gap-2">
+            {[
+              { status: 'AVAILABLE', label: 'Mark Available', color: 'bg-emerald-600 hover:bg-emerald-500' },
+              { status: 'HOLD', label: 'Mark Hold', color: 'bg-amber-600 hover:bg-amber-500' },
+              { status: 'BOOKED', label: 'Mark Booked', color: 'bg-blue-600 hover:bg-blue-500' }
+            ].map(act => (
+              <button
+                key={act.status}
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    await Promise.all(selectedFlatIds.map(async id => {
+                      const response = await fetch(`http://localhost:3001/inventory/flats/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', ...getHeaders() },
+                        body: JSON.stringify({ status: act.status }),
+                      });
+                      if (!response.ok) {
+                        throw new Error(`Failed to update flat ${id}`);
+                      }
+                    }));
+                    setSelectedFlatIds([]);
+                    await fetchData();
+                  } catch (e) {
+                    console.error("Bulk update error:", e);
+                    alert('Some flats could not be updated. Please try again.');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition text-white ${act.color}`}
+              >
+                {act.label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setSelectedFlatIds([])}
+            className="text-xs text-white/50 hover:text-white transition font-bold"
+          >
+            Clear Selection
+          </button>
         </div>
       )}
     </div>

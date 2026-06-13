@@ -3,6 +3,7 @@ import { ProjectsService } from '../services/projects.service';
 import { BillingService } from '../services/billing.service';
 import { CreateProjectDto, UpdateProjectDto } from '../dtos/project.dto';
 import { TenantId } from '../interceptors/tenant.decorator';
+import { AmenityType } from '../entities/amenity.entity';
 
 @Controller('projects')
 export class ProjectsController {
@@ -14,6 +15,31 @@ export class ProjectsController {
   @Get()
   async findAll(@TenantId() tenantId: string) {
     return this.projectsService.findAll(tenantId);
+  }
+
+  @Get(':id/amenities')
+  async findAmenities(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.projectsService.findAmenities(tenantId, id);
+  }
+
+  @Post(':id/amenities')
+  async saveAmenities(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() body: {
+      amenities: Array<{
+        type: AmenityType;
+        x: number;
+        z: number;
+        rotation?: number;
+        label: string;
+        description?: string;
+        imageUrl?: string;
+        timings?: string;
+      }>;
+    },
+  ) {
+    return this.projectsService.saveAmenities(tenantId, id, body.amenities || []);
   }
 
   @Get(':id')

@@ -20,7 +20,7 @@ export class Hotspot {
   name!: string;
 
   @Column({ type: 'varchar', length: 50, default: 'info' })
-  type!: 'info' | 'pricing' | 'video' | 'brochure' | 'cta';
+  type!: 'info' | 'pricing' | 'video' | 'brochure' | 'cta' | 'amenity';
 
   @Column({ type: 'float', default: 0 })
   posX!: number;

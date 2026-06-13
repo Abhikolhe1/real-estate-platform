@@ -73,6 +73,7 @@ import { Translation } from './entities/translation.entity';
 import { Currency } from './entities/currency.entity';
 import { GeneratedStructure } from './entities/generated-structure.entity';
 import { StructuralAperture } from './entities/structural-aperture.entity';
+import { Amenity } from './entities/amenity.entity';
 
 // Interceptor
 import { TenantInterceptor } from './interceptors/tenant.interceptor';
@@ -101,7 +102,7 @@ import { AuditService } from './services/audit.service';
         NavigationMenu, NavigationItem, AnimationPreset, PageRevision, 
         DigitalTwinModel, CameraPoint, Hotspot, TourRoute, SdkKey, EmbedConfig, 
         AnalyticsEvent, Subscription, Invoice, SsoProvider, Translation, Currency,
-        GeneratedStructure, StructuralAperture
+        GeneratedStructure, StructuralAperture, Amenity
       ],
       synchronize: true, // Automatically synchronize schema
     }),
@@ -111,7 +112,7 @@ import { AuditService } from './services/audit.service';
       NavigationMenu, NavigationItem, AnimationPreset, PageRevision, 
       DigitalTwinModel, CameraPoint, Hotspot, TourRoute, SdkKey, EmbedConfig, 
       AnalyticsEvent, Subscription, Invoice, SsoProvider, Translation, Currency,
-      GeneratedStructure, StructuralAperture
+      GeneratedStructure, StructuralAperture, Amenity
     ]),
   ],
   controllers: [

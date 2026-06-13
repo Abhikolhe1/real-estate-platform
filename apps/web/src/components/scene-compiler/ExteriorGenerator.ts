@@ -271,11 +271,24 @@ export class ExteriorGenerator {
             rotY = 0;
           }
 
+          // Find which room this window belongs to
+          const rooms = structureJson.rooms || [];
+          const room = rooms.find((r: any) => {
+            const pad = 0.35; // tolerance
+            return globalX >= r.x - pad && globalX <= r.x + r.width + pad &&
+                   globalZ >= r.z - pad && globalZ <= r.z + r.depth + pad;
+          });
+
           // Create glass plane
           const glassGeo = new THREE.PlaneGeometry(ap.width, ap.height);
           const glassMesh = new THREE.Mesh(glassGeo, windowGlassMat);
           glassMesh.position.set(windowX, globalY, windowZ);
           glassMesh.rotation.y = rotY;
+          glassMesh.userData = {
+            type: 'windowGlass',
+            flatId: room?.flatId || room?.id,
+            floorId: floor.id
+          };
           group.add(glassMesh);
 
           // Add frame box outlines
@@ -328,6 +341,11 @@ export class ExteriorGenerator {
           balSlabMesh.position.set(cx, by + 0.04, cz);
           balSlabMesh.receiveShadow = true;
           balSlabMesh.castShadow = true;
+          balSlabMesh.userData = {
+            type: 'balconySlab',
+            flatId: r.flatId || r.id,
+            floorId: floor.id
+          };
           group.add(balSlabMesh);
 
           // Glass Railings (North, South, East, West edges where exposed)

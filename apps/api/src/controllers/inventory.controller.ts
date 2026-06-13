@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Tower } from '../entities/tower.entity';
@@ -89,12 +89,14 @@ export class InventoryController {
   @Get('flats')
   async getFlats(@TenantId() tenantId: string, @Query('towerId') towerId?: string) {
     if (towerId) {
-      const floors = await this.floorRepo.find({
-        where: { tenantId, towerId },
-        relations: ['flats'],
-        order: { floorNumber: 'DESC' },
+      return this.flatRepo.find({
+        where: { tenantId, floor: { towerId } } as any,
+        relations: ['floor', 'floor.tower'],
+        order: {
+          floor: { floorNumber: 'DESC' },
+          flatNumber: 'ASC',
+        } as any,
       });
-      return floors;
     }
 
     return this.flatRepo.find({
@@ -102,6 +104,20 @@ export class InventoryController {
       relations: ['floor', 'floor.tower'],
       order: { flatNumber: 'ASC' },
     });
+  }
+
+  @Get('flats/:id')
+  async getFlat(@TenantId() tenantId: string, @Param('id') id: string) {
+    const flat = await this.flatRepo.findOne({
+      where: { id, tenantId },
+      relations: ['floor', 'floor.tower'],
+    });
+
+    if (!flat) {
+      throw new NotFoundException('Flat unit not found under this tenant context');
+    }
+
+    return flat;
   }
 
   // Update Flat Status (Book flat, change price, orientation)

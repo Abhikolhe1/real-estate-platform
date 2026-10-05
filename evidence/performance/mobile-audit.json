@@ -1,0 +1,319 @@
+[
+  {
+    "port": 3002,
+    "route": "/",
+    "url": "http://localhost:3002/",
+    "title": "Governance Intelligence",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": [
+      {
+        "tag": "BUTTON",
+        "cls": "px-3 py-1 rounded-lg font-bold text-[10px] transition-all border bg-slate-900 text-slate-400 hover:text-red-400 border-slate-800",
+        "text": "Suspend"
+      },
+      {
+        "tag": "TR",
+        "cls": "hover:bg-slate-900/30 transition-colors duration-200",
+        "text": "Aethelgard Luxury ResidencesID: b0d39e2a-1cbe-4c28"
+      },
+      {
+        "tag": "TD",
+        "cls": "py-4.5 px-6",
+        "text": "Active"
+      },
+      {
+        "tag": "SPAN",
+        "cls": "inline-flex items-center gap-1.5 font-bold text-[10px] uppercase text-emerald-400",
+        "text": "Active"
+      },
+      {
+        "tag": "TD",
+        "cls": "py-4.5 px-6 text-right",
+        "text": "Suspend"
+      },
+      {
+        "tag": "BUTTON",
+        "cls": "px-3 py-1 rounded-lg font-bold text-[10px] transition-all border bg-slate-900 text-slate-400 hover:text-red-400 border-slate-800",
+        "text": "Suspend"
+      }
+    ]
+  },
+  {
+    "port": 3002,
+    "route": "/?tab=builders",
+    "url": "http://localhost:3002/?tab=builders",
+    "title": "Builders Directory",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": [
+      {
+        "tag": "path",
+        "cls": {},
+        "text": ""
+      },
+      {
+        "tag": "BUTTON",
+        "cls": "px-4 py-2 rounded-lg bg-slate-900 hover:bg-red-950/30 text-slate-400 hover:text-red-400 border border-slate-800 font-bold text-[10px] transition-all active:scale-95 flex items-center justify-center gap-1.5",
+        "text": "Delete"
+      },
+      {
+        "tag": "svg",
+        "cls": {},
+        "text": ""
+      },
+      {
+        "tag": "g",
+        "cls": {},
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "cls": {},
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "cls": {},
+        "text": ""
+      }
+    ]
+  },
+  {
+    "port": 3002,
+    "route": "/?tab=billing",
+    "url": "http://localhost:3002/?tab=billing",
+    "title": "Billing & Subscriptions",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": [
+      {
+        "tag": "TD",
+        "cls": "py-4.5 px-6 text-right",
+        "text": "Modify Plan"
+      },
+      {
+        "tag": "BUTTON",
+        "cls": "text-xs font-bold text-indigo-400 hover:text-indigo-300 hover:underline",
+        "text": "Modify Plan"
+      },
+      {
+        "tag": "TR",
+        "cls": "hover:bg-slate-900/30 transition-colors",
+        "text": "Aethelgard Luxury ResidencesStarter₹4,20,000Auto-D"
+      },
+      {
+        "tag": "TD",
+        "cls": "py-4.5 px-6 text-slate-500",
+        "text": "Auto-Debit: 1st of Month"
+      },
+      {
+        "tag": "TD",
+        "cls": "py-4.5 px-6 text-right",
+        "text": "Modify Plan"
+      },
+      {
+        "tag": "BUTTON",
+        "cls": "text-xs font-bold text-indigo-400 hover:text-indigo-300 hover:underline",
+        "text": "Modify Plan"
+      }
+    ]
+  },
+  {
+    "port": 3002,
+    "route": "/?tab=settings",
+    "url": "http://localhost:3002/?tab=settings",
+    "title": "System Settings",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": []
+  },
+  {
+    "port": 3003,
+    "route": "/",
+    "url": "http://localhost:3003/",
+    "title": "Builder Workspace",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": []
+  },
+  {
+    "port": 3003,
+    "route": "/projects",
+    "url": "http://localhost:3003/projects",
+    "title": "Projects Portfolio",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": []
+  },
+  {
+    "port": 3003,
+    "route": "/towers",
+    "url": "http://localhost:3003/towers",
+    "title": "Building Towers",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": []
+  },
+  {
+    "port": 3003,
+    "route": "/floors",
+    "url": "http://localhost:3003/floors",
+    "title": "Floor Management",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": []
+  },
+  {
+    "port": 3003,
+    "route": "/flats",
+    "url": "http://localhost:3003/flats",
+    "title": "Flats & Inventory",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": []
+  },
+  {
+    "port": 3003,
+    "route": "/analytics",
+    "url": "http://localhost:3003/analytics",
+    "title": "Analytics & Insights",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": []
+  },
+  {
+    "port": 3003,
+    "route": "/amenities",
+    "url": "http://localhost:3003/amenities",
+    "title": "Amenities Site Plan",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": []
+  },
+  {
+    "port": 3003,
+    "route": "/leads",
+    "url": "http://localhost:3003/leads",
+    "title": "Sales Leads CRM",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": [
+      {
+        "tag": "TD",
+        "cls": "py-4 px-5 text-xs text-gray-400 max-w-[180px] truncate",
+        "text": "Interested in the 3BHK flat on Floor 2. Needs a ca"
+      },
+      {
+        "tag": "TD",
+        "cls": "py-4 px-5 text-right",
+        "text": "💬✏️🗑️"
+      },
+      {
+        "tag": "DIV",
+        "cls": "flex gap-2 justify-end",
+        "text": "💬✏️🗑️"
+      },
+      {
+        "tag": "A",
+        "cls": "px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 text-[11px] font-bold hover:bg-emerald-100 transition",
+        "text": "💬"
+      },
+      {
+        "tag": "BUTTON",
+        "cls": "px-2.5 py-1.5 rounded-lg bg-gray-50 text-gray-600 text-[11px] font-bold hover:bg-gray-100 transition",
+        "text": "✏️"
+      },
+      {
+        "tag": "BUTTON",
+        "cls": "px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 text-[11px] font-bold hover:bg-red-100 transition",
+        "text": "🗑️"
+      }
+    ]
+  },
+  {
+    "port": 3003,
+    "route": "/team",
+    "url": "http://localhost:3003/team",
+    "title": "Team Members",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": []
+  },
+  {
+    "port": 3003,
+    "route": "/media",
+    "url": "http://localhost:3003/media",
+    "title": "Media Library",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": []
+  },
+  {
+    "port": 3003,
+    "route": "/website",
+    "url": "http://localhost:3003/website",
+    "title": "Website Visual Architect",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": [
+      {
+        "tag": "TD",
+        "cls": "py-4 px-6 text-gray-400 italic truncate max-w-xs",
+        "text": "Aethelgard Luxury Residences | Sky Penthouses"
+      },
+      {
+        "tag": "TD",
+        "cls": "py-4 px-6",
+        "text": "published"
+      },
+      {
+        "tag": "BUTTON",
+        "cls": "px-3 py-1 rounded-full text-[10px] font-bold uppercase transition bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100/50",
+        "text": "published"
+      },
+      {
+        "tag": "TD",
+        "cls": "py-4 px-6 text-right space-x-2",
+        "text": "Design LayoutDuplicate"
+      },
+      {
+        "tag": "BUTTON",
+        "cls": "px-2.5 py-1.5 rounded bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] shadow-sm transition",
+        "text": "Design Layout"
+      },
+      {
+        "tag": "BUTTON",
+        "cls": "px-2.5 py-1.5 rounded bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 font-bold text-[10px] transition disabled:opacity-50",
+        "text": "Duplicate"
+      }
+    ]
+  },
+  {
+    "port": 3003,
+    "route": "/sdk",
+    "url": "http://localhost:3003/sdk",
+    "title": "SDK Platform & Universal Embeds",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": []
+  },
+  {
+    "port": 3003,
+    "route": "/ai-generator",
+    "url": "http://localhost:3003/ai-generator",
+    "title": "🏢Real Estate Virtual Twin Engine",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": []
+  },
+  {
+    "port": 3003,
+    "route": "/walkthroughs",
+    "url": "http://localhost:3003/walkthroughs",
+    "title": "3D Virtual Experience Studio",
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": []
+  }
+]

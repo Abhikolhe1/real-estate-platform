@@ -12,327 +12,276 @@ import { TwinsService } from '../services/twins.service';
 import { Builder } from '../entities/builder.entity';
 
 // Template coordinates lookup generator for configurable floors
-function getTemplateLayout(type: string) {
-  if (type === '1BHK') {
+// Template coordinates lookup generator for configurable floors matching the Architectural Blueprint:
+// Ground Floor: Lobby, Parking, Security, Meter Room, Central Core
+// Type A: 2 Units (3 BHK each, ~1,650 sq.ft)
+// Type B: 4 Units (2 BHK each, ~1,050 sq.ft)
+// Type C: 1 Unit (4 BHK Sky Villa, ~2,400 sq.ft)
+export function getTemplateLayout(type: string) {
+  const normType = (type || 'TYPE_A').toUpperCase().replace(/[^A-Z0-9_]/g, '');
+
+  // 1. GROUND FLOOR: Entrance Lobby, Security Cabin, Meter Room, Parking Bays, Central Core
+  if (normType === 'GROUND' || normType === 'LOBBY' || normType === '0') {
     return {
       rooms: [
-        { id: 'room-lobby-1bhk', name: 'Lobby Corridor', x: -8, z: 4, width: 16, depth: 2, color: '#374151', node: { x: 0, z: 5.0 } },
-        { id: 'room-living-a-1bhk', name: 'Flat A - Living Room', x: -8, z: 0, width: 8, depth: 4, color: '#f5efe6', node: { x: -4, z: 2.0 } },
-        { id: 'room-kitchen-a-1bhk', name: 'Flat A - Kitchen', x: -8, z: -4, width: 4, depth: 4, color: '#f4ece1', node: { x: -6, z: -2.0 } },
-        { id: 'room-bedroom-a-1bhk', name: 'Flat A - Bedroom', x: -4, z: -4, width: 4, depth: 4, color: '#ece8f2', node: { x: -2, z: -2.0 } },
-        { id: 'room-balcony-a-1bhk', name: 'Flat A - Balcony', x: -4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: -2, z: -5.75 } },
-        { id: 'room-living-b-1bhk', name: 'Flat B - Living Room', x: 0, z: 0, width: 8, depth: 4, color: '#f5efe6', node: { x: 4, z: 2.0 } },
-        { id: 'room-kitchen-b-1bhk', name: 'Flat B - Kitchen', x: 0, z: -4, width: 4, depth: 4, color: '#f4ece1', node: { x: 2, z: -2.0 } },
-        { id: 'room-bedroom-b-1bhk', name: 'Flat B - Bedroom', x: 4, z: -4, width: 4, depth: 4, color: '#ece8f2', node: { x: 6, z: -2.0 } },
-        { id: 'room-balcony-b-1bhk', name: 'Flat B - Balcony', x: 4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: 6, z: -5.75 } }
+        { id: 'room-g-lobby', name: 'Grand Entrance & Reception Lobby', x: -4, z: 0, width: 8, depth: 6, color: '#f8fafc', node: { x: 0, z: 3.0 } },
+        { id: 'room-g-stairs', name: 'Central Staircase Core', x: -5, z: -4, width: 5, depth: 4, color: '#0f172a', node: { x: -2.5, z: -2.0 } },
+        { id: 'room-g-lift', name: 'High-Speed Passenger Lift', x: 0, z: -4, width: 5, depth: 4, color: '#1e293b', node: { x: 2.5, z: -2.0 } },
+        { id: 'room-g-security', name: 'Security Control Cabin', x: 4, z: 0, width: 4, depth: 3, color: '#e2e8f0', node: { x: 6, z: 1.5 } },
+        { id: 'room-g-meter', name: 'Meter & Electrical Services', x: 4, z: 3, width: 4, depth: 3, color: '#cbd5e1', node: { x: 6, z: 4.5 } },
+        { id: 'room-g-park-w', name: 'West Parking Bays', x: -13, z: -8, width: 7, depth: 15, color: '#334155', node: { x: -9.5, z: 0 } },
+        { id: 'room-g-park-e', name: 'East Parking Bays', x: 9, z: -8, width: 7, depth: 15, color: '#334155', node: { x: 12.5, z: 0 } },
       ],
       walls: [
-        // Outer boundaries
-        { id: 'w-1bhk-out-top', startX: -8, startZ: -5, endX: 8, endZ: -5, thickness: 0.2, height: 3.0 },
-        { id: 'w-1bhk-out-right', startX: 8, startZ: -5, endX: 8, endZ: 6, thickness: 0.2, height: 3.0 },
-        { id: 'w-1bhk-out-bottom', startX: 8, startZ: 6, endX: -8, endZ: 6, thickness: 0.2, height: 3.0 },
-        { id: 'w-1bhk-out-left', startX: -8, startZ: 6, endX: -8, endZ: -5, thickness: 0.2, height: 3.0 },
-        // Internal partitions
-        { id: 'w-1bhk-int-mid', startX: 0, startZ: -5, endX: 0, endZ: 4, thickness: 0.15, height: 3.0 },
-        { id: 'w-1bhk-int-lobby', startX: -8, startZ: 4, endX: 8, endZ: 4, thickness: 0.15, height: 3.0 },
-        { id: 'w-1bhk-int-flat-a-horiz', startX: -8, startZ: 0, endX: 0, endZ: 0, thickness: 0.15, height: 3.0 },
-        { id: 'w-1bhk-int-flat-b-horiz', startX: 0, startZ: 0, endX: 8, endZ: 0, thickness: 0.15, height: 3.0 },
-        { id: 'w-1bhk-int-flat-a-vert', startX: -4, startZ: -4, endX: -4, endZ: 0, thickness: 0.15, height: 3.0 },
-        { id: 'w-1bhk-int-flat-b-vert', startX: 4, startZ: -4, endX: 4, endZ: 0, thickness: 0.15, height: 3.0 }
+        // Perimeter
+        { id: 'w-g-top', startX: -13, startZ: -8, endX: 16, endZ: -8, thickness: 0.25, height: 4.0 },
+        { id: 'w-g-right', startX: 16, startZ: -8, endX: 16, endZ: 7, thickness: 0.25, height: 4.0 },
+        { id: 'w-g-bottom', startX: 16, startZ: 7, endX: -13, endZ: 7, thickness: 0.25, height: 4.0 },
+        { id: 'w-g-left', startX: -13, startZ: 7, endX: -13, endZ: -8, thickness: 0.25, height: 4.0 },
+        // Central Core & Lobby Partitions
+        { id: 'w-g-core-back', startX: -5, startZ: -4, endX: 5, endZ: -4, thickness: 0.25, height: 4.0 },
+        { id: 'w-g-core-mid', startX: 0, startZ: -4, endX: 0, endZ: 0, thickness: 0.2, height: 4.0 },
+        { id: 'w-g-lobby-front', startX: -4, startZ: 6, endX: 8, endZ: 6, thickness: 0.25, height: 4.0 },
+        { id: 'w-g-lobby-left', startX: -4, startZ: 0, endX: -4, endZ: 6, thickness: 0.25, height: 4.0 },
+        { id: 'w-g-sec-mid', startX: 4, startZ: 3, endX: 8, endZ: 3, thickness: 0.2, height: 4.0 },
+        { id: 'w-g-sec-right', startX: 8, startZ: 0, endX: 8, endZ: 6, thickness: 0.25, height: 4.0 },
       ],
       apertures: [
-        // Entrance doors from Lobby Corridor (interactive swinging doors swinging inward)
-        { id: 'ap-entrance-a-1bhk', wallId: 'w-1bhk-int-lobby', type: 'door', startOffset: 3.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-entrance-b-1bhk', wallId: 'w-1bhk-int-lobby', type: 'door', startOffset: 11.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-        // Flat A Bedroom/Kitchen
-        { id: 'ap-door-bedroom-a-1bhk', wallId: 'w-1bhk-int-flat-a-horiz', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-arch-kitchen-a-1bhk', wallId: 'w-1bhk-int-flat-a-horiz', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 }, // Open archway
-        // Flat B Bedroom/Kitchen
-        { id: 'ap-door-bedroom-b-1bhk', wallId: 'w-1bhk-int-flat-b-horiz', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-arch-kitchen-b-1bhk', wallId: 'w-1bhk-int-flat-b-horiz', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 }, // Open archway
-        // Balcony Doors
-        { id: 'ap-balcony-door-a-1bhk', wallId: 'w-1bhk-out-top', type: 'door', startOffset: 5.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
-        { id: 'ap-balcony-door-b-1bhk', wallId: 'w-1bhk-out-top', type: 'door', startOffset: 13.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
-        // Windows
-        { id: 'ap-win-kitchen-a-1bhk', wallId: 'w-1bhk-out-top', type: 'window', startOffset: 1.5, width: 1.2, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-kitchen-b-1bhk', wallId: 'w-1bhk-out-top', type: 'window', startOffset: 9.5, width: 1.2, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-living-a-1bhk', wallId: 'w-1bhk-out-left', type: 'window', startOffset: 4.0, width: 1.5, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-living-b-1bhk', wallId: 'w-1bhk-out-right', type: 'window', startOffset: 6.0, width: 1.5, height: 1.2, elevation: 0.9 }
+        { id: 'ap-g-main-ent', wallId: 'w-g-lobby-front', type: 'door', startOffset: 2.5, width: 3.0, height: 3.0, elevation: 0.0, swing: 1 },
+        { id: 'ap-g-sec-door', wallId: 'w-g-sec-mid', type: 'door', startOffset: 1.5, width: 1.0, height: 2.2, elevation: 0.0, swing: -1 },
+        { id: 'ap-g-win-l', wallId: 'w-g-lobby-front', type: 'window', startOffset: 0.5, width: 1.5, height: 2.4, elevation: 0.5 },
       ],
       furniture: [
-        { id: 'f-sofa-a-1bhk', type: 'sofa', roomId: 'room-living-a-1bhk', x: -4.0, z: 1.5, rotation: 0 },
-        { id: 'f-table-a-1bhk', type: 'table', roomId: 'room-living-a-1bhk', x: -4.0, z: 2.5, rotation: 0 },
-        { id: 'f-bed-a-1bhk', type: 'bed', roomId: 'room-bedroom-a-1bhk', x: -2.0, z: -2.5, rotation: 90 },
-        { id: 'f-sofa-b-1bhk', type: 'sofa', roomId: 'room-living-b-1bhk', x: 4.0, z: 1.5, rotation: 0 },
-        { id: 'f-table-b-1bhk', type: 'table', roomId: 'room-living-b-1bhk', x: 4.0, z: 2.5, rotation: 0 },
-        { id: 'f-bed-b-1bhk', type: 'bed', roomId: 'room-bedroom-b-1bhk', x: 6.0, z: -2.5, rotation: 90 }
+        { id: 'f-g-counter', type: 'counter', roomId: 'room-g-lobby', x: 0, z: 1.5, rotation: 0 },
+        { id: 'f-g-lift', type: 'elevator', roomId: 'room-g-lift', x: 2.5, z: -2.5, rotation: 180 },
+        { id: 'f-g-stairs', type: 'stairs', roomId: 'room-g-stairs', x: -2.5, z: -2.5, rotation: 0 },
+        { id: 'f-g-sofa-w1', type: 'sofa', roomId: 'room-g-lobby', x: -2.5, z: 4.5, rotation: 90 },
+        { id: 'f-g-sofa-w2', type: 'sofa', roomId: 'room-g-lobby', x: 2.5, z: 4.5, rotation: -90 },
       ]
     };
   }
 
-  if (type === '2BHK') {
+  // 2. TYPE B FLOOR: 4 UNITS (2 BHK EACH, ~1,050 sq. ft. each) - Floors 2, 5, 8
+  if (normType === 'TYPE_B' || normType === '2BHK' || normType === 'TYPEB' || normType === '2' || normType === '5' || normType === '8') {
     return {
       rooms: [
-        { id: 'room-lobby-2bhk', name: 'Lobby Corridor', x: -8, z: 4, width: 16, depth: 2, color: '#374151', node: { x: 0, z: 5.0 } },
-        { id: 'room-living-a-2bhk', name: 'Flat A - Living Room', x: -8, z: -1, width: 8, depth: 5, color: '#f5efe6', node: { x: -4, z: 1.5 } },
-        { id: 'room-kitchen-a-2bhk', name: 'Flat A - Kitchen', x: -8, z: -5, width: 4, depth: 4, color: '#f4ece1', node: { x: -6, z: -3.0 } },
-        { id: 'room-bedroom-a-2bhk', name: 'Flat A - Bedroom', x: -4, z: -5, width: 4, depth: 4, color: '#ece8f2', node: { x: -2, z: -3.0 } },
-        { id: 'room-balcony-a-2bhk', name: 'Flat A - Balcony', x: -4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: -2, z: -5.75 } },
-        { id: 'room-living-b-2bhk', name: 'Flat B - Living Room', x: 0, z: -1, width: 8, depth: 5, color: '#f5efe6', node: { x: 4, z: 1.5 } },
-        { id: 'room-kitchen-b-2bhk', name: 'Flat B - Kitchen', x: 0, z: -5, width: 4, depth: 4, color: '#f4ece1', node: { x: 2, z: -3.0 } },
-        { id: 'room-bedroom-b-2bhk', name: 'Flat B - Bedroom', x: 4, z: -5, width: 4, depth: 4, color: '#ece8f2', node: { x: 6, z: -3.0 } },
-        { id: 'room-balcony-b-2bhk', name: 'Flat B - Balcony', x: 4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: 6, z: -5.75 } }
-      ],
-      walls: [
-        // Outer boundaries
-        { id: 'w-2bhk-out-top', startX: -8, startZ: -5, endX: 8, endZ: -5, thickness: 0.2, height: 3.0 },
-        { id: 'w-2bhk-out-right', startX: 8, startZ: -5, endX: 8, endZ: 6, thickness: 0.2, height: 3.0 },
-        { id: 'w-2bhk-out-bottom', startX: 8, startZ: 6, endX: -8, endZ: 6, thickness: 0.2, height: 3.0 },
-        { id: 'w-2bhk-out-left', startX: -8, startZ: 6, endX: -8, endZ: -5, thickness: 0.2, height: 3.0 },
-        // Internal partitions
-        { id: 'w-2bhk-int-mid', startX: 0, startZ: -5, endX: 0, endZ: 4, thickness: 0.15, height: 3.0 },
-        { id: 'w-2bhk-int-lobby', startX: -8, startZ: 4, endX: 8, endZ: 4, thickness: 0.15, height: 3.0 },
-        { id: 'w-2bhk-int-flat-a-horiz', startX: -8, startZ: -1, endX: 0, endZ: -1, thickness: 0.15, height: 3.0 },
-        { id: 'w-2bhk-int-flat-b-horiz', startX: 0, startZ: -1, endX: 8, endZ: -1, thickness: 0.15, height: 3.0 },
-        { id: 'w-2bhk-int-flat-a-vert', startX: -4, startZ: -5, endX: -4, endZ: -1, thickness: 0.15, height: 3.0 },
-        { id: 'w-2bhk-int-flat-b-vert', startX: 4, startZ: -5, endX: 4, endZ: -1, thickness: 0.15, height: 3.0 }
-      ],
-      apertures: [
-        { id: 'ap-entrance-a-2bhk', wallId: 'w-2bhk-int-lobby', type: 'door', startOffset: 3.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-entrance-b-2bhk', wallId: 'w-2bhk-int-lobby', type: 'door', startOffset: 11.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-door-bedroom-a-2bhk', wallId: 'w-2bhk-int-flat-a-horiz', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-arch-kitchen-a-2bhk', wallId: 'w-2bhk-int-flat-a-horiz', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 },
-        { id: 'ap-door-bedroom-b-2bhk', wallId: 'w-2bhk-int-flat-b-horiz', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-arch-kitchen-b-2bhk', wallId: 'w-2bhk-int-flat-b-horiz', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 },
-        { id: 'ap-balcony-door-a-2bhk', wallId: 'w-2bhk-out-top', type: 'door', startOffset: 5.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
-        { id: 'ap-balcony-door-b-2bhk', wallId: 'w-2bhk-out-top', type: 'door', startOffset: 13.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
-        { id: 'ap-win-kitchen-a-2bhk', wallId: 'w-2bhk-out-top', type: 'window', startOffset: 1.5, width: 1.2, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-kitchen-b-2bhk', wallId: 'w-2bhk-out-top', type: 'window', startOffset: 9.5, width: 1.2, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-living-a-2bhk', wallId: 'w-2bhk-out-left', type: 'window', startOffset: 4.0, width: 1.5, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-living-b-2bhk', wallId: 'w-2bhk-out-right', type: 'window', startOffset: 6.0, width: 1.5, height: 1.2, elevation: 0.9 }
-      ],
-      furniture: [
-        { id: 'f-sofa-a-2bhk', type: 'sofa', roomId: 'room-living-a-2bhk', x: -4.0, z: 1.5, rotation: 0 },
-        { id: 'f-table-a-2bhk', type: 'table', roomId: 'room-living-a-2bhk', x: -4.0, z: 2.5, rotation: 0 },
-        { id: 'f-bed-a-2bhk', type: 'bed', roomId: 'room-bedroom-a-2bhk', x: -2.0, z: -3.5, rotation: 90 },
-        { id: 'f-sofa-b-2bhk', type: 'sofa', roomId: 'room-living-b-2bhk', x: 4.0, z: 1.5, rotation: 0 },
-        { id: 'f-table-b-2bhk', type: 'table', roomId: 'room-living-b-2bhk', x: 4.0, z: 2.5, rotation: 0 },
-        { id: 'f-bed-b-2bhk', type: 'bed', roomId: 'room-bedroom-b-2bhk', x: 6.0, z: -3.5, rotation: 90 }
-      ]
-    };
-  }
-
-  if (type === '3BHK') {
-    return {
-      rooms: [
-        { id: 'room-lobby-3bhk', name: 'Lobby Corridor', x: -8, z: 4, width: 16, depth: 2, color: '#374151', node: { x: 0, z: 5.0 } },
-        { id: 'room-living-a-3bhk', name: 'Flat A - Living Room', x: -8, z: 1, width: 8, depth: 3, color: '#f5efe6', node: { x: -4, z: 2.5 } },
-        { id: 'room-kitchen-a-3bhk', name: 'Flat A - Kitchen', x: -8, z: -2, width: 4, depth: 3, color: '#f4ece1', node: { x: -6, z: -0.5 } },
-        { id: 'room-bedroom-a-3bhk', name: 'Flat A - Master Bedroom', x: -4, z: -2, width: 4, depth: 3, color: '#ece8f2', node: { x: -2, z: -0.5 } },
-        { id: 'room-kids-a-3bhk', name: 'Flat A - Kids Bedroom', x: -8, z: -5, width: 4, depth: 3, color: '#e3ece9', node: { x: -6, z: -3.5 } },
-        { id: 'room-guest-a-3bhk', name: 'Flat A - Guest Bedroom', x: -4, z: -5, width: 4, depth: 3, color: '#e1ecf4', node: { x: -2, z: -3.5 } },
-        { id: 'room-balcony-a-3bhk', name: 'Flat A - Balcony', x: -4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: -2, z: -5.75 } },
+        // Central Core
+        { id: 'room-b-stairs', name: 'Central Staircase Core', x: -5, z: -2, width: 5, depth: 4, color: '#0f172a', node: { x: -2.5, z: 0 } },
+        { id: 'room-b-lobby', name: 'Central 4-Door Resident Lobby', x: 0, z: -2, width: 5, depth: 4, color: '#334155', node: { x: 2.5, z: 0 } },
+        { id: 'room-b-lift', name: 'High-Speed Passenger Lift', x: 5, z: -2, width: 4, depth: 4, color: '#1e293b', node: { x: 7.0, z: 0 } },
         
-        { id: 'room-living-b-3bhk', name: 'Flat B - Living Room', x: 0, z: 1, width: 8, depth: 3, color: '#f5efe6', node: { x: 4, z: 2.5 } },
-        { id: 'room-kitchen-b-3bhk', name: 'Flat B - Kitchen', x: 0, z: -2, width: 4, depth: 3, color: '#f4ece1', node: { x: 2, z: -0.5 } },
-        { id: 'room-bedroom-b-3bhk', name: 'Flat B - Master Bedroom', x: 4, z: -2, width: 4, depth: 3, color: '#ece8f2', node: { x: 6, z: -0.5 } },
-        { id: 'room-kids-b-3bhk', name: 'Flat B - Kids Bedroom', x: 0, z: -5, width: 4, depth: 3, color: '#e3ece9', node: { x: 2, z: -3.5 } },
-        { id: 'room-guest-b-3bhk', name: 'Flat B - Guest Bedroom', x: 4, z: -5, width: 4, depth: 3, color: '#e1ecf4', node: { x: 6, z: -3.5 } },
-        { id: 'room-balcony-b-3bhk', name: 'Flat B - Balcony', x: 4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: 6, z: -5.75 } }
+        // Unit 1 (2 BHK - NW Top-Left)
+        { id: 'room-b1-living', name: 'Unit 1 (2 BHK) - Living & Dining Lounge', x: -11, z: -7, width: 6, depth: 5, color: '#f5efe6', node: { x: -8.0, z: -4.5 } },
+        { id: 'room-b1-kitchen', name: 'Unit 1 - Modular Kitchen', x: -5, z: -7, width: 5, depth: 5, color: '#f4ece1', node: { x: -2.5, z: -4.5 } },
+        { id: 'room-b1-master', name: 'Unit 1 - Master Bedroom', x: -11, z: -12, width: 5.5, depth: 5, color: '#ece8f2', node: { x: -8.25, z: -9.5 } },
+        { id: 'room-b1-bed2', name: 'Unit 1 - Bedroom 2', x: -5.5, z: -12, width: 5.5, depth: 5, color: '#e3ece9', node: { x: -2.75, z: -9.5 } },
+        { id: 'room-b1-bath', name: 'Unit 1 - Luxury Bath', x: -13, z: -9, width: 2, depth: 3, color: '#e2e8f0', node: { x: -12.0, z: -7.5 } },
+        
+        // Unit 2 (2 BHK - NE Top-Right)
+        { id: 'room-b2-living', name: 'Unit 2 (2 BHK) - Living & Dining Lounge', x: 5, z: -7, width: 6, depth: 5, color: '#f5efe6', node: { x: 8.0, z: -4.5 } },
+        { id: 'room-b2-kitchen', name: 'Unit 2 - Modular Kitchen', x: 0, z: -7, width: 5, depth: 5, color: '#f4ece1', node: { x: 2.5, z: -4.5 } },
+        { id: 'room-b2-master', name: 'Unit 2 - Master Bedroom', x: 5.5, z: -12, width: 5.5, depth: 5, color: '#ece8f2', node: { x: 8.25, z: -9.5 } },
+        { id: 'room-b2-bed2', name: 'Unit 2 - Bedroom 2', x: 0, z: -12, width: 5.5, depth: 5, color: '#e3ece9', node: { x: 2.75, z: -9.5 } },
+        { id: 'room-b2-bath', name: 'Unit 2 - Luxury Bath', x: 11, z: -9, width: 2, depth: 3, color: '#e2e8f0', node: { x: 12.0, z: -7.5 } },
+
+        // Unit 3 (2 BHK - SW Bottom-Left)
+        { id: 'room-b3-living', name: 'Unit 3 (2 BHK) - Living & Dining Lounge', x: -11, z: 2, width: 6, depth: 5, color: '#f5efe6', node: { x: -8.0, z: 4.5 } },
+        { id: 'room-b3-kitchen', name: 'Unit 3 - Modular Kitchen', x: -5, z: 2, width: 5, depth: 5, color: '#f4ece1', node: { x: -2.5, z: 4.5 } },
+        { id: 'room-b3-master', name: 'Unit 3 - Master Bedroom', x: -11, z: 7, width: 5.5, depth: 5, color: '#ece8f2', node: { x: -8.25, z: 9.5 } },
+        { id: 'room-b3-bed2', name: 'Unit 3 - Bedroom 2', x: -5.5, z: 7, width: 5.5, depth: 5, color: '#e3ece9', node: { x: -2.75, z: 9.5 } },
+        { id: 'room-b3-bath', name: 'Unit 3 - Luxury Bath', x: -13, z: 4, width: 2, depth: 3, color: '#e2e8f0', node: { x: -12.0, z: 5.5 } },
+
+        // Unit 4 (2 BHK - SE Bottom-Right)
+        { id: 'room-b4-living', name: 'Unit 4 (2 BHK) - Living & Dining Lounge', x: 5, z: 2, width: 6, depth: 5, color: '#f5efe6', node: { x: 8.0, z: 4.5 } },
+        { id: 'room-b4-kitchen', name: 'Unit 4 - Modular Kitchen', x: 0, z: 2, width: 5, depth: 5, color: '#f4ece1', node: { x: 2.5, z: 4.5 } },
+        { id: 'room-b4-master', name: 'Unit 4 - Master Bedroom', x: 5.5, z: 7, width: 5.5, depth: 5, color: '#ece8f2', node: { x: 8.25, z: 9.5 } },
+        { id: 'room-b4-bed2', name: 'Unit 4 - Bedroom 2', x: 0, z: 7, width: 5.5, depth: 5, color: '#e3ece9', node: { x: 2.75, z: 9.5 } },
+        { id: 'room-b4-bath', name: 'Unit 4 - Luxury Bath', x: 11, z: 4, width: 2, depth: 3, color: '#e2e8f0', node: { x: 12.0, z: 5.5 } },
       ],
       walls: [
         // Outer boundaries
-        { id: 'w-3bhk-out-top', startX: -8, startZ: -5, endX: 8, endZ: -5, thickness: 0.2, height: 3.0 },
-        { id: 'w-3bhk-out-right', startX: 8, startZ: -5, endX: 8, endZ: 6, thickness: 0.2, height: 3.0 },
-        { id: 'w-3bhk-out-bottom', startX: 8, startZ: 6, endX: -8, endZ: 6, thickness: 0.2, height: 3.0 },
-        { id: 'w-3bhk-out-left', startX: -8, startZ: 6, endX: -8, endZ: -5, thickness: 0.2, height: 3.0 },
-        // Internal partitions
-        { id: 'w-3bhk-int-mid', startX: 0, startZ: -5, endX: 0, endZ: 4, thickness: 0.15, height: 3.0 },
-        { id: 'w-3bhk-int-lobby', startX: -8, startZ: 4, endX: 8, endZ: 4, thickness: 0.15, height: 3.0 },
-        { id: 'w-3bhk-int-flat-a-horiz1', startX: -8, startZ: 1, endX: 0, endZ: 1, thickness: 0.15, height: 3.0 },
-        { id: 'w-3bhk-int-flat-b-horiz1', startX: 0, startZ: 1, endX: 8, endZ: 1, thickness: 0.15, height: 3.0 },
-        { id: 'w-3bhk-int-flat-a-horiz2', startX: -8, startZ: -2, endX: 0, endZ: -2, thickness: 0.15, height: 3.0 },
-        { id: 'w-3bhk-int-flat-b-horiz2', startX: 0, startZ: -2, endX: 8, endZ: -2, thickness: 0.15, height: 3.0 },
-        { id: 'w-3bhk-int-flat-a-vert1', startX: -4, startZ: -2, endX: -4, endZ: 1, thickness: 0.15, height: 3.0 },
-        { id: 'w-3bhk-int-flat-b-vert1', startX: 4, startZ: -2, endX: 4, endZ: 1, thickness: 0.15, height: 3.0 },
-        { id: 'w-3bhk-int-flat-a-vert2', startX: -4, startZ: -5, endX: -4, endZ: -2, thickness: 0.15, height: 3.0 },
-        { id: 'w-3bhk-int-flat-b-vert2', startX: 4, startZ: -5, endX: 4, endZ: -2, thickness: 0.15, height: 3.0 }
+        { id: 'w-b-out-top', startX: -13, startZ: -12, endX: 13, endZ: -12, thickness: 0.22, height: 3.1 },
+        { id: 'w-b-out-right', startX: 13, startZ: -12, endX: 13, endZ: 12, thickness: 0.22, height: 3.1 },
+        { id: 'w-b-out-bottom', startX: 13, startZ: 12, endX: -13, endZ: 12, thickness: 0.22, height: 3.1 },
+        { id: 'w-b-out-left', startX: -13, startZ: 12, endX: -13, endZ: -12, thickness: 0.22, height: 3.1 },
+        // Central Core Walls
+        { id: 'w-b-core-t', startX: -5, startZ: -2, endX: 9, endZ: -2, thickness: 0.22, height: 3.1 },
+        { id: 'w-b-core-b', startX: -5, startZ: 2, endX: 9, endZ: 2, thickness: 0.22, height: 3.1 },
+        { id: 'w-b-core-v1', startX: 0, startZ: -2, endX: 0, endZ: 2, thickness: 0.2, height: 3.1 },
+        { id: 'w-b-core-v2', startX: 5, startZ: -2, endX: 5, endZ: 2, thickness: 0.2, height: 3.1 },
+        // Quadrant dividing walls
+        { id: 'w-b-div-top', startX: 0, startZ: -12, endX: 0, endZ: -2, thickness: 0.2, height: 3.1 },
+        { id: 'w-b-div-bot', startX: 0, startZ: 2, endX: 0, endZ: 12, thickness: 0.2, height: 3.1 },
+        { id: 'w-b-div-mid-l', startX: -13, startZ: 0, endX: -5, endZ: 0, thickness: 0.2, height: 3.1 },
+        { id: 'w-b-div-mid-r', startX: 9, startZ: 0, endX: 13, endZ: 0, thickness: 0.2, height: 3.1 },
       ],
       apertures: [
-        { id: 'ap-entrance-a-3bhk', wallId: 'w-3bhk-int-lobby', type: 'door', startOffset: 3.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-entrance-b-3bhk', wallId: 'w-3bhk-int-lobby', type: 'door', startOffset: 11.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-door-master-a-3bhk', wallId: 'w-3bhk-int-flat-a-horiz1', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-arch-kitchen-a-3bhk', wallId: 'w-3bhk-int-flat-a-horiz1', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 },
-        { id: 'ap-door-kids-a-3bhk', wallId: 'w-3bhk-int-flat-a-horiz2', type: 'door', startOffset: 1.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-door-guest-a-3bhk', wallId: 'w-3bhk-int-flat-a-horiz2', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-door-master-b-3bhk', wallId: 'w-3bhk-int-flat-b-horiz1', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-arch-kitchen-b-3bhk', wallId: 'w-3bhk-int-flat-b-horiz1', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 },
-        { id: 'ap-door-kids-b-3bhk', wallId: 'w-3bhk-int-flat-b-horiz2', type: 'door', startOffset: 1.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-door-guest-b-3bhk', wallId: 'w-3bhk-int-flat-b-horiz2', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-balcony-door-a-3bhk', wallId: 'w-3bhk-out-top', type: 'door', startOffset: 5.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
-        { id: 'ap-balcony-door-b-3bhk', wallId: 'w-3bhk-out-top', type: 'door', startOffset: 13.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
-        { id: 'ap-win-kitchen-a-3bhk', wallId: 'w-3bhk-out-top', type: 'window', startOffset: 1.5, width: 1.2, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-kitchen-b-3bhk', wallId: 'w-3bhk-out-top', type: 'window', startOffset: 9.5, width: 1.2, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-living-a-3bhk', wallId: 'w-3bhk-out-left', type: 'window', startOffset: 4.0, width: 1.5, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-living-b-3bhk', wallId: 'w-3bhk-out-right', type: 'window', startOffset: 6.0, width: 1.5, height: 1.2, elevation: 0.9 }
+        // 4 Entrance Doors directly from the Central Lobby
+        { id: 'ap-b-ent-1', wallId: 'w-b-core-t', type: 'door', startOffset: 1.5, width: 1.0, height: 2.2, elevation: 0.0, swing: -1 },
+        { id: 'ap-b-ent-2', wallId: 'w-b-core-t', type: 'door', startOffset: 7.0, width: 1.0, height: 2.2, elevation: 0.0, swing: 1 },
+        { id: 'ap-b-ent-3', wallId: 'w-b-core-b', type: 'door', startOffset: 1.5, width: 1.0, height: 2.2, elevation: 0.0, swing: -1 },
+        { id: 'ap-b-ent-4', wallId: 'w-b-core-b', type: 'door', startOffset: 7.0, width: 1.0, height: 2.2, elevation: 0.0, swing: 1 },
       ],
       furniture: [
-        { id: 'f-sofa-a-3bhk', type: 'sofa', roomId: 'room-living-a-3bhk', x: -4.0, z: 2.0, rotation: 0 },
-        { id: 'f-table-a-3bhk', type: 'table', roomId: 'room-living-a-3bhk', x: -4.0, z: 3.0, rotation: 0 },
-        { id: 'f-bed-master-a-3bhk', type: 'bed', roomId: 'room-bedroom-a-3bhk', x: -2.0, z: -0.5, rotation: 90 },
-        { id: 'f-bed-kids-a-3bhk', type: 'bed', roomId: 'room-kids-a-3bhk', x: -6.0, z: -3.5, rotation: 90 },
-        { id: 'f-bed-guest-a-3bhk', type: 'bed', roomId: 'room-guest-a-3bhk', x: -2.0, z: -3.5, rotation: 90 },
-        { id: 'f-sofa-b-3bhk', type: 'sofa', roomId: 'room-living-b-3bhk', x: 4.0, z: 2.0, rotation: 0 },
-        { id: 'f-table-b-3bhk', type: 'table', roomId: 'room-living-b-3bhk', x: 4.0, z: 3.0, rotation: 0 },
-        { id: 'f-bed-master-b-3bhk', type: 'bed', roomId: 'room-bedroom-b-3bhk', x: 6.0, z: -0.5, rotation: 90 },
-        { id: 'f-bed-kids-b-3bhk', type: 'bed', roomId: 'room-kids-b-3bhk', x: 2.0, z: -3.5, rotation: 90 },
-        { id: 'f-bed-guest-b-3bhk', type: 'bed', roomId: 'room-guest-b-3bhk', x: 6.0, z: -3.5, rotation: 90 }
+        { id: 'f-b-lift', type: 'elevator', roomId: 'room-b-lift', x: 7.0, z: 0.0, rotation: 180 },
+        { id: 'f-b-stairs', type: 'stairs', roomId: 'room-b-stairs', x: -2.5, z: 0.0, rotation: 0 },
+        // Unit 1
+        { id: 'f-b1-sofa', type: 'sofa', roomId: 'room-b1-living', x: -9.5, z: -5.0, rotation: 0 },
+        { id: 'f-b1-table', type: 'coffee_table', roomId: 'room-b1-living', x: -8.0, z: -5.0, rotation: 0 },
+        { id: 'f-b1-tv', type: 'tv_unit', roomId: 'room-b1-living', x: -6.5, z: -5.0, rotation: 180 },
+        { id: 'f-b1-bed-m', type: 'bed', roomId: 'room-b1-master', x: -8.25, z: -9.5, rotation: 90 },
+        { id: 'f-b1-bed-2', type: 'bed', roomId: 'room-b1-bed2', x: -2.75, z: -9.5, rotation: 90 },
+        { id: 'f-b1-kit', type: 'kitchen_counter', roomId: 'room-b1-kitchen', x: -2.5, z: -6.0, rotation: 0 },
+        // Unit 2
+        { id: 'f-b2-sofa', type: 'sofa', roomId: 'room-b2-living', x: 6.5, z: -5.0, rotation: 0 },
+        { id: 'f-b2-table', type: 'coffee_table', roomId: 'room-b2-living', x: 8.0, z: -5.0, rotation: 0 },
+        { id: 'f-b2-tv', type: 'tv_unit', roomId: 'room-b2-living', x: 9.5, z: -5.0, rotation: 180 },
+        { id: 'f-b2-bed-m', type: 'bed', roomId: 'room-b2-master', x: 8.25, z: -9.5, rotation: 90 },
+        { id: 'f-b2-bed-2', type: 'bed', roomId: 'room-b2-bed2', x: 2.75, z: -9.5, rotation: 90 },
+        { id: 'f-b2-kit', type: 'kitchen_counter', roomId: 'room-b2-kitchen', x: 2.5, z: -6.0, rotation: 0 },
+        // Unit 3
+        { id: 'f-b3-sofa', type: 'sofa', roomId: 'room-b3-living', x: -9.5, z: 4.5, rotation: 0 },
+        { id: 'f-b3-bed-m', type: 'bed', roomId: 'room-b3-master', x: -8.25, z: 9.5, rotation: 90 },
+        { id: 'f-b3-bed-2', type: 'bed', roomId: 'room-b3-bed2', x: -2.75, z: 9.5, rotation: 90 },
+        { id: 'f-b3-kit', type: 'kitchen_counter', roomId: 'room-b3-kitchen', x: -2.5, z: 3.5, rotation: 0 },
+        // Unit 4
+        { id: 'f-b4-sofa', type: 'sofa', roomId: 'room-b4-living', x: 6.5, z: 4.5, rotation: 0 },
+        { id: 'f-b4-bed-m', type: 'bed', roomId: 'room-b4-master', x: 8.25, z: 9.5, rotation: 90 },
+        { id: 'f-b4-bed-2', type: 'bed', roomId: 'room-b4-bed2', x: 2.75, z: 9.5, rotation: 90 },
+        { id: 'f-b4-kit', type: 'kitchen_counter', roomId: 'room-b4-kitchen', x: 2.5, z: 3.5, rotation: 0 },
       ]
     };
   }
 
-  if (type === 'PENTHOUSE') {
+  // 3. TYPE C FLOOR: 1 UNIT (4 BHK SKY VILLA, ~2,400 sq. ft.) - Floors 3, 6, 9
+  if (normType === 'TYPE_C' || normType === '4BHK' || normType === 'PENTHOUSE' || normType === 'TYPEC' || normType === '3' || normType === '6' || normType === '9') {
     return {
       rooms: [
-        { id: 'room-lobby-ph', name: 'Lobby Corridor', x: -8, z: 4, width: 16, depth: 2, color: '#374151', node: { x: 0, z: 5.0 } },
-        { id: 'room-living-ph', name: 'Grand Living Hall', x: -8, z: -1, width: 16, depth: 5, color: '#f5efe6', node: { x: 0, z: 1.5 } },
-        { id: 'room-kitchen-ph', name: 'Gourmet Kitchen', x: -8, z: -5, width: 5, depth: 4, color: '#f4ece1', node: { x: -5.5, z: -3.0 } },
-        { id: 'room-master-ph', name: 'Master Suite', x: -3, z: -5, width: 6, depth: 4, color: '#ece8f2', node: { x: 0, z: -3.0 } },
-        { id: 'room-guest-ph', name: 'Guest Suite', x: 3, z: -5, width: 5, depth: 4, color: '#e1ecf4', node: { x: 5.5, z: -3.0 } },
-        { id: 'room-balcony-ph', name: 'Sky Deck Balcony', x: -4, z: -6.5, width: 8, depth: 1.5, color: '#faf5ef', node: { x: 0, z: -5.75 } }
+        // Central Core
+        { id: 'room-c-stairs', name: 'Fire Exit & Staircase', x: -5, z: -2, width: 5, depth: 4, color: '#0f172a', node: { x: -2.5, z: 0 } },
+        { id: 'room-c-lobby', name: 'Private Sky Residence Foyer', x: 0, z: -2, width: 4, depth: 4, color: '#334155', node: { x: 2.0, z: 0 } },
+        { id: 'room-c-lift', name: 'Direct-Access Elevator Core', x: 4, z: -2, width: 4, depth: 4, color: '#1e293b', node: { x: 6.0, z: 0 } },
+        
+        // North Wing - Grand Living & Balcony
+        { id: 'room-c-living', name: 'Grand Living Salon', x: -2, z: -9, width: 10, depth: 7, color: '#f8fafc', node: { x: 3.0, z: -5.5 } },
+        { id: 'room-c-balcony-n', name: 'Panoramic Sky Balcony (North)', x: -2, z: -12, width: 10, depth: 3, color: '#faf5ef', node: { x: 3.0, z: -10.5 } },
+        { id: 'room-c-dining', name: 'Formal Royal Dining Hall', x: 4, z: 2, width: 5, depth: 5, color: '#fdf8f4', node: { x: 6.5, z: 4.5 } },
+        { id: 'room-c-kitchen', name: 'Gourmet Chef Island Kitchen', x: 9, z: -2, width: 5, depth: 5, color: '#f4ece1', node: { x: 11.5, z: 0.5 } },
+        { id: 'room-c-utility', name: 'Utility & Butler Pantry', x: 9, z: 3, width: 5, depth: 3, color: '#f1f5f9', node: { x: 11.5, z: 4.5 } },
+
+        // South Wing - Family Lounge, Master Suite & Bedroom 4
+        { id: 'room-c-family', name: 'Private Family Lounge', x: -2, z: 5, width: 8, depth: 5, color: '#f5efe6', node: { x: 2.0, z: 7.5 } },
+        { id: 'room-c-balcony-s', name: 'Sunset Balcony (South)', x: -2, z: 10, width: 8, depth: 2.5, color: '#faf5ef', node: { x: 2.0, z: 11.25 } },
+        { id: 'room-c-master', name: 'Master Presidential Suite', x: -7, z: 5, width: 5, depth: 5, color: '#ece8f2', node: { x: -4.5, z: 7.5 } },
+        { id: 'room-c-walkin', name: 'Walk-in Wardrobe', x: -12, z: 3, width: 5, depth: 3.5, color: '#f3e8ff', node: { x: -9.5, z: 4.75 } },
+        { id: 'room-c-mbath', name: 'Master En-Suite Spa Bath', x: -12, z: 6.5, width: 5, depth: 4, color: '#e2e8f0', node: { x: -9.5, z: 8.5 } },
+        { id: 'room-c-bed2', name: 'Executive Suite 2', x: -12, z: -9, width: 5, depth: 6, color: '#e3ece9', node: { x: -9.5, z: -6.0 } },
+        { id: 'room-c-bed2-bath', name: 'Suite 2 Bath', x: -12, z: -3, width: 5, depth: 3, color: '#e2e8f0', node: { x: -9.5, z: -1.5 } },
+        { id: 'room-c-bed3', name: 'Guest Residence 3', x: 8, z: -9, width: 6, depth: 6, color: '#e0e7ff', node: { x: 11.0, z: -6.0 } },
+        { id: 'room-c-bed3-bath', name: 'Residence 3 Bath', x: 8, z: -3, width: 6, depth: 3, color: '#e2e8f0', node: { x: 11.0, z: -1.5 } },
+        { id: 'room-c-bed4', name: 'Bedroom 4 / Study', x: 6, z: 7, width: 6, depth: 5, color: '#fef3c7', node: { x: 9.0, z: 9.5 } },
       ],
       walls: [
-        // Outer boundaries
-        { id: 'w-ph-out-top', startX: -8, startZ: -5, endX: 8, endZ: -5, thickness: 0.2, height: 3.0 },
-        { id: 'w-ph-out-right', startX: 8, startZ: -5, endX: 8, endZ: 6, thickness: 0.2, height: 3.0 },
-        { id: 'w-ph-out-bottom', startX: 8, startZ: 6, endX: -8, endZ: 6, thickness: 0.2, height: 3.0 },
-        { id: 'w-ph-out-left', startX: -8, startZ: 6, endX: -8, endZ: -5, thickness: 0.2, height: 3.0 },
-        // Internal partitions
-        { id: 'w-ph-int-lobby', startX: -8, startZ: 4, endX: 8, endZ: 4, thickness: 0.15, height: 3.0 },
-        { id: 'w-ph-int-flat-horiz', startX: -8, startZ: -1, endX: 8, endZ: -1, thickness: 0.15, height: 3.0 },
-        { id: 'w-ph-int-flat-vert1', startX: -3, startZ: -5, endX: -3, endZ: -1, thickness: 0.15, height: 3.0 },
-        { id: 'w-ph-int-flat-vert2', startX: 3, startZ: -5, endX: 3, endZ: -1, thickness: 0.15, height: 3.0 }
+        { id: 'w-c-out-top', startX: -12, startZ: -12, endX: 14, endZ: -12, thickness: 0.25, height: 3.3 },
+        { id: 'w-c-out-right', startX: 14, startZ: -12, endX: 14, endZ: 12, thickness: 0.25, height: 3.3 },
+        { id: 'w-c-out-bottom', startX: 14, startZ: 12, endX: -12, endZ: 12, thickness: 0.25, height: 3.3 },
+        { id: 'w-c-out-left', startX: -12, startZ: 12, endX: -12, endZ: -12, thickness: 0.25, height: 3.3 },
+        // Core walls
+        { id: 'w-c-core-t', startX: -5, startZ: -2, endX: 8, endZ: -2, thickness: 0.22, height: 3.3 },
+        { id: 'w-c-core-b', startX: -5, startZ: 2, endX: 8, endZ: 2, thickness: 0.22, height: 3.3 },
       ],
       apertures: [
-        { id: 'ap-entrance-ph', wallId: 'w-ph-int-lobby', type: 'door', startOffset: 7.5, width: 1.2, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-door-master-ph', wallId: 'w-ph-int-flat-horiz', type: 'door', startOffset: 7.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-arch-kitchen-ph', wallId: 'w-ph-int-flat-horiz', type: 'arch', startOffset: 2.0, width: 1.2, height: 2.1, elevation: 0.0 },
-        { id: 'ap-door-guest-ph', wallId: 'w-ph-int-flat-horiz', type: 'door', startOffset: 13.0, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-deck-door-ph', wallId: 'w-ph-out-top', type: 'door', startOffset: 7.5, width: 1.2, height: 2.1, elevation: 0.0, swing: 1 },
-        { id: 'ap-win-kitchen-ph', wallId: 'w-ph-out-top', type: 'window', startOffset: 1.5, width: 1.2, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-guest-ph', wallId: 'w-ph-out-top', type: 'window', startOffset: 13.5, width: 1.2, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-living-l-ph', wallId: 'w-ph-out-left', type: 'window', startOffset: 4.0, width: 1.5, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-living-r-ph', wallId: 'w-ph-out-right', type: 'window', startOffset: 6.0, width: 1.5, height: 1.2, elevation: 0.9 }
+        { id: 'ap-c-foyer-door', wallId: 'w-c-core-b', type: 'door', startOffset: 2.0, width: 1.4, height: 2.4, elevation: 0.0, swing: -1 },
+        { id: 'ap-c-balc-n', wallId: 'w-c-out-top', type: 'door', startOffset: 5.0, width: 2.8, height: 2.6, elevation: 0.0, swing: 1 },
+        { id: 'ap-c-balc-s', wallId: 'w-c-out-bottom', type: 'door', startOffset: 5.0, width: 2.8, height: 2.6, elevation: 0.0, swing: 1 },
       ],
       furniture: [
-        { id: 'f-sofa-ph', type: 'sofa', roomId: 'room-living-ph', x: 0, z: 1.5, rotation: 0 },
-        { id: 'f-table-ph', type: 'table', roomId: 'room-living-ph', x: 0, z: 2.5, rotation: 0 },
-        { id: 'f-bed-master-ph', type: 'bed', roomId: 'room-master-ph', x: 0, z: -3.5, rotation: 90 },
-        { id: 'f-bed-guest-ph', type: 'bed', roomId: 'room-guest-ph', x: 5.5, z: -3.5, rotation: 90 }
+        { id: 'f-c-lift', type: 'elevator', roomId: 'room-c-lift', x: 6.0, z: 0.0, rotation: 180 },
+        { id: 'f-c-stairs', type: 'stairs', roomId: 'room-c-stairs', x: -2.5, z: 0.0, rotation: 0 },
+        { id: 'f-c-sofa-main', type: 'sofa', roomId: 'room-c-living', x: 1.0, z: -6.0, rotation: 0 },
+        { id: 'f-c-tv-main', type: 'tv_unit', roomId: 'room-c-living', x: 5.0, z: -6.0, rotation: 180 },
+        { id: 'f-c-table-main', type: 'coffee_table', roomId: 'room-c-living', x: 3.0, z: -6.0, rotation: 0 },
+        { id: 'f-c-dining', type: 'dining_table', roomId: 'room-c-dining', x: 6.5, z: 4.5, rotation: 0 },
+        { id: 'f-c-kitchen', type: 'kitchen_counter', roomId: 'room-c-kitchen', x: 11.5, z: 0.5, rotation: 0 },
+        { id: 'f-c-family-sofa', type: 'sofa', roomId: 'room-c-family', x: 2.0, z: 7.5, rotation: 0 },
+        { id: 'f-c-bed-m', type: 'bed', roomId: 'room-c-master', x: -4.5, z: 7.5, rotation: 90 },
+        { id: 'f-c-bed-2', type: 'bed', roomId: 'room-c-bed2', x: -9.5, z: -6.0, rotation: 90 },
+        { id: 'f-c-bed-3', type: 'bed', roomId: 'room-c-bed3', x: 11.0, z: -6.0, rotation: 90 },
+        { id: 'f-c-bed-4', type: 'bed', roomId: 'room-c-bed4', x: 9.0, z: 9.5, rotation: 90 },
       ]
     };
   }
 
-  if (type === 'LUXURY_SHOWROOM') {
-    return {
-      rooms: [
-        { id: 'room-lobby-sr', name: 'Lobby Corridor', x: -8, z: 4, width: 16, depth: 2, color: '#374151', node: { x: 0, z: 5.0 } },
-        { id: 'room-living-a-sr', name: 'Flat A - Luxury Living Suite', x: -8, z: -1, width: 8, depth: 5, color: '#f5efe6', node: { x: -4, z: 1.5 } },
-        { id: 'room-kitchen-sr', name: 'Flat A - Modern Gourmet Kitchen', x: -8, z: -5, width: 4, depth: 4, color: '#f4ece1', node: { x: -6, z: -3.0 } },
-        { id: 'room-bedroom-sr', name: 'Flat A - Presidential Master Suite', x: -4, z: -5, width: 4, depth: 4, color: '#ece8f2', node: { x: -2, z: -3.0 } },
-        { id: 'room-balcony-sr', name: 'Flat A - Open Air Sun Deck', x: -4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: -2, z: -5.75 } },
-        { id: 'room-living-b-sr', name: 'Flat B - Luxury Living Suite', x: 0, z: -1, width: 8, depth: 5, color: '#f5efe6', node: { x: 4, z: 1.5 } },
-        { id: 'room-kitchen-b-sr', name: 'Flat B - Modern Gourmet Kitchen', x: 0, z: -5, width: 4, depth: 4, color: '#f4ece1', node: { x: 2, z: -3.0 } },
-        { id: 'room-bedroom-b-sr', name: 'Flat B - Presidential Master Suite', x: 4, z: -5, width: 4, depth: 4, color: '#ece8f2', node: { x: 6, z: -3.0 } },
-        { id: 'room-balcony-b-sr', name: 'Flat B - Open Air Sun Deck', x: 4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: 6, z: -5.75 } }
-      ],
-      walls: [
-        // Outer boundaries
-        { id: 'w-sr-out-top', startX: -8, startZ: -5, endX: 8, endZ: -5, thickness: 0.2, height: 3.0 },
-        { id: 'w-sr-out-right', startX: 8, startZ: -5, endX: 8, endZ: 6, thickness: 0.2, height: 3.0 },
-        { id: 'w-sr-out-bottom', startX: 8, startZ: 6, endX: -8, endZ: 6, thickness: 0.2, height: 3.0 },
-        { id: 'w-sr-out-left', startX: -8, startZ: 6, endX: -8, endZ: -5, thickness: 0.2, height: 3.0 },
-        // Internal partitions
-        { id: 'w-sr-int-mid', startX: 0, startZ: -5, endX: 0, endZ: 4, thickness: 0.15, height: 3.0 },
-        { id: 'w-sr-int-lobby', startX: -8, startZ: 4, endX: 8, endZ: 4, thickness: 0.15, height: 3.0 },
-        { id: 'w-sr-int-flat-a-horiz', startX: -8, startZ: -1, endX: 0, endZ: -1, thickness: 0.15, height: 3.0 },
-        { id: 'w-sr-int-flat-b-horiz', startX: 0, startZ: -1, endX: 8, endZ: -1, thickness: 0.15, height: 3.0 },
-        { id: 'w-sr-int-flat-a-vert', startX: -4, startZ: -5, endX: -4, endZ: -1, thickness: 0.15, height: 3.0 },
-        { id: 'w-sr-int-flat-b-vert', startX: 4, startZ: -5, endX: 4, endZ: -1, thickness: 0.15, height: 3.0 }
-      ],
-      apertures: [
-        { id: 'ap-entrance-a-sr', wallId: 'w-sr-int-lobby', type: 'door', startOffset: 3.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-entrance-b-sr', wallId: 'w-sr-int-lobby', type: 'door', startOffset: 11.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-door-bedroom-a-sr', wallId: 'w-sr-int-flat-a-horiz', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-arch-kitchen-a-sr', wallId: 'w-sr-int-flat-a-horiz', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 },
-        { id: 'ap-door-bedroom-b-sr', wallId: 'w-sr-int-flat-b-horiz', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-        { id: 'ap-arch-kitchen-b-sr', wallId: 'w-sr-int-flat-b-horiz', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 },
-        { id: 'ap-balcony-door-a-sr', wallId: 'w-sr-out-top', type: 'door', startOffset: 5.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
-        { id: 'ap-balcony-door-b-sr', wallId: 'w-sr-out-top', type: 'door', startOffset: 13.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
-        { id: 'ap-win-kitchen-a-sr', wallId: 'w-sr-out-top', type: 'window', startOffset: 1.5, width: 1.2, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-kitchen-b-sr', wallId: 'w-sr-out-top', type: 'window', startOffset: 9.5, width: 1.2, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-living-a-sr', wallId: 'w-sr-out-left', type: 'window', startOffset: 4.0, width: 1.5, height: 1.2, elevation: 0.9 },
-        { id: 'ap-win-living-b-sr', wallId: 'w-sr-out-right', type: 'window', startOffset: 6.0, width: 1.5, height: 1.2, elevation: 0.9 }
-      ],
-      furniture: [
-        { id: 'f-sofa-a-sr', type: 'sofa', roomId: 'room-living-a-sr', x: -4.0, z: 1.5, rotation: 0 },
-        { id: 'f-table-a-sr', type: 'table', roomId: 'room-living-a-sr', x: -4.0, z: 2.5, rotation: 0 },
-        { id: 'f-bed-a-sr', type: 'bed', roomId: 'room-bedroom-a-sr', x: -2.0, z: -3.5, rotation: 90 },
-        { id: 'f-sofa-b-sr', type: 'sofa', roomId: 'room-living-b-sr', x: 4.0, z: 1.5, rotation: 0 },
-        { id: 'f-table-b-sr', type: 'table', roomId: 'room-living-b-sr', x: 4.0, z: 2.5, rotation: 0 },
-        { id: 'f-bed-b-sr', type: 'bed', roomId: 'room-bedroom-b-sr', x: 6.0, z: -3.5, rotation: 90 }
-      ]
-    };
-  }
-
-  // Symmetrical Default 2BHK Layout Fallback
+  // 4. TYPE A FLOOR: 2 UNITS (3 BHK EACH, ~1,650 sq. ft. each) - Floors 1, 4, 7, 10
   return {
     rooms: [
-      { id: 'room-lobby-2bhk', name: 'Lobby Corridor', x: -8, z: 4, width: 16, depth: 2, color: '#374151', node: { x: 0, z: 5.0 } },
-      { id: 'room-living-a-2bhk', name: 'Flat A - Living Room', x: -8, z: -1, width: 8, depth: 5, color: '#f5efe6', node: { x: -4, z: 1.5 } },
-      { id: 'room-kitchen-a-2bhk', name: 'Flat A - Kitchen', x: -8, z: -5, width: 4, depth: 4, color: '#f4ece1', node: { x: -6, z: -3.0 } },
-      { id: 'room-bedroom-a-2bhk', name: 'Flat A - Bedroom', x: -4, z: -5, width: 4, depth: 4, color: '#ece8f2', node: { x: -2, z: -3.0 } },
-      { id: 'room-balcony-a-2bhk', name: 'Flat A - Balcony', x: -4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: -2, z: -5.75 } },
-      { id: 'room-living-b-2bhk', name: 'Flat B - Living Room', x: 0, z: -1, width: 8, depth: 5, color: '#f5efe6', node: { x: 4, z: 1.5 } },
-      { id: 'room-kitchen-b-2bhk', name: 'Flat B - Kitchen', x: 0, z: -5, width: 4, depth: 4, color: '#f4ece1', node: { x: 2, z: -3.0 } },
-      { id: 'room-bedroom-b-2bhk', name: 'Flat B - Bedroom', x: 4, z: -5, width: 4, depth: 4, color: '#ece8f2', node: { x: 6, z: -3.0 } },
-      { id: 'room-balcony-b-2bhk', name: 'Flat B - Balcony', x: 4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: 6, z: -5.75 } }
+      // Central Core
+      { id: 'room-a-stairs', name: 'Central Staircase Core', x: -5, z: -2, width: 5, depth: 4, color: '#0f172a', node: { x: -2.5, z: 0 } },
+      { id: 'room-a-lobby', name: 'Central Floor Lobby', x: 0, z: -2, width: 4, depth: 4, color: '#334155', node: { x: 2.0, z: 0 } },
+      { id: 'room-a-lift', name: 'High-Speed Passenger Lift', x: 4, z: -2, width: 4, depth: 4, color: '#1e293b', node: { x: 6.0, z: 0 } },
+
+      // Unit 1 (3 BHK - South Wing, ~1,650 sq. ft.)
+      { id: 'room-a1-living', name: 'Unit 1 (3 BHK) - Grand Living Hall', x: 0, z: 2.5, width: 6, depth: 5, color: '#f5efe6', node: { x: 3.0, z: 5.0 } },
+      { id: 'room-a1-dining', name: 'Unit 1 - Formal Dining Alcove', x: -5, z: 2.5, width: 5, depth: 3, color: '#fdf8f4', node: { x: -2.5, z: 4.0 } },
+      { id: 'room-a1-kitchen', name: 'Unit 1 - Chef Modular Kitchen', x: -11, z: 2.5, width: 6, depth: 3, color: '#f4ece1', node: { x: -8.0, z: 4.0 } },
+      { id: 'room-a1-master', name: 'Unit 1 - Master Bedroom Suite', x: 6, z: 2.5, width: 5.5, depth: 5, color: '#ece8f2', node: { x: 8.75, z: 5.0 } },
+      { id: 'room-a1-mbath', name: 'Unit 1 - Master En-Suite Bath', x: 6, z: 7.5, width: 5.5, depth: 2.5, color: '#e2e8f0', node: { x: 8.75, z: 8.75 } },
+      { id: 'room-a1-bed2', name: 'Unit 1 - Bedroom 2', x: -11, z: 5.5, width: 5.5, depth: 4.5, color: '#e3ece9', node: { x: -8.25, z: 7.75 } },
+      { id: 'room-a1-bed3', name: 'Unit 1 - Bedroom 3', x: -5.5, z: 5.5, width: 5.5, depth: 4.5, color: '#e0e7ff', node: { x: -2.75, z: 7.75 } },
+      { id: 'room-a1-balcony', name: 'Unit 1 - Sunset Horizon Balcony', x: 0, z: 7.5, width: 6, depth: 2.5, color: '#faf5ef', node: { x: 3.0, z: 8.75 } },
+
+      // Unit 2 (3 BHK - North Wing, ~1,650 sq. ft.)
+      { id: 'room-a2-living', name: 'Unit 2 (3 BHK) - Grand Living Hall', x: 0, z: -7.5, width: 6, depth: 5, color: '#f5efe6', node: { x: 3.0, z: -5.0 } },
+      { id: 'room-a2-dining', name: 'Unit 2 - Formal Dining Alcove', x: -5, z: -5.5, width: 5, depth: 3, color: '#fdf8f4', node: { x: -2.5, z: -4.0 } },
+      { id: 'room-a2-kitchen', name: 'Unit 2 - Chef Modular Kitchen', x: -11, z: -5.5, width: 6, depth: 3, color: '#f4ece1', node: { x: -8.0, z: -4.0 } },
+      { id: 'room-a2-master', name: 'Unit 2 - Master Bedroom Suite', x: 6, z: -7.5, width: 5.5, depth: 5, color: '#ece8f2', node: { x: 8.75, z: -5.0 } },
+      { id: 'room-a2-mbath', name: 'Unit 2 - Master En-Suite Bath', x: 6, z: -10.0, width: 5.5, depth: 2.5, color: '#e2e8f0', node: { x: 8.75, z: -8.75 } },
+      { id: 'room-a2-bed2', name: 'Unit 2 - Bedroom 2', x: -11, z: -10.0, width: 5.5, depth: 4.5, color: '#e3ece9', node: { x: -8.25, z: -7.75 } },
+      { id: 'room-a2-bed3', name: 'Unit 2 - Bedroom 3', x: -5.5, z: -10.0, width: 5.5, depth: 4.5, color: '#e0e7ff', node: { x: -2.75, z: -7.75 } },
+      { id: 'room-a2-balcony', name: 'Unit 2 - Sunrise Horizon Balcony', x: 0, z: -10.0, width: 6, depth: 2.5, color: '#faf5ef', node: { x: 3.0, z: -8.75 } },
     ],
     walls: [
       // Outer boundaries
-      { id: 'w-2bhk-out-top', startX: -8, startZ: -5, endX: 8, endZ: -5, thickness: 0.2, height: 3.0 },
-      { id: 'w-2bhk-out-right', startX: 8, startZ: -5, endX: 8, endZ: 6, thickness: 0.2, height: 3.0 },
-      { id: 'w-2bhk-out-bottom', startX: 8, startZ: 6, endX: -8, endZ: 6, thickness: 0.2, height: 3.0 },
-      { id: 'w-2bhk-out-left', startX: -8, startZ: 6, endX: -8, endZ: -5, thickness: 0.2, height: 3.0 },
-      // Internal partitions
-      { id: 'w-2bhk-int-mid', startX: 0, startZ: -5, endX: 0, endZ: 4, thickness: 0.15, height: 3.0 },
-      { id: 'w-2bhk-int-lobby', startX: -8, startZ: 4, endX: 8, endZ: 4, thickness: 0.15, height: 3.0 },
-      { id: 'w-2bhk-int-flat-a-horiz', startX: -8, startZ: -1, endX: 0, endZ: -1, thickness: 0.15, height: 3.0 },
-      { id: 'w-2bhk-int-flat-b-horiz', startX: 0, startZ: -1, endX: 8, endZ: -1, thickness: 0.15, height: 3.0 },
-      { id: 'w-2bhk-int-flat-a-vert', startX: -4, startZ: -5, endX: -4, endZ: -1, thickness: 0.15, height: 3.0 },
-      { id: 'w-2bhk-int-flat-b-vert', startX: 4, startZ: -5, endX: 4, endZ: -1, thickness: 0.15, height: 3.0 }
+      { id: 'w-a-out-top', startX: -11, startZ: -10, endX: 11.5, endZ: -10, thickness: 0.22, height: 3.1 },
+      { id: 'w-a-out-right', startX: 11.5, startZ: -10, endX: 11.5, endZ: 10, thickness: 0.22, height: 3.1 },
+      { id: 'w-a-out-bottom', startX: 11.5, startZ: 10, endX: -11, endZ: 10, thickness: 0.22, height: 3.1 },
+      { id: 'w-a-out-left', startX: -11, startZ: 10, endX: -11, endZ: -10, thickness: 0.22, height: 3.1 },
+      // Central Core Walls
+      { id: 'w-a-core-top', startX: -5, startZ: -2, endX: 8, endZ: -2, thickness: 0.22, height: 3.1 },
+      { id: 'w-a-core-bot', startX: -5, startZ: 2, endX: 8, endZ: 2, thickness: 0.22, height: 3.1 },
+      { id: 'w-a-core-mid1', startX: 0, startZ: -2, endX: 0, endZ: 2, thickness: 0.2, height: 3.1 },
+      { id: 'w-a-core-mid2', startX: 4, startZ: -2, endX: 4, endZ: 2, thickness: 0.2, height: 3.1 },
     ],
     apertures: [
-      { id: 'ap-entrance-a-2bhk', wallId: 'w-2bhk-int-lobby', type: 'door', startOffset: 3.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-      { id: 'ap-entrance-b-2bhk', wallId: 'w-2bhk-int-lobby', type: 'door', startOffset: 11.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-      { id: 'ap-door-bedroom-a-2bhk', wallId: 'w-2bhk-int-flat-a-horiz', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-      { id: 'ap-arch-kitchen-a-2bhk', wallId: 'w-2bhk-int-flat-a-horiz', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 },
-      { id: 'ap-door-bedroom-b-2bhk', wallId: 'w-2bhk-int-flat-b-horiz', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-      { id: 'ap-arch-kitchen-b-2bhk', wallId: 'w-2bhk-int-flat-b-horiz', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 },
-      { id: 'ap-balcony-door-a-2bhk', wallId: 'w-2bhk-out-top', type: 'door', startOffset: 5.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
-      { id: 'ap-balcony-door-b-2bhk', wallId: 'w-2bhk-out-top', type: 'door', startOffset: 13.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
-      { id: 'ap-win-kitchen-a-2bhk', wallId: 'w-2bhk-out-top', type: 'window', startOffset: 1.5, width: 1.2, height: 1.2, elevation: 0.9 },
-      { id: 'ap-win-kitchen-b-2bhk', wallId: 'w-2bhk-out-top', type: 'window', startOffset: 9.5, width: 1.2, height: 1.2, elevation: 0.9 },
-      { id: 'ap-win-living-a-2bhk', wallId: 'w-2bhk-out-left', type: 'window', startOffset: 4.0, width: 1.5, height: 1.2, elevation: 0.9 },
-      { id: 'ap-win-living-b-2bhk', wallId: 'w-2bhk-out-right', type: 'window', startOffset: 6.0, width: 1.5, height: 1.2, elevation: 0.9 }
+      // Entrances from lobby into Unit 1 and Unit 2
+      { id: 'ap-a-ent-1', wallId: 'w-a-core-bot', type: 'door', startOffset: 2.0, width: 1.1, height: 2.3, elevation: 0.0, swing: 1 },
+      { id: 'ap-a-ent-2', wallId: 'w-a-core-top', type: 'door', startOffset: 2.0, width: 1.1, height: 2.3, elevation: 0.0, swing: -1 },
+      // Balcony doors
+      { id: 'ap-a-balc-1', wallId: 'w-a-out-bottom', type: 'door', startOffset: 7.5, width: 2.2, height: 2.3, elevation: 0.0, swing: 1 },
+      { id: 'ap-a-balc-2', wallId: 'w-a-out-top', type: 'door', startOffset: 7.5, width: 2.2, height: 2.3, elevation: 0.0, swing: -1 },
     ],
     furniture: [
-      { id: 'f-sofa-a-2bhk', type: 'sofa', roomId: 'room-living-a-2bhk', x: -4.0, z: 1.5, rotation: 0 },
-      { id: 'f-table-a-2bhk', type: 'table', roomId: 'room-living-a-2bhk', x: -4.0, z: 2.5, rotation: 0 },
-      { id: 'f-bed-a-2bhk', type: 'bed', roomId: 'room-bedroom-a-2bhk', x: -2.0, z: -3.5, rotation: 90 },
-      { id: 'f-sofa-b-2bhk', type: 'sofa', roomId: 'room-living-b-2bhk', x: 4.0, z: 1.5, rotation: 0 },
-      { id: 'f-table-b-2bhk', type: 'table', roomId: 'room-living-b-2bhk', x: 4.0, z: 2.5, rotation: 0 },
-      { id: 'f-bed-b-2bhk', type: 'bed', roomId: 'room-bedroom-b-2bhk', x: 6.0, z: -3.5, rotation: 90 }
+      // Central Core
+      { id: 'f-a-lift', type: 'elevator', roomId: 'room-a-lift', x: 6.0, z: 0.0, rotation: 180 },
+      { id: 'f-a-stairs', type: 'stairs', roomId: 'room-a-stairs', x: -2.5, z: 0.0, rotation: 0 },
+      // Unit 1
+      { id: 'f-a1-sofa', type: 'sofa', roomId: 'room-a1-living', x: 1.5, z: 5.0, rotation: 0 },
+      { id: 'f-a1-tv', type: 'tv_unit', roomId: 'room-a1-living', x: 5.0, z: 5.0, rotation: 180 },
+      { id: 'f-a1-table', type: 'coffee_table', roomId: 'room-a1-living', x: 3.2, z: 5.0, rotation: 0 },
+      { id: 'f-a1-dining', type: 'dining_table', roomId: 'room-a1-dining', x: -2.5, z: 4.0, rotation: 0 },
+      { id: 'f-a1-kit', type: 'kitchen_counter', roomId: 'room-a1-kitchen', x: -8.0, z: 3.5, rotation: 0 },
+      { id: 'f-a1-bed-m', type: 'bed', roomId: 'room-a1-master', x: 8.75, z: 5.0, rotation: 90 },
+      { id: 'f-a1-bed-2', type: 'bed', roomId: 'room-a1-bed2', x: -8.25, z: 7.75, rotation: 90 },
+      { id: 'f-a1-bed-3', type: 'bed', roomId: 'room-a1-bed3', x: -2.75, z: 7.75, rotation: 90 },
+      // Unit 2
+      { id: 'f-a2-sofa', type: 'sofa', roomId: 'room-a2-living', x: 1.5, z: -5.0, rotation: 0 },
+      { id: 'f-a2-tv', type: 'tv_unit', roomId: 'room-a2-living', x: 5.0, z: -5.0, rotation: 180 },
+      { id: 'f-a2-table', type: 'coffee_table', roomId: 'room-a2-living', x: 3.2, z: -5.0, rotation: 0 },
+      { id: 'f-a2-dining', type: 'dining_table', roomId: 'room-a2-dining', x: -2.5, z: -4.0, rotation: 0 },
+      { id: 'f-a2-kit', type: 'kitchen_counter', roomId: 'room-a2-kitchen', x: -8.0, z: -4.5, rotation: 0 },
+      { id: 'f-a2-bed-m', type: 'bed', roomId: 'room-a2-master', x: 8.75, z: -5.0, rotation: 90 },
+      { id: 'f-a2-bed-2', type: 'bed', roomId: 'room-a2-bed2', x: -8.25, z: -7.75, rotation: 90 },
+      { id: 'f-a2-bed-3', type: 'bed', roomId: 'room-a2-bed3', x: -2.75, z: -7.75, rotation: 90 },
     ]
   };
 }
@@ -346,6 +295,40 @@ export class FloorPlanController {
     private readonly builderRepo: Repository<Builder>,
     private readonly twinsService: TwinsService,
   ) {}
+
+  // Multi-Floor Tower Template Endpoint providing 10 floors matching the blueprint:
+  // Floor 0: Ground Floor (Lobby, Parking, Amenities, Security)
+  // Floor 1: Type A (2 x 3 BHK)
+  // Floor 2: Type B (4 x 2 BHK)
+  // Floor 3: Type C (1 x 4 BHK)
+  // Floor 4: Type A (2 x 3 BHK)
+  // Floor 5: Type B (4 x 2 BHK)
+  // Floor 6: Type C (1 x 4 BHK)
+  // Floor 7: Type A (2 x 3 BHK)
+  // Floor 8: Type B (4 x 2 BHK)
+  // Floor 9: Type C (1 x 4 BHK)
+  // Floor 10: Type A (2 x 3 BHK)
+  @Get('tower-template')
+  async getTowerTemplate() {
+    return {
+      success: true,
+      towerName: 'Aetheria Panorama Tower',
+      totalFloors: 10,
+      floors: [
+        { id: 'floor-0', floorNumber: 0, floorHeight: 3.6, unitsPerFloor: 1, flatType: 'Ground Amenities', description: 'Ground Floor - Grand Entrance Lobby, Security, Meter Room & Parking', structureJson: getTemplateLayout('GROUND'), layout: getTemplateLayout('GROUND') },
+        { id: 'floor-1', floorNumber: 1, floorHeight: 3.0, unitsPerFloor: 2, flatType: 'Type A (2 x 3 BHK)', description: '1st Floor - Type A: 2 Units (3 BHK Each, ~1,650 sq.ft)', structureJson: getTemplateLayout('TYPE_A'), layout: getTemplateLayout('TYPE_A') },
+        { id: 'floor-2', floorNumber: 2, floorHeight: 3.0, unitsPerFloor: 4, flatType: 'Type B (4 x 2 BHK)', description: '2nd Floor - Type B: 4 Units (2 BHK Each, ~1,050 sq.ft)', structureJson: getTemplateLayout('TYPE_B'), layout: getTemplateLayout('TYPE_B') },
+        { id: 'floor-3', floorNumber: 3, floorHeight: 3.2, unitsPerFloor: 1, flatType: 'Type C (1 x 4 BHK)', description: '3rd Floor - Type C: 1 Unit (4 BHK Sky Villa, ~2,400 sq.ft)', structureJson: getTemplateLayout('TYPE_C'), layout: getTemplateLayout('TYPE_C') },
+        { id: 'floor-4', floorNumber: 4, floorHeight: 3.0, unitsPerFloor: 2, flatType: 'Type A (2 x 3 BHK)', description: '4th Floor - Type A: 2 Units (3 BHK Each, ~1,650 sq.ft)', structureJson: getTemplateLayout('TYPE_A'), layout: getTemplateLayout('TYPE_A') },
+        { id: 'floor-5', floorNumber: 5, floorHeight: 3.0, unitsPerFloor: 4, flatType: 'Type B (4 x 2 BHK)', description: '5th Floor - Type B: 4 Units (2 BHK Each, ~1,050 sq.ft)', structureJson: getTemplateLayout('TYPE_B'), layout: getTemplateLayout('TYPE_B') },
+        { id: 'floor-6', floorNumber: 6, floorHeight: 3.2, unitsPerFloor: 1, flatType: 'Type C (1 x 4 BHK)', description: '6th Floor - Type C: 1 Unit (4 BHK Sky Villa, ~2,400 sq.ft)', structureJson: getTemplateLayout('TYPE_C'), layout: getTemplateLayout('TYPE_C') },
+        { id: 'floor-7', floorNumber: 7, floorHeight: 3.0, unitsPerFloor: 2, flatType: 'Type A (2 x 3 BHK)', description: '7th Floor - Type A: 2 Units (3 BHK Each, ~1,650 sq.ft)', structureJson: getTemplateLayout('TYPE_A'), layout: getTemplateLayout('TYPE_A') },
+        { id: 'floor-8', floorNumber: 8, floorHeight: 3.0, unitsPerFloor: 4, flatType: 'Type B (4 x 2 BHK)', description: '8th Floor - Type B: 4 Units (2 BHK Each, ~1,050 sq.ft)', structureJson: getTemplateLayout('TYPE_B'), layout: getTemplateLayout('TYPE_B') },
+        { id: 'floor-9', floorNumber: 9, floorHeight: 3.2, unitsPerFloor: 1, flatType: 'Type C (1 x 4 BHK)', description: '9th Floor - Type C: 1 Unit (4 BHK Sky Villa, ~2,400 sq.ft)', structureJson: getTemplateLayout('TYPE_C'), layout: getTemplateLayout('TYPE_C') },
+        { id: 'floor-10', floorNumber: 10, floorHeight: 3.2, unitsPerFloor: 2, flatType: 'Type A (2 x 3 BHK)', description: '10th Floor - Type A: 2 Units (3 BHK Each, ~1,650 sq.ft)', structureJson: getTemplateLayout('TYPE_A'), layout: getTemplateLayout('TYPE_A') },
+      ]
+    };
+  }
 
   // Get all floor plans
   @Get()

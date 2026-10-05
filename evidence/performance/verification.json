@@ -1,0 +1,49 @@
+[
+  {
+    "name": "Explorer navigation stays stable and renderer survives sidebar changes",
+    "result": "PASS",
+    "headerHidden": true,
+    "defaultSidebarWidth": 240
+  },
+  {
+    "name": "Public inventory displays API units and retains the selected builder",
+    "result": "PASS",
+    "selectedHome": "101"
+  },
+  {
+    "name": "Failed inventory requests show an error and recover on retry",
+    "result": "PASS"
+  },
+  {
+    "name": "Unknown builder and unit show clear states rather than invented listing details",
+    "result": "PASS"
+  },
+  {
+    "name": "Mobile explorer navigation opens, closes, and keeps content within the screen",
+    "result": "PASS",
+    "width": 390,
+    "content": 390
+  },
+  {
+    "name": "Portal refresh and mobile navigation: admin@platform.com",
+    "result": "PASS"
+  },
+  {
+    "name": "Portal refresh and mobile navigation: admin@aethelgard.com",
+    "result": "PASS"
+  },
+  {
+    "name": "Portal refresh and mobile navigation: admin@omniestate.com",
+    "result": "PASS"
+  },
+  {
+    "name": "AI floor-plan requests use the logged-in OmniEstate tenant",
+    "result": "PASS",
+    "tenantRequests": 1
+  },
+  {
+    "name": "No browser errors in public interaction checks",
+    "result": "PASS",
+    "errors": []
+  }
+]

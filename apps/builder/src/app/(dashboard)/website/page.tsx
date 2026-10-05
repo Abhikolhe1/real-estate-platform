@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import PremiumButton from '@/components/premium-button';
@@ -149,7 +150,7 @@ export default function WebsiteArchitectPage() {
   const loadThemes = async () => {
     if (!token || !user?.tenantId) return;
     try {
-      const res = await fetch('http://localhost:3001/themes', {
+      const res = await fetch(`${API_URL}/themes`, {
         headers: { 'x-tenant-id': user.tenantId, 'Authorization': `Bearer ${token}` },
       });
       if (res.ok) {
@@ -165,7 +166,7 @@ export default function WebsiteArchitectPage() {
   const loadBranding = async () => {
     if (!token || !user?.tenantId) return;
     try {
-      const res = await fetch('http://localhost:3001/builders/theme', {
+      const res = await fetch(`${API_URL}/builders/theme`, {
         headers: { 'x-tenant-id': user.tenantId, 'Authorization': `Bearer ${token}` },
       });
       if (res.ok) {
@@ -195,7 +196,7 @@ export default function WebsiteArchitectPage() {
   const loadPages = async () => {
     if (!token || !user?.tenantId) return;
     try {
-      const res = await fetch('http://localhost:3001/pages', {
+      const res = await fetch(`${API_URL}/pages`, {
         headers: { 'x-tenant-id': user.tenantId, 'Authorization': `Bearer ${token}` },
       });
       if (res.ok) {
@@ -212,7 +213,7 @@ export default function WebsiteArchitectPage() {
 
   const loadPresets = async () => {
     try {
-      const res = await fetch('http://localhost:3001/components/animations/presets');
+      const res = await fetch(`${API_URL}/components/animations/presets`);
       if (res.ok) {
         const data = await res.json();
         setPresets(data);
@@ -225,7 +226,7 @@ export default function WebsiteArchitectPage() {
   const loadMenus = async () => {
     if (!token || !user?.tenantId) return;
     try {
-      const res = await fetch('http://localhost:3001/navigation/menus', {
+      const res = await fetch(`${API_URL}/navigation/menus`, {
         headers: { 'x-tenant-id': user.tenantId, 'Authorization': `Bearer ${token}` },
       });
       if (res.ok) {
@@ -243,7 +244,7 @@ export default function WebsiteArchitectPage() {
   const loadPageSections = async (pageId: string) => {
     if (!token || !user?.tenantId || !pageId) return;
     try {
-      const res = await fetch(`http://localhost:3001/pages/${pageId}`, {
+      const res = await fetch(`${API_URL}/pages/${pageId}`, {
         headers: { 'x-tenant-id': user.tenantId, 'Authorization': `Bearer ${token}` },
       });
       if (res.ok) {
@@ -260,7 +261,7 @@ export default function WebsiteArchitectPage() {
     if (!token || !user?.tenantId || !targetPageId) return;
     setLoadingRevisions(true);
     try {
-      const res = await fetch(`http://localhost:3001/pages/${targetPageId}/revisions`, {
+      const res = await fetch(`${API_URL}/pages/${targetPageId}/revisions`, {
         headers: { 'x-tenant-id': user.tenantId, 'Authorization': `Bearer ${token}` },
       });
       if (res.ok) {
@@ -277,7 +278,7 @@ export default function WebsiteArchitectPage() {
   const loadComponents = async () => {
     if (!token || !user?.tenantId) return;
     try {
-      const res = await fetch('http://localhost:3001/components', {
+      const res = await fetch(`${API_URL}/components`, {
         headers: { 'x-tenant-id': user.tenantId, 'Authorization': `Bearer ${token}` },
       });
       if (res.ok) {
@@ -321,7 +322,7 @@ export default function WebsiteArchitectPage() {
     e.preventDefault();
     if (isSalesUser || isBuilderStaff) return;
     try {
-      const res = await fetch('http://localhost:3001/pages', {
+      const res = await fetch(`${API_URL}/pages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -357,7 +358,7 @@ export default function WebsiteArchitectPage() {
   const handleDuplicatePage = async (pageId: string) => {
     if (isSalesUser || isBuilderStaff) return;
     try {
-      const res = await fetch(`http://localhost:3001/pages/${pageId}/duplicate`, {
+      const res = await fetch(`${API_URL}/pages/${pageId}/duplicate`, {
         method: 'POST',
         headers: {
           'x-tenant-id': user?.tenantId || '',
@@ -381,7 +382,7 @@ export default function WebsiteArchitectPage() {
     if (!confirm('Are you sure you want to delete this page? This will delete all its sections.')) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/pages/${pageId}`, {
+      const res = await fetch(`${API_URL}/pages/${pageId}`, {
         method: 'DELETE',
         headers: {
           'x-tenant-id': user?.tenantId || '',
@@ -405,7 +406,7 @@ export default function WebsiteArchitectPage() {
     if (isSalesUser || isBuilderStaff) return;
     const newStatus = page.status === 'published' ? 'draft' : 'published';
     try {
-      const res = await fetch(`http://localhost:3001/pages/${page.id}`, {
+      const res = await fetch(`${API_URL}/pages/${page.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -428,7 +429,7 @@ export default function WebsiteArchitectPage() {
   const handleAddSection = async (type: string) => {
     if (isSalesUser) return;
     try {
-      const res = await fetch(`http://localhost:3001/pages/${selectedPageId}/sections`, {
+      const res = await fetch(`${API_URL}/pages/${selectedPageId}/sections`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -453,7 +454,7 @@ export default function WebsiteArchitectPage() {
   const handleUpdateSectionConfig = async (secId: string, updatedConfig: any) => {
     if (isSalesUser) return;
     try {
-      const res = await fetch(`http://localhost:3001/pages/${selectedPageId}/sections/${secId}`, {
+      const res = await fetch(`${API_URL}/pages/${selectedPageId}/sections/${secId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -480,7 +481,7 @@ export default function WebsiteArchitectPage() {
   const handleDeleteSection = async (secId: string) => {
     if (isSalesUser) return;
     try {
-      const res = await fetch(`http://localhost:3001/pages/${selectedPageId}/sections/${secId}`, {
+      const res = await fetch(`${API_URL}/pages/${selectedPageId}/sections/${secId}`, {
         method: 'DELETE',
         headers: {
           'x-tenant-id': user?.tenantId || '',
@@ -504,7 +505,7 @@ export default function WebsiteArchitectPage() {
   const handleDuplicateSection = async (sec: Section) => {
     if (isSalesUser) return;
     try {
-      const res = await fetch(`http://localhost:3001/pages/${selectedPageId}/sections`, {
+      const res = await fetch(`${API_URL}/pages/${selectedPageId}/sections`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -543,7 +544,7 @@ export default function WebsiteArchitectPage() {
 
     // Save ordering to backend
     try {
-      await fetch(`http://localhost:3001/pages/${selectedPageId}/sections/reorder`, {
+      await fetch(`${API_URL}/pages/${selectedPageId}/sections/reorder`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -565,7 +566,7 @@ export default function WebsiteArchitectPage() {
     e.preventDefault();
     if (isSalesUser || isBuilderStaff) return;
     try {
-      const res = await fetch(`http://localhost:3001/navigation/menus/${selectedMenuId}/items`, {
+      const res = await fetch(`${API_URL}/navigation/menus/${selectedMenuId}/items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -590,7 +591,7 @@ export default function WebsiteArchitectPage() {
     e.preventDefault();
     if (isSalesUser || isBuilderStaff || !editingItem) return;
     try {
-      const res = await fetch(`http://localhost:3001/navigation/items/${editingItem.id}`, {
+      const res = await fetch(`${API_URL}/navigation/items/${editingItem.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -616,7 +617,7 @@ export default function WebsiteArchitectPage() {
     if (isSalesUser || isBuilderStaff) return;
     if (!confirm('Are you sure you want to delete this link?')) return;
     try {
-      const res = await fetch(`http://localhost:3001/navigation/items/${itemId}`, {
+      const res = await fetch(`${API_URL}/navigation/items/${itemId}`, {
         method: 'DELETE',
         headers: {
           'x-tenant-id': user?.tenantId || '',
@@ -646,7 +647,7 @@ export default function WebsiteArchitectPage() {
 
     // Trigger reorder API
     try {
-      const res = await fetch(`http://localhost:3001/navigation/menus/${selectedMenuId}/items/reorder`, {
+      const res = await fetch(`${API_URL}/navigation/menus/${selectedMenuId}/items/reorder`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -668,7 +669,7 @@ export default function WebsiteArchitectPage() {
   const handleSaveBranding = async () => {
     if (isSalesUser) return;
     try {
-      const res = await fetch('http://localhost:3001/builders/theme', {
+      const res = await fetch(`${API_URL}/builders/theme`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -706,7 +707,7 @@ export default function WebsiteArchitectPage() {
     e.preventDefault();
     if (isSalesUser) return;
     try {
-      const res = await fetch('http://localhost:3001/themes', {
+      const res = await fetch(`${API_URL}/themes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -750,7 +751,7 @@ export default function WebsiteArchitectPage() {
   const handleActivateTheme = async (themeId: string) => {
     if (isSalesUser || !themeId) return;
     try {
-      const res = await fetch(`http://localhost:3001/themes/${themeId}/activate`, {
+      const res = await fetch(`${API_URL}/themes/${themeId}/activate`, {
         method: 'POST',
         headers: {
           'x-tenant-id': user?.tenantId || '',
@@ -809,7 +810,7 @@ export default function WebsiteArchitectPage() {
     handleDragEnd();
 
     try {
-      const res = await fetch(`http://localhost:3001/pages/${selectedPageId}/sections/reorder`, {
+      const res = await fetch(`${API_URL}/pages/${selectedPageId}/sections/reorder`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -834,7 +835,7 @@ export default function WebsiteArchitectPage() {
     if (isSalesUser || isBuilderStaff) return;
     if (!confirm('Are you sure you want to restore this layout snapshot? This will replace all current sections.')) return;
     try {
-      const res = await fetch(`http://localhost:3001/pages/${selectedPageId}/revisions/${revisionId}/restore`, {
+      const res = await fetch(`${API_URL}/pages/${selectedPageId}/revisions/${revisionId}/restore`, {
         method: 'POST',
         headers: {
           'x-tenant-id': user?.tenantId || '',
@@ -862,7 +863,7 @@ export default function WebsiteArchitectPage() {
     e.preventDefault();
     if (isSalesUser) return;
     try {
-      const res = await fetch('http://localhost:3001/components', {
+      const res = await fetch(`${API_URL}/components`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -895,7 +896,7 @@ export default function WebsiteArchitectPage() {
     e.preventDefault();
     if (isSalesUser || !editingComponent) return;
     try {
-      const res = await fetch(`http://localhost:3001/components/${editingComponent.id}`, {
+      const res = await fetch(`${API_URL}/components/${editingComponent.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -928,7 +929,7 @@ export default function WebsiteArchitectPage() {
     if (isSalesUser) return;
     if (!confirm('Are you sure you want to delete this library component?')) return;
     try {
-      const res = await fetch(`http://localhost:3001/components/${compId}`, {
+      const res = await fetch(`${API_URL}/components/${compId}`, {
         method: 'DELETE',
         headers: {
           'x-tenant-id': user?.tenantId || '',
@@ -958,12 +959,12 @@ export default function WebsiteArchitectPage() {
 
   return (
     <div>
-      <header className="flex justify-between items-center mb-8">
+      <header className="flex flex-wrap gap-4 justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-950 tracking-tight">Website Visual Architect</h1>
           <p className="text-gray-500 text-sm mt-1">Design layout pages, configure dynamic content sections, customize menus, and branding.</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           {successMsg && <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">{successMsg}</span>}
           {errorMsg && <span className="text-xs text-red-600 font-bold bg-red-50 px-4 py-2 rounded-xl border border-red-100">{errorMsg}</span>}
           {isSalesUser && <span className="text-xs font-bold text-gray-400 bg-gray-100 px-4 py-2 rounded-xl border">READ ONLY ACCESS</span>}
@@ -972,7 +973,7 @@ export default function WebsiteArchitectPage() {
       </header>
 
       {/* Navigation Tabs */}
-      <div className="flex border-b border-gray-150 mb-8 gap-1">
+      <div className="flex flex-wrap border-b border-gray-150 mb-8 gap-1">
         <button
           onClick={() => setActiveTab('pages')}
           className={`py-3 px-6 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
@@ -1028,7 +1029,7 @@ export default function WebsiteArchitectPage() {
           )}
 
           <div className="bg-white border border-gray-150 rounded-2xl overflow-hidden shadow-sm">
-            <table className="w-full text-left border-collapse">
+            <div className="w-full overflow-x-auto"><table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                   <th className="py-4 px-6">Page Name</th>
@@ -1087,16 +1088,16 @@ export default function WebsiteArchitectPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
         </section>
       )}
 
       {/* --- TAB 2: SECTIONS LAYOUT --- */}
       {activeTab === 'sections' && (
-        <div className="grid grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
           {/* List of sections on the active page (Left Sidebar: 2 columns) */}
-          <section className="col-span-2 bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
+          <section className="xl:col-span-2 bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
             <div className="flex justify-between items-center">
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Active Design Page</label>
@@ -1197,9 +1198,9 @@ export default function WebsiteArchitectPage() {
           </section>
 
           {/* Right Column: Visual Sub-Tabs Workspace (3 columns) */}
-          <section className="col-span-3 flex flex-col gap-6">
+          <section className="xl:col-span-3 flex flex-col gap-6">
             {/* Sub-tab selections */}
-            <div className="flex border-b border-gray-150 gap-2">
+            <div className="flex overflow-x-auto border-b border-gray-150 gap-2">
               <button
                 onClick={() => setWorkspaceSubTab('inspector')}
                 className={`py-2.5 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
@@ -1518,7 +1519,7 @@ export default function WebsiteArchitectPage() {
 
           {activeMenu ? (
             <div className="bg-white border border-gray-150 rounded-2xl overflow-hidden shadow-sm">
-              <table className="w-full text-left border-collapse">
+              <div className="w-full overflow-x-auto"><table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                     <th className="py-4 px-6 w-16">Order</th>
@@ -1581,7 +1582,7 @@ export default function WebsiteArchitectPage() {
                     </tr>
                   )}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           ) : (
             <p className="text-center text-gray-400 py-10 text-xs italic">No menus synchronized.</p>
@@ -1648,8 +1649,8 @@ export default function WebsiteArchitectPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-5 gap-8">
-            <section className="col-span-3 bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
+            <section className="xl:col-span-3 bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
               <div>
                 <h3 className="text-sm font-bold text-gray-950 uppercase tracking-wider">Branding & Layout Settings</h3>
                 <p className="text-xs text-gray-400 mt-1">Configure company logos, custom style themes, dynamic navigation header layouts, and footer modules.</p>
@@ -1946,7 +1947,7 @@ export default function WebsiteArchitectPage() {
             </section>
 
             {/* Simulated Live Theme Preview */}
-            <section className="col-span-2 flex flex-col gap-6">
+            <section className="xl:col-span-2 flex flex-col gap-6">
               <div className="bg-neutral-950 text-stone-200 rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[520px] border border-neutral-800">
                 {/* Header Simulator Panel */}
                 <div className="space-y-4">
@@ -2673,7 +2674,7 @@ function BuilderLivePreview({ sections, branding, selectedSectionId, onSelectSec
                 </div>
               ))}
               {(!config.features || config.features.length === 0) && (
-                <div className="col-span-2 p-4 border border-dashed border-white/10 rounded-xl text-center text-[9px] text-stone-500 italic">
+                <div className="xl:col-span-2 p-4 border border-dashed border-white/10 rounded-xl text-center text-[9px] text-stone-500 italic">
                   No features config.
                 </div>
               )}
@@ -2700,7 +2701,7 @@ function BuilderLivePreview({ sections, branding, selectedSectionId, onSelectSec
                 </div>
               ))}
               {galleryImages.length === 0 && (
-                <div className="col-span-2 p-4 border border-dashed border-white/10 rounded-xl text-center text-[9px] text-stone-500 italic">
+                <div className="xl:col-span-2 p-4 border border-dashed border-white/10 rounded-xl text-center text-[9px] text-stone-500 italic">
                   No photos added to gallery.
                 </div>
               )}
@@ -2728,7 +2729,7 @@ function BuilderLivePreview({ sections, branding, selectedSectionId, onSelectSec
                 </div>
               ))}
               {ams.length === 0 && (
-                <div className="col-span-2 p-4 border border-dashed border-white/10 rounded-xl text-center text-[9px] text-stone-500 italic">
+                <div className="xl:col-span-2 p-4 border border-dashed border-white/10 rounded-xl text-center text-[9px] text-stone-500 italic">
                   No amenities configured.
                 </div>
               )}

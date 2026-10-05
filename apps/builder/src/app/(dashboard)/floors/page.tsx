@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { gsap } from 'gsap';
@@ -30,12 +31,11 @@ const FLAT_STATUS_COLORS: Record<string, string> = {
   HOLD: 'bg-amber-50 text-amber-700',
 };
 
-const TENANT_ID = 'b0d39e2a-1cbe-4c28-bbbe-e6e788e99aa2';
 
 export default function FloorsPage() {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
-  const tenantId = user?.tenantId || TENANT_ID;
+  const tenantId = user?.tenantId || '';
   const getHeaders = () => ({
     'x-tenant-id': tenantId,
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -63,7 +63,7 @@ export default function FloorsPage() {
 
   const fetchTowers = async () => {
     try {
-      const res = await fetch('http://localhost:3001/inventory/towers', { headers: getHeaders() });
+      const res = await fetch(`${API_URL}/inventory/towers`, { headers: getHeaders() });
       if (res.ok) {
         const data = await res.json();
         setTowers(data);
@@ -75,7 +75,7 @@ export default function FloorsPage() {
 
   const fetchFloorplans = async () => {
     try {
-      const res = await fetch('http://localhost:3001/floorplans', { headers: getHeaders() });
+      const res = await fetch(`${API_URL}/floorplans`, { headers: getHeaders() });
       if (res.ok) {
         setFloorplans(await res.json());
       }
@@ -85,7 +85,7 @@ export default function FloorsPage() {
   const fetchFloors = async (towerId: string) => {
     if (!towerId) return;
     try {
-      const res = await fetch(`http://localhost:3001/inventory/floors?towerId=${towerId}`, { headers: getHeaders() });
+      const res = await fetch(`${API_URL}/inventory/floors?towerId=${towerId}`, { headers: getHeaders() });
       if (res.ok) {
         const data = await res.json();
         setFloors(data);
@@ -119,7 +119,7 @@ export default function FloorsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await fetch('http://localhost:3001/inventory/floors', {
+      await fetch(`${API_URL}/inventory/floors`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getHeaders() },
         body: JSON.stringify({
@@ -143,7 +143,7 @@ export default function FloorsPage() {
     if (!settings) return;
     setSaving(true);
     try {
-      const res = await fetch(`http://localhost:3001/inventory/floors/${floorId}`, {
+      const res = await fetch(`${API_URL}/inventory/floors/${floorId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...getHeaders() },
         body: JSON.stringify({
@@ -169,7 +169,7 @@ export default function FloorsPage() {
   const handleDeleteFloor = async (id: string) => {
     if (!confirm('Delete this floor? All flat units on this floor will be removed.')) return;
     try {
-      await fetch(`http://localhost:3001/inventory/floors/${id}`, { method: 'DELETE', headers: getHeaders() });
+      await fetch(`${API_URL}/inventory/floors/${id}`, { method: 'DELETE', headers: getHeaders() });
       fetchFloors(selectedTowerId);
     } catch { }
   };
@@ -190,7 +190,7 @@ export default function FloorsPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <header className="flex justify-between items-center">
+      <header className="flex flex-wrap gap-3 justify-between items-center">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-950 tracking-tight">Floor Management</h1>
           <p className="text-gray-400 text-sm mt-1">Manage floor levels within each tower block and their flat units.</p>
@@ -234,7 +234,7 @@ export default function FloorsPage() {
       {selectedTowerId && (
         <>
           {/* Tower Summary */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { label: 'Tower', value: selectedTower?.name || '—', icon: '🏢' },
               { label: 'Total Floors', value: floors.length, icon: '🏠' },
@@ -346,7 +346,7 @@ export default function FloorsPage() {
                             flats.length === 0 ? (
                               <p className="text-xs text-gray-400 text-center py-4">No flat units on this floor.</p>
                             ) : (
-                              <div className="grid grid-cols-4 gap-3">
+                              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                                 {flats.map(flat => (
                                   <div
                                     key={flat.id}

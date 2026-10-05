@@ -426,7 +426,7 @@ async function bootstrap() {
             subtitle: 'Aethelgard Sky Penthouses',
             buttonText: 'Book Site Visit',
             buttonUrl: '#inquiry',
-            backgroundImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCeasfkI_suwcpRV_6250zNvP_BR0KoVsvLqrSxx8cmogEnaRDVVenavhi_YCekm4SaL6VvvdrbJLazm7giBQmN10B0oeeJTqtjHOVhx3AaxHqBMhemyrPk_cPi0wZ2WPm3tZZ-bgCnHIc4hDHEJGP7r-4hICejzEoyn9w96UHDAsF9-a4UQ0o-iQosIaniAZ71fTzoSLh6IdeTt48bOcV261qD2msDZuAW99EkUeeFoDW3tUygEMkSn9at1VY5V3lnpb_DgeSNc9E',
+            backgroundImage: '/images/hero-skyline.jpg',
             animation: 'fade-up',
             duration: 1.2,
             delay: 0.3
@@ -443,12 +443,12 @@ async function bootstrap() {
               {
                 title: 'Private Terraces',
                 subtitle: 'Luxury Sky Suites',
-                image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuALub8tldhZ_oMsDBRNKvmeXkewkHSlaNawnWde8Xoltrq0FSdntj93gg8_tlgdCPs1sX8IUmXuDlrojoVQ9QLZjHLlaeN41Qp_MiMdpQ2C1neDNmt9MWzLGhTG6IiOVbDfeZbT8ip3VFdJ5gjtfB8mQj-9uU6Ear6AraJyfkHXMyT7S-q7BLRg0NQO3d1J_lhzuXOsyTBKlhZOKt0d2LNE5__yhPDr1aL2pU1cGStdoz1seLCZxe7JpdEIkwyWYpBxdOcVXoeUaEY'
+                image: '/images/suite-terrace.jpg'
               },
               {
                 title: 'Infinity Oasis',
                 subtitle: 'Panoramic Rooftop Pool',
-                image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAr28uHqFUXU1-6oqJKy3H8H0P8wAh2ZOivH0xSDCfso4Y_Xb1gI-e8rBONeD9EF-H27ir1ARdke5aDiY1CvNLqDuihLjYmGKq1MoFG4Gl1LCXLHboR5rnB0LWIZnjPYXI4JBBVc_mHNuqF5FaaqjudHxOFXXErQBlWNhEfyoQXA7iWevn8AMNmdzjSalTnZ775wingAAKF2urxtQ-OSe0_bBOzzpU6HnTu4efJV85W_Y0VFve4ibvEtwe5_Ts1eB1tQxMwTe3wpsY'
+                image: '/images/infinity-pool.jpg'
               }
             ],
             animation: 'fade-left',
@@ -463,8 +463,8 @@ async function bootstrap() {
             title: 'Cinematic Gallery',
             subtitle: 'A Visual Walkthrough of Elegance',
             images: [
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuALub8tldhZ_oMsDBRNKvmeXkewkHSlaNawnWde8Xoltrq0FSdntj93gg8_tlgdCPs1sX8IUmXuDlrojoVQ9QLZjHLlaeN41Qp_MiMdpQ2C1neDNmt9MWzLGhTG6IiOVbDfeZbT8ip3VFdJ5gjtfB8mQj-9uU6Ear6AraJyfkHXMyT7S-q7BLRg0NQO3d1J_lhzuXOsyTBKlhZOKt0d2LNE5__yhPDr1aL2pU1cGStdoz1seLCZxe7JpdEIkwyWYpBxdOcVXoeUaEY',
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuAr28uHqFUXU1-6oqJKy3H8H0P8wAh2ZOivH0xSDCfso4Y_Xb1gI-e8rBONeD9EF-H27ir1ARdke5aDiY1CvNLqDuihLjYmGKq1MoFG4Gl1LCXLHboR5rnB0LWIZnjPYXI4JBBVc_mHNuqF5FaaqjudHxOFXXErQBlWNhEfyoQXA7iWevn8AMNmdzjSalTnZ775wingAAKF2urxtQ-OSe0_bBOzzpU6HnTu4efJV85W_Y0VFve4ibvEtwe5_Ts1eB1tQxMwTe3wpsY'
+              '/images/suite-terrace.jpg',
+              '/images/infinity-pool.jpg'
             ],
             animation: 'zoom',
             duration: 1.5,
@@ -529,7 +529,7 @@ async function bootstrap() {
           configJson: {
             title: 'Crafting Architectural Icons',
             subtitle: 'About Aethelgard Residences',
-            backgroundImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCeasfkI_suwcpRV_6250zNvP_BR0KoVsvLqrSxx8cmogEnaRDVVenavhi_YCekm4SaL6VvvdrbJLazm7giBQmN10B0oeeJTqtjHOVhx3AaxHqBMhemyrPk_cPi0wZ2WPm3tZZ-bgCnHIc4hDHEJGP7r-4hICejzEoyn9w96UHDAsF9-a4UQ0o-iQosIaniAZ71fTzoSLh6IdeTt48bOcV261qD2msDZuAW99EkUeeFoDW3tUygEMkSn9at1VY5V3lnpb_DgeSNc9E',
+            backgroundImage: '/images/hero-skyline.jpg',
             animation: 'fade-up',
             duration: 1.2,
             delay: 0.1
@@ -562,7 +562,7 @@ async function bootstrap() {
           configJson: {
             title: 'A Private Sanctuary of Leisure',
             subtitle: 'Aethelgard Premium Amenities',
-            backgroundImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAr28uHqFUXU1-6oqJKy3H8H0P8wAh2ZOivH0xSDCfso4Y_Xb1gI-e8rBONeD9EF-H27ir1ARdke5aDiY1CvNLqDuihLjYmGKq1MoFG4Gl1LCXLHboR5rnB0LWIZnjPYXI4JBBVc_mHNuqF5FaaqjudHxOFXXErQBlWNhEfyoQXA7iWevn8AMNmdzjSalTnZ775wingAAKF2urxtQ-OSe0_bBOzzpU6HnTu4efJV85W_Y0VFve4ibvEtwe5_Ts1eB1tQxMwTe3wpsY',
+            backgroundImage: '/images/infinity-pool.jpg',
             animation: 'fade-up',
             duration: 1.2,
             delay: 0.1
@@ -594,7 +594,7 @@ async function bootstrap() {
           configJson: {
             title: 'Experience personalized consultations',
             subtitle: 'Get in Touch',
-            backgroundImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCeasfkI_suwcpRV_6250zNvP_BR0KoVsvLqrSxx8cmogEnaRDVVenavhi_YCekm4SaL6VvvdrbJLazm7giBQmN10B0oeeJTqtjHOVhx3AaxHqBMhemyrPk_cPi0wZ2WPm3tZZ-bgCnHIc4hDHEJGP7r-4hICejzEoyn9w96UHDAsF9-a4UQ0o-iQosIaniAZ71fTzoSLh6IdeTt48bOcV261qD2msDZuAW99EkUeeFoDW3tUygEMkSn9at1VY5V3lnpb_DgeSNc9E',
+            backgroundImage: '/images/hero-skyline.jpg',
             animation: 'fade-up',
             duration: 1.0,
             delay: 0.1
@@ -626,7 +626,7 @@ async function bootstrap() {
           configJson: {
             title: 'Step inside Aethelgard virtual reality',
             subtitle: 'Interactive Experience',
-            backgroundImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCeasfkI_suwcpRV_6250zNvP_BR0KoVsvLqrSxx8cmogEnaRDVVenavhi_YCekm4SaL6VvvdrbJLazm7giBQmN10B0oeeJTqtjHOVhx3AaxHqBMhemyrPk_cPi0wZ2WPm3tZZ-bgCnHIc4hDHEJGP7r-4hICejzEoyn9w96UHDAsF9-a4UQ0o-iQosIaniAZ71fTzoSLh6IdeTt48bOcV261qD2msDZuAW99EkUeeFoDW3tUygEMkSn9at1VY5V3lnpb_DgeSNc9E',
+            backgroundImage: '/images/hero-skyline.jpg',
             animation: 'fade-up',
             duration: 1.2,
             delay: 0.1
@@ -638,7 +638,7 @@ async function bootstrap() {
           configJson: {
             title: 'Virtual Walkthrough Video',
             subtitle: 'A cinematic aerial capture of our skyscraper',
-            videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-luxury-home-with-swimming-pool-and-palm-trees-43224-large.mp4',
+            videoUrl: '/videos/walkthrough.mp4',
             animation: 'fade-up',
             duration: 1.2,
             delay: 0.3
@@ -686,7 +686,7 @@ async function bootstrap() {
             subtitle: 'OmniEstate Seafront Villas',
             buttonText: 'Request Brochure',
             buttonUrl: '#inquiry',
-            backgroundImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCeasfkI_suwcpRV_6250zNvP_BR0KoVsvLqrSxx8cmogEnaRDVVenavhi_YCekm4SaL6VvvdrbJLazm7giBQmN10B0oeeJTqtjHOVhx3AaxHqBMhemyrPk_cPi0wZ2WPm3tZZ-bgCnHIc4hDHEJGP7r-4hICejzEoyn9w96UHDAsF9-a4UQ0o-iQosIaniAZ71fTzoSLh6IdeTt48bOcV261qD2msDZuAW99EkUeeFoDW3tUygEMkSn9at1VY5V3lnpb_DgeSNc9E',
+            backgroundImage: '/images/hero-skyline.jpg',
             animation: 'fade-up',
             duration: 1.0,
             delay: 0.1

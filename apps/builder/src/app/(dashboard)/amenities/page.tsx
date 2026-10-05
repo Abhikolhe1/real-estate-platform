@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useAuthStore } from '@/store/authStore';
@@ -53,7 +54,7 @@ export default function AmenitiesPage() {
 
   useEffect(() => {
     if (!token || !tenantId) return;
-    fetch('http://localhost:3001/projects', { headers })
+    fetch(`${API_URL}/projects`, { headers })
       .then((response) => response.json())
       .then((data: Project[]) => {
         setProjects(data || []);
@@ -63,7 +64,7 @@ export default function AmenitiesPage() {
 
   useEffect(() => {
     if (!projectId) return;
-    fetch(`http://localhost:3001/projects/${projectId}/amenities`, { headers })
+    fetch(`${API_URL}/projects/${projectId}/amenities`, { headers })
       .then((response) => response.json())
       .then((data) => setItems((data || []).map((item: any) => ({
         ...item,
@@ -125,7 +126,7 @@ export default function AmenitiesPage() {
 
   const save = async () => {
     setSaving(true);
-    const response = await fetch(`http://localhost:3001/projects/${projectId}/amenities`, {
+    const response = await fetch(`${API_URL}/projects/${projectId}/amenities`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ amenities: items.map(({ id: _id, ...item }) => item) }),
@@ -148,8 +149,8 @@ export default function AmenitiesPage() {
           <h1 className="text-2xl font-black text-gray-950">Amenities Site Plan</h1>
           <p className="text-sm text-gray-400">Drag amenities onto the 1m grid and save the project layout.</p>
         </div>
-        <div className="flex gap-2">
-          <select value={projectId} onChange={(event) => setProjectId(event.target.value)} className="rounded-xl border px-4 py-2 text-xs font-bold">
+        <div className="flex flex-wrap gap-2">
+          <select value={projectId} onChange={(event) => setProjectId(event.target.value)} className="max-w-full rounded-xl border px-4 py-2 text-xs font-bold">
             {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
           </select>
           <button onClick={save} disabled={!projectId || saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-xs font-black text-white disabled:opacity-50">
@@ -159,7 +160,7 @@ export default function AmenitiesPage() {
       </header>
       {message && <p className="rounded-xl bg-indigo-50 px-4 py-3 text-xs font-bold text-indigo-700">{message}</p>}
 
-      <div className="grid min-h-[620px] grid-cols-[200px_minmax(0,1fr)_250px] overflow-hidden rounded-3xl border bg-white shadow-sm">
+      <div className="grid min-h-[620px] grid-cols-1 xl:grid-cols-[200px_minmax(0,1fr)_250px] overflow-hidden rounded-3xl border bg-white shadow-sm">
         <aside className="space-y-2 border-r p-4">
           <p className="pb-2 text-[9px] font-black uppercase tracking-widest text-gray-400">Amenity Library</p>
           {catalog.map((item) => {
@@ -176,7 +177,7 @@ export default function AmenitiesPage() {
           })}
         </aside>
 
-        <main className="flex flex-col bg-gray-50 p-5">
+        <main className="flex min-h-[400px] min-w-0 flex-col bg-gray-50 p-5">
           <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-gray-400">60m x 40m site</p>
           <div onDragOver={(event) => event.preventDefault()} onDrop={onDrop}
             className="relative flex-1 overflow-hidden rounded-2xl border-2 border-dashed bg-[#eef2e8]"

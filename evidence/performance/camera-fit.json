@@ -1,0 +1,35 @@
+{
+  "results": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "result": "PASS",
+      "maxX": 0.9259259259259257,
+      "maxY": 0.4318045643174828,
+      "meshCount": 277
+    },
+    {
+      "viewport": {
+        "width": 360,
+        "height": 780
+      },
+      "result": "PASS",
+      "maxX": 0.9259259259259253,
+      "maxY": 0.43899163582185735,
+      "meshCount": 277
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "result": "PASS",
+      "maxX": 0.7533001272507878,
+      "maxY": 0.925925925925926,
+      "meshCount": 277
+    }
+  ],
+  "errors": []
+}

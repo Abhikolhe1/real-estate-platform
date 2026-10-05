@@ -1,0 +1,320 @@
+[
+  {
+    "app": "web",
+    "route": "/",
+    "status": 200,
+    "ms": 1150,
+    "title": "The Peak of Luxury LivingAethelgard Sky Penthouses",
+    "overflow": false,
+    "bodyLength": 1420,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/about",
+    "status": 200,
+    "ms": 695,
+    "title": "Crafting Architectural IconsAbout Aethelgard Residences",
+    "overflow": false,
+    "bodyLength": 740,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/amenities",
+    "status": 200,
+    "ms": 613,
+    "title": "A Private Sanctuary of LeisureAethelgard Premium Amenities",
+    "overflow": false,
+    "bodyLength": 622,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/contact",
+    "status": 200,
+    "ms": 593,
+    "title": "Experience personalized consultationsGet in Touch",
+    "overflow": false,
+    "bodyLength": 544,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/gallery",
+    "status": 200,
+    "ms": 608,
+    "title": "Visual Showcase",
+    "overflow": false,
+    "bodyLength": 1061,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/inventory",
+    "status": 200,
+    "ms": 638,
+    "title": "Find your next home",
+    "overflow": false,
+    "bodyLength": 1195,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/location",
+    "status": 200,
+    "ms": 581,
+    "title": "Location & neighborhood",
+    "overflow": false,
+    "bodyLength": 490,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/virtual-tour",
+    "status": 200,
+    "ms": 580,
+    "title": "Step inside Aethelgard virtual realityInteractive Experience",
+    "overflow": false,
+    "bodyLength": 482,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/explorer",
+    "status": 200,
+    "ms": 2004,
+    "title": "Explore the architecture",
+    "overflow": false,
+    "bodyLength": 789,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "mobile": {
+      "width": 390,
+      "scrollWidth": 390
+    }
+  },
+  {
+    "app": "admin",
+    "route": "/",
+    "status": 200,
+    "ms": 621,
+    "title": "Governance Intelligence",
+    "overflow": false,
+    "bodyLength": 834,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "admin",
+    "route": "/?tab=builders",
+    "status": 200,
+    "ms": 623,
+    "title": "Builders Directory",
+    "overflow": false,
+    "bodyLength": 600,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "admin",
+    "route": "/?tab=billing",
+    "status": 200,
+    "ms": 561,
+    "title": "Billing & Subscriptions",
+    "overflow": false,
+    "bodyLength": 889,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "admin",
+    "route": "/?tab=settings",
+    "status": 200,
+    "ms": 571,
+    "title": "System Settings",
+    "overflow": false,
+    "bodyLength": 577,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "admin",
+    "mobile": {
+      "width": 390,
+      "scrollWidth": 390
+    }
+  },
+  {
+    "app": "builder",
+    "route": "/",
+    "status": 200,
+    "ms": 693,
+    "title": "Builder Workspace",
+    "overflow": false,
+    "bodyLength": 1239,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/projects",
+    "status": 200,
+    "ms": 602,
+    "title": "Projects Portfolio",
+    "overflow": false,
+    "bodyLength": 713,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/towers",
+    "status": 200,
+    "ms": 587,
+    "title": "Building Towers",
+    "overflow": false,
+    "bodyLength": 638,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/floors",
+    "status": 200,
+    "ms": 605,
+    "title": "Floor Management",
+    "overflow": false,
+    "bodyLength": 851,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/flats",
+    "status": 200,
+    "ms": 592,
+    "title": "Flats & Inventory",
+    "overflow": false,
+    "bodyLength": 1467,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/analytics",
+    "status": 200,
+    "ms": 620,
+    "title": "Analytics & Insights",
+    "overflow": false,
+    "bodyLength": 1235,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/amenities",
+    "status": 200,
+    "ms": 657,
+    "title": "Amenities Site Plan",
+    "overflow": false,
+    "bodyLength": 745,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/leads",
+    "status": 200,
+    "ms": 612,
+    "title": "Sales Leads CRM",
+    "overflow": false,
+    "bodyLength": 1026,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/team",
+    "status": 200,
+    "ms": 594,
+    "title": "Team Members",
+    "overflow": false,
+    "bodyLength": 599,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/media",
+    "status": 200,
+    "ms": 604,
+    "title": "Media Library",
+    "overflow": false,
+    "bodyLength": 743,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/website",
+    "status": 200,
+    "ms": 636,
+    "title": "Website Visual Architect",
+    "overflow": false,
+    "bodyLength": 1131,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/sdk",
+    "status": 200,
+    "ms": 597,
+    "title": "SDK Platform & Universal Embeds",
+    "overflow": false,
+    "bodyLength": 799,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/ai-generator",
+    "status": 200,
+    "ms": 631,
+    "title": "🏢Real Estate Virtual Twin Engine",
+    "overflow": false,
+    "bodyLength": 2232,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/walkthroughs",
+    "status": 200,
+    "ms": 754,
+    "title": "3D Virtual Experience Studio",
+    "overflow": false,
+    "bodyLength": 980,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "mobile": {
+      "width": 390,
+      "scrollWidth": 390
+    }
+  }
+]

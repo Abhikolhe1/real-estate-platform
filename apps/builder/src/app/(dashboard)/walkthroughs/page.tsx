@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { Icon } from '@iconify/react';
@@ -225,7 +226,7 @@ export default function WalkthroughsPage() {
   useEffect(() => {
     if (!token || !tenantId) return;
 
-    fetch('http://localhost:3001/projects', {
+    fetch(`${API_URL}/projects`, {
       headers: {
         'x-tenant-id': tenantId,
         'Authorization': `Bearer ${token}`,
@@ -245,7 +246,7 @@ export default function WalkthroughsPage() {
   useEffect(() => {
     if (!selectedProjectId || !token || !tenantId) return;
 
-    fetch(`http://localhost:3001/projects/${selectedProjectId}/amenities`, {
+    fetch(`${API_URL}/projects/${selectedProjectId}/amenities`, {
       headers: {
         'x-tenant-id': tenantId,
         'Authorization': `Bearer ${token}`
@@ -265,7 +266,7 @@ export default function WalkthroughsPage() {
     if (!selectedProjectId || !token || !tenantId) return;
 
     setStructureFetchError(null);
-    fetch(`http://localhost:3001/floorplans`, {
+    fetch(`${API_URL}/floorplans`, {
       headers: { 
         'x-tenant-id': tenantId,
         'Authorization': `Bearer ${token}`
@@ -279,7 +280,7 @@ export default function WalkthroughsPage() {
           if (projFp) {
             if (projFp.status === 'parsed' || projFp.status === 'GENERATED' || projFp.status === 'generated') {
               try {
-                const resStruct = await fetch(`http://localhost:3001/structures/${projFp.structureId}`, {
+                const resStruct = await fetch(`${API_URL}/structures/${projFp.structureId}`, {
                   headers: { 
                     'x-tenant-id': tenantId,
                     'Authorization': `Bearer ${token}`
@@ -313,7 +314,7 @@ export default function WalkthroughsPage() {
   useEffect(() => {
     if (!selectedProjectId || !token || !tenantId) return;
     setLoading(true);
-    fetch(`http://localhost:3001/digital-twin/models?projectId=${selectedProjectId}`, {
+    fetch(`${API_URL}/digital-twin/models?projectId=${selectedProjectId}`, {
       headers: {
         'x-tenant-id': tenantId,
         'Authorization': `Bearer ${token}`,
@@ -350,9 +351,9 @@ export default function WalkthroughsPage() {
     };
 
     Promise.all([
-      fetch(`http://localhost:3001/digital-twin/models/${selectedModel.id}/hotspots`, { headers }).then((r) => r.json()),
-      fetch(`http://localhost:3001/digital-twin/models/${selectedModel.id}/camera-points`, { headers }).then((r) => r.json()),
-      fetch(`http://localhost:3001/digital-twin/models/${selectedModel.id}/tours`, { headers }).then((r) => r.json()),
+      fetch(`${API_URL}/digital-twin/models/${selectedModel.id}/hotspots`, { headers }).then((r) => r.json()),
+      fetch(`${API_URL}/digital-twin/models/${selectedModel.id}/camera-points`, { headers }).then((r) => r.json()),
+      fetch(`${API_URL}/digital-twin/models/${selectedModel.id}/tours`, { headers }).then((r) => r.json()),
     ])
       .then(([hotspotsData, pointsData, toursData]) => {
         setHotspots(hotspotsData || []);
@@ -974,7 +975,7 @@ export default function WalkthroughsPage() {
     if (!token || !tenantId || !selectedProjectId) return;
 
     try {
-      const res = await fetch('http://localhost:3001/digital-twin/models', {
+      const res = await fetch(`${API_URL}/digital-twin/models`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1011,7 +1012,7 @@ export default function WalkthroughsPage() {
     if (!token || !tenantId) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/digital-twin/models/${id}`, {
+      const res = await fetch(`${API_URL}/digital-twin/models/${id}`, {
         method: 'DELETE',
         headers: {
           'x-tenant-id': tenantId,
@@ -1053,7 +1054,7 @@ export default function WalkthroughsPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:3001/digital-twin/models/${selectedModel.id}/hotspots`, {
+      const res = await fetch(`${API_URL}/digital-twin/models/${selectedModel.id}/hotspots`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1086,7 +1087,7 @@ export default function WalkthroughsPage() {
     if (!token || !tenantId) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/digital-twin/hotspots/${id}`, {
+      const res = await fetch(`${API_URL}/digital-twin/hotspots/${id}`, {
         method: 'DELETE',
         headers: {
           'x-tenant-id': tenantId,
@@ -1121,7 +1122,7 @@ export default function WalkthroughsPage() {
     if (!selectedModel || !tempCameraCoords || !token || !tenantId) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/digital-twin/models/${selectedModel.id}/camera-points`, {
+      const res = await fetch(`${API_URL}/digital-twin/models/${selectedModel.id}/camera-points`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1155,7 +1156,7 @@ export default function WalkthroughsPage() {
     if (!token || !tenantId) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/digital-twin/camera-points/${id}`, {
+      const res = await fetch(`${API_URL}/digital-twin/camera-points/${id}`, {
         method: 'DELETE',
         headers: {
           'x-tenant-id': tenantId,
@@ -1187,7 +1188,7 @@ export default function WalkthroughsPage() {
     }));
 
     try {
-      const res = await fetch(`http://localhost:3001/digital-twin/models/${selectedModel.id}/tours`, {
+      const res = await fetch(`${API_URL}/digital-twin/models/${selectedModel.id}/tours`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1292,12 +1293,12 @@ export default function WalkthroughsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header className="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+      <header className="flex flex-wrap gap-4 justify-between items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">3D Virtual Experience Studio</h1>
           <p className="text-xs text-gray-400 mt-1">Configure digital twin models, place spatial information hotspots, and define smooth guided walkthrough paths.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <select
             value={selectedProjectId}
             onChange={(e) => setSelectedProjectId(e.target.value)}
@@ -1368,14 +1369,14 @@ export default function WalkthroughsPage() {
         {/* Center: 3D Viewport Editor (6 Cols) */}
         <div className="lg:col-span-6 relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between min-h-[550px]">
           {/* Controls Overlay */}
-          <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10 pointer-events-none">
+          <div className="absolute top-4 left-4 right-4 flex flex-wrap gap-2 justify-between items-center z-10 pointer-events-none">
             <div className="bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-gray-200/50 text-[10px] font-black text-gray-800 tracking-wider flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${selectedModel ? 'bg-emerald-500' : 'bg-gray-300'}`}></span>
               <span>{selectedModel ? selectedModel.name.toUpperCase() : 'NO MODEL LOADED'}</span>
             </div>
             
             {selectedModel && (
-              <div className="flex gap-2 pointer-events-auto">
+              <div className="flex flex-wrap gap-2 pointer-events-auto">
                 <button
                   onClick={() => setIsPlacingHotspot(!isPlacingHotspot)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-bold border transition-all active:scale-95 ${

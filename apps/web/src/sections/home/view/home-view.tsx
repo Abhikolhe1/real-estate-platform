@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PremiumButton from '@/components/premium-button';
@@ -49,13 +50,13 @@ function HomeViewContent() {
 
   // Fetch Builder Theme & Details
   useEffect(() => {
-    fetch(`http://localhost:3001/builders/theme-by-slug/${builderSlug}`)
+    fetch(`${API_URL}/builders/theme-by-slug/${builderSlug}`)
       .then((res) => res.json())
       .then((data) => {
         if (data && data.id) {
           setBuilderData(data);
           // Fetch Live Inventory for the Builder
-          fetch(`http://localhost:3001/inventory/towers`, {
+          fetch(`${API_URL}/inventory/towers`, {
             headers: {
               'x-tenant-id': data.id,
             },
@@ -99,7 +100,7 @@ function HomeViewContent() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const response = await fetch('http://localhost:3001/leads', {
+      const response = await fetch(`${API_URL}/leads`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +167,7 @@ function HomeViewContent() {
           <img 
             className="w-full h-full object-cover grayscale-[20%] brightness-[35%] transition-all duration-1000 hover:scale-105" 
             alt="Cinematic Skyscraper Architecture"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeasfkI_suwcpRV_6250zNvP_BR0KoVsvLqrSxx8cmogEnaRDVVenavhi_YCekm4SaL6VvvdrbJLazm7giBQmN10B0oeeJTqtjHOVhx3AaxHqBMhemyrPk_cPi0wZ2WPm3tZZ-bgCnHIc4hDHEJGP7r-4hICejzEoyn9w96UHDAsF9-a4UQ0o-iQosIaniAZ71fTzoSLh6IdeTt48bOcV261qD2msDZuAW99EkUeeFoDW3tUygEMkSn9at1VY5V3lnpb_DgeSNc9E"
+            src="/images/hero-skyline.jpg"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/40 via-transparent to-neutral-950"></div>
         </div>
@@ -214,7 +215,7 @@ function HomeViewContent() {
               <img 
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                 alt="Private Terraces Penthouse View"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuALub8tldhZ_oMsDBRNKvmeXkewkHSlaNawnWde8Xoltrq0FSdntj93gg8_tlgdCPs1sX8IUmXuDlrojoVQ9QLZjHLlaeN41Qp_MiMdpQ2C1neDNmt9MWzLGhTG6IiOVbDfeZbT8ip3VFdJ5gjtfB8mQj-9uU6Ear6AraJyfkHXMyT7S-q7BLRg0NQO3d1J_lhzuXOsyTBKlhZOKt0d2LNE5__yhPDr1aL2pU1cGStdoz1seLCZxe7JpdEIkwyWYpBxdOcVXoeUaEY"
+                src="/images/suite-terrace.jpg"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 to-transparent opacity-60"></div>
               <div className="absolute bottom-8 left-8">
@@ -226,7 +227,7 @@ function HomeViewContent() {
               <img 
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                 alt="Infinity Oasis Luxury Pool"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAr28uHqFUXU1-6oqJKy3H8H0P8wAh2ZOivH0xSDCfso4Y_Xb1gI-e8rBONeD9EF-H27ir1ARdke5aDiY1CvNLqDuihLjYmGKq1MoFG4Gl1LCXLHboR5rnB0LWIZnjPYXI4JBBVc_mHNuqF5FaaqjudHxOFXXErQBlWNhEfyoQXA7iWevn8AMNmdzjSalTnZ775wingAAKF2urxtQ-OSe0_bBOzzpU6HnTu4efJV85W_Y0VFve4ibvEtwe5_Ts1eB1tQxMwTe3wpsY"
+                src="/images/infinity-pool.jpg"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 to-transparent opacity-60"></div>
               <div className="absolute bottom-8 left-8">

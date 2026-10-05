@@ -1,16 +1,14 @@
 'use client';
 
+import { API_URL } from '@/config/api';
+import Link from 'next/link';
+import { builderUrl, getBuilder, publicJson } from '@/lib/public-data';
+import { PageSkeleton } from './page-skeleton';
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PremiumButton from '@/components/premium-button';
 import { Icon } from '@iconify/react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-// Register ScrollTrigger client-side
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 interface Section {
   id: string;
@@ -50,6 +48,9 @@ export default function DynamicPageRenderer({ slug }: { slug: string }) {
   const [builderData, setBuilderData] = useState<any>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [retry, setRetry] = useState(0);
+  const [submitError, setSubmitError] = useState('');
 
   // Lead Form States
   const [leadName, setLeadName] = useState('');
@@ -66,104 +67,54 @@ export default function DynamicPageRenderer({ slug }: { slug: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    let active = true;
+    setLoading(true); setLoadError(''); setBuilderData(null); setSections([]); setTowers([]); setFlatSelection(null);
+    (async () => {
       try {
-        // 1. Fetch builder theme settings
-        const themeRes = await fetch(`http://localhost:3001/builders/theme-by-slug/${builderSlug}`);
-        const themeData = await themeRes.json();
-        if (themeData && themeData.id) {
-          setBuilderData(themeData);
-
-          // 2. Fetch page layout sections
-          const pageRes = await fetch(`http://localhost:3001/pages/by-slug/${slug}?builderSlug=${builderSlug}`);
-          const pageData = await pageRes.json();
-          if (pageData) {
-            setSections(pageData.websiteSections || []);
-          }
-
-          // 3. Fetch towers if inventory sections are needed
-          const towerRes = await fetch(`http://localhost:3001/inventory/towers`, {
-            headers: { 'x-tenant-id': themeData.id },
-          });
-          if (towerRes.ok) {
-            const towerData = await towerRes.json();
-            if (Array.isArray(towerData) && towerData.length > 0) {
-              setTowers(towerData);
-              setActiveTowerId(towerData[0].id);
-              const firstFlat = towerData[0].floors?.[0]?.flats?.[0];
-              if (firstFlat) setFlatSelection(firstFlat);
-            }
-          }
+        const builder = await getBuilder(builderSlug);
+        if (!builder?.id) throw new Error('This builder could not be found.');
+        const page = await publicJson('/pages/by-slug/' + encodeURIComponent(slug) + '?builderSlug=' + encodeURIComponent(builderSlug), builder.id);
+        if (!active) return;
+        const nextSections = Array.isArray(page?.websiteSections) ? page.websiteSections : [];
+        setBuilderData(builder); setSections(nextSections);
+        if (nextSections.some((section: Section) => section.type === 'inventory')) {
+          const data = await publicJson('/inventory/towers', builder.id);
+          if (!active) return;
+          if (!Array.isArray(data)) throw new Error('Inventory could not be loaded.');
+          setTowers(data); setActiveTowerId(data[0]?.id || '');
+          setFlatSelection(data[0]?.floors?.flatMap((floor: Floor) => floor.flats || [])[0] || null);
         }
-      } catch (err) {
-        console.error('Failed to load page renderer:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [slug, builderSlug]);
+      } catch (error) {
+        if (active) setLoadError(error instanceof Error ? error.message : 'This page could not load.');
+      } finally { if (active) setLoading(false); }
+    })();
+    return () => { active = false; };
+  }, [slug, builderSlug, retry]);
 
-  // Apply GSAP Animations based on settings
+  // Reveal sections without blocking the first visible content on an animation library.
   useEffect(() => {
-    if (loading || !containerRef.current) return;
-
-    // Reset ScrollTrigger
-    ScrollTrigger.getAll().forEach((t) => t.kill());
-
-    const children = containerRef.current.children;
-    for (let i = 0; i < children.length; i++) {
-      const sectionEl = children[i] as HTMLElement;
-      const animationType = sectionEl.getAttribute('data-animation');
-      const duration = parseFloat(sectionEl.getAttribute('data-duration') || '1.2');
-      const delay = parseFloat(sectionEl.getAttribute('data-delay') || '0.1');
-
-      if (!animationType || animationType === 'none') continue;
-
-      let fromProps: gsap.TweenVars = { opacity: 0 };
-      let toProps: gsap.TweenVars = {
-        opacity: 1,
-        duration,
-        delay,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: sectionEl,
-          start: 'top 80%',
-          toggleActions: 'play none none none',
-        },
-      };
-
-      if (animationType === 'fade-up') {
-        fromProps.y = 50;
-        toProps.y = 0;
-      } else if (animationType === 'fade-down') {
-        fromProps.y = -50;
-        toProps.y = 0;
-      } else if (animationType === 'fade-left') {
-        fromProps.x = 50;
-        toProps.x = 0;
-      } else if (animationType === 'fade-right') {
-        fromProps.x = -50;
-        toProps.x = 0;
-      } else if (animationType === 'zoom') {
-        fromProps.scale = 0.85;
-        toProps.scale = 1;
-      } else if (animationType === 'scale') {
-        fromProps.scale = 0.95;
-        toProps.scale = 1;
+    if (loading || !containerRef.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const animations: Animation[] = [];
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const element = entry.target as HTMLElement;
+        observer.unobserve(element);
+        const kind = element.dataset.animation;
+        if (!kind || kind === 'none') continue;
+        const transform: Record<string, string> = { 'fade-up': 'translateY(24px)', 'fade-down': 'translateY(-24px)', 'fade-left': 'translateX(24px)', 'fade-right': 'translateX(-24px)', zoom: 'scale(.95)', scale: 'scale(.97)' };
+        animations.push(element.animate([{opacity: 0, transform: transform[kind] || 'none'}, {opacity: 1, transform: 'none'}], {duration: Math.max(0, Number(element.dataset.duration) || .6) * 1000, easing: 'ease-out'}));
       }
-
-      gsap.fromTo(sectionEl, fromProps, toProps);
-    }
+    }, {threshold: .08});
+    Array.from(containerRef.current.children).slice(1).forEach(element => observer.observe(element));
+    return () => { observer.disconnect(); animations.forEach(animation => animation.cancel()); };
   }, [loading, sections]);
 
-  // Handle lead submission
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
+    setSubmitting(true); setSubmitError('');
     try {
-      const response = await fetch('http://localhost:3001/leads', {
+      const response = await fetch(`${API_URL}/leads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -180,25 +131,18 @@ export default function DynamicPageRenderer({ slug }: { slug: string }) {
         setLeadEmail('');
         setLeadPhone('');
       } else {
-        alert('Failed to submit inquiry. Please try again.');
+        setSubmitError('Failed to submit inquiry. Please try again.');
       }
     } catch (err) {
-      console.error('Error submitting lead:', err);
+      setSubmitError('Unable to reach the server. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-neutral-950 text-stone-100">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
-          <p className="text-xs font-bold text-stone-500 tracking-wider uppercase">Loading Premium Experience...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton label="Loading property page" />;
+  if (loadError) return <div role="alert" className="mx-auto max-w-lg px-6 py-20 text-center"><h1 className="text-2xl">Unable to load this page</h1><p className="my-4 text-white/60">{loadError}</p><button onClick={() => setRetry(value => value + 1)} className="rounded-lg border border-white/30 px-5 py-3">Try again</button></div>;
+  if (!sections.length) return <div className="px-6 py-20 text-center"><h1 className="text-2xl">This page is not published yet</h1><Link href={builderUrl('/explorer', builderSlug)} className="mt-5 inline-block text-primary underline">Explore the property in 3D</Link></div>;
 
   const theme = builderData?.themeSettings || {};
   const themeStyles = {
@@ -248,7 +192,7 @@ export default function DynamicPageRenderer({ slug }: { slug: string }) {
               <img
                 className="w-full h-full object-cover grayscale-[20%] brightness-[35%] transition-all duration-1000 hover:scale-105"
                 alt="Landscape View"
-                src={config.backgroundImage || 'https://lh3.googleusercontent.com/aida-public/AB6AXuCeasfkI_suwcpRV_6250zNvP_BR0KoVsvLqrSxx8cmogEnaRDVVenavhi_YCekm4SaL6VvvdrbJLazm7giBQmN10B0oeeJTqtjHOVhx3AaxHqBMhemyrPk_cPi0wZ2WPm3tZZ-bgCnHIc4hDHEJGP7r-4hICejzEoyn9w96UHDAsF9-a4UQ0o-iQosIaniAZ71fTzoSLh6IdeTt48bOcV261qD2msDZuAW99EkUeeFoDW3tUygEMkSn9at1VY5V3lnpb_DgeSNc9E'}
+                src={config.backgroundImage || '/images/hero-skyline.jpg'}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/40 via-transparent to-neutral-950"></div>
             </div>
@@ -262,9 +206,9 @@ export default function DynamicPageRenderer({ slug }: { slug: string }) {
               </h1>
               {config.buttonText && (
                 <div className="flex gap-4 justify-center">
-                  <a href={config.buttonUrl || '#inquiry'} className={btnStyleClass('primary')}>
+                  <Link href={builderUrl(config.buttonUrl || '/contact', builderSlug)} className={btnStyleClass('primary')}>
                     {config.buttonText}
-                  </a>
+                  </Link>
                 </div>
               )}
             </div>
@@ -298,10 +242,10 @@ export default function DynamicPageRenderer({ slug }: { slug: string }) {
                     key={idx}
                     className={`group overflow-hidden relative aspect-[4/5] ${cardStyleClass()} ${idx === 1 ? 'mt-0 sm:mt-16' : ''}`}
                   >
-                    <img
+                    <img loading="lazy" decoding="async"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       alt={feat.title}
-                      src={feat.image || 'https://lh3.googleusercontent.com/aida-public/AB6AXuALub8tldhZ_oMsDBRNKvmeXkewkHSlaNawnWde8Xoltrq0FSdntj93gg8_tlgdCPs1sX8IUmXuDlrojoVQ9QLZjHLlaeN41Qp_MiMdpQ2C1neDNmt9MWzLGhTG6IiOVbDfeZbT8ip3VFdJ5gjtfB8mQj-9uU6Ear6AraJyfkHXMyT7S-q7BLRg0NQO3d1J_lhzuXOsyTBKlhZOKt0d2LNE5__yhPDr1aL2pU1cGStdoz1seLCZxe7JpdEIkwyWYpBxdOcVXoeUaEY'}
+                      src={feat.image || (idx === 0 ? '/images/suite-terrace.jpg' : '/images/infinity-pool.jpg')}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 to-transparent opacity-60"></div>
                     <div className="absolute bottom-8 left-8">
@@ -339,7 +283,7 @@ export default function DynamicPageRenderer({ slug }: { slug: string }) {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {galleryImages.map((imgUrl: string, idx: number) => (
                   <div key={idx} className={`overflow-hidden aspect-video ${cardStyleClass()}`}>
-                    <img
+                    <img loading="lazy" decoding="async"
                       className="w-full h-full object-cover hover:scale-105 transition-all duration-700"
                       src={imgUrl}
                       alt={`Gallery Item ${idx + 1}`}
@@ -400,9 +344,9 @@ export default function DynamicPageRenderer({ slug }: { slug: string }) {
               </p>
               {config.buttonText && (
                 <div className="pt-4">
-                  <a href={config.buttonUrl || '#inquiry'} className={btnStyleClass('primary')}>
+                  <Link href={builderUrl(config.buttonUrl || '/contact', builderSlug)} className={btnStyleClass('primary')}>
                     {config.buttonText}
-                  </a>
+                  </Link>
                 </div>
               )}
             </div>
@@ -503,13 +447,17 @@ export default function DynamicPageRenderer({ slug }: { slug: string }) {
                 </h3>
                 <p className="text-stone-400 text-xs mt-2">{config.subtitle}</p>
               </div>
-              {config.videoUrl ? (
-                <div className="overflow-hidden rounded-3xl border border-white/10 aspect-video">
-                  <video src={config.videoUrl} controls className="w-full h-full object-cover" />
-                </div>
-              ) : (
-                <p className="text-center text-xs text-stone-500 italic">No Walkthrough video URL configured.</p>
-              )}
+              <div className="overflow-hidden rounded-3xl border border-white/10 aspect-video shadow-2xl bg-neutral-950">
+                <video
+                  src={config.videoUrl || '/videos/walkthrough.mp4'}
+                  controls
+                  preload="none"
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
           </section>
         );
@@ -532,7 +480,7 @@ export default function DynamicPageRenderer({ slug }: { slug: string }) {
               </div>
               {config.tourUrl ? (
                 <div className="overflow-hidden rounded-3xl border border-white/15 aspect-video h-[500px] bg-neutral-950">
-                  <iframe src={config.tourUrl} className="w-full h-full border-none" allowFullScreen />
+                  <iframe title={config.title || 'Property virtual tour'} loading="lazy" src={config.tourUrl} className="w-full h-full border-none" allowFullScreen />
                 </div>
               ) : (
                 <div className="p-20 text-center border border-dashed border-white/10 rounded-3xl">
@@ -689,15 +637,8 @@ export default function DynamicPageRenderer({ slug }: { slug: string }) {
 
   return (
     <div style={themeStyles} className="min-h-screen bg-neutral-950 text-stone-100 font-sans antialiased">
-      {/* Dynamic Font Loader */}
-      {theme.fontHeader && (
-        <link
-          href={`https://fonts.googleapis.com/css2?family=${theme.fontHeader.replace(/\s+/g, '+')}&family=${(theme.fontBody || 'Inter').replace(/\s+/g, '+')}&display=swap`}
-          rel="stylesheet"
-        />
-      )}
-
-      <div ref={containerRef} className="flex flex-col w-full">
+      <div>{submitError && <p role="alert" className="p-4 text-center text-red-300">{submitError}</p>}</div>
+      <div ref={containerRef} className="flex flex-col w-full overflow-x-clip">
         {sections.map((sec, index) => renderSection(sec, index))}
       </div>
     </div>

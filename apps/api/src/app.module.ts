@@ -104,7 +104,7 @@ import { AuditService } from './services/audit.service';
         AnalyticsEvent, Subscription, Invoice, SsoProvider, Translation, Currency,
         GeneratedStructure, StructuralAperture, Amenity
       ],
-      synchronize: true, // Automatically synchronize schema
+      synchronize: process.env.DB_SYNCHRONIZE !== 'false', // Disable for review against existing data
     }),
     TypeOrmModule.forFeature([
       Builder, User, Project, Tower, Floor, Flat, Lead, Page, FloorPlan, 

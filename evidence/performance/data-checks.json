@@ -1,0 +1,16 @@
+[
+  {
+    "email": "admin@aethelgard.com",
+    "totalFlats": 9,
+    "recordedViewerOpens": 0,
+    "floorPlans": 0,
+    "result": "PASS"
+  },
+  {
+    "email": "admin@omniestate.com",
+    "totalFlats": 0,
+    "recordedViewerOpens": 0,
+    "floorPlans": 0,
+    "result": "PASS"
+  }
+]

@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { gsap } from 'gsap';
@@ -31,12 +32,11 @@ const STATUS_STYLES: Record<string, { card: string; badge: string; dot: string }
 
 const TYPE_ICONS: Record<string, string> = { '1BHK': '🛏️', '2BHK': '🛋️', '3BHK': '🏡', 'PENTHOUSE': '✨' };
 
-const TENANT_ID = 'b0d39e2a-1cbe-4c28-bbbe-e6e788e99aa2';
 
 export default function FlatsInventoryPage() {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
-  const tenantId = user?.tenantId || TENANT_ID;
+  const tenantId = user?.tenantId || '';
   const getHeaders = () => ({
     'x-tenant-id': tenantId,
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -67,9 +67,9 @@ export default function FlatsInventoryPage() {
   const fetchData = async () => {
     try {
       const [flatsRes, towersRes, projRes] = await Promise.all([
-        fetch('http://localhost:3001/inventory/flats', { headers: getHeaders() }),
-        fetch('http://localhost:3001/inventory/towers', { headers: getHeaders() }),
-        fetch('http://localhost:3001/projects', { headers: getHeaders() }),
+        fetch(`${API_URL}/inventory/flats`, { headers: getHeaders() }),
+        fetch(`${API_URL}/inventory/towers`, { headers: getHeaders() }),
+        fetch(`${API_URL}/projects`, { headers: getHeaders() }),
       ]);
       if (flatsRes.ok) setFlats(await flatsRes.json());
       if (towersRes.ok) setTowers(await towersRes.json());
@@ -122,7 +122,7 @@ export default function FlatsInventoryPage() {
     if (!selectedFlat) return;
     setIsSaving(true);
     try {
-      const res = await fetch(`http://localhost:3001/inventory/flats/${selectedFlat.id}`, {
+      const res = await fetch(`${API_URL}/inventory/flats/${selectedFlat.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...getHeaders() },
         body: JSON.stringify({ status: statusInput, price: priceInput, orientation: orientInput }),
@@ -134,7 +134,7 @@ export default function FlatsInventoryPage() {
   const handleDeleteFlat = async (id: string) => {
     if (!confirm('Remove this flat unit?')) return;
     try {
-      await fetch(`http://localhost:3001/inventory/flats/${id}`, { method: 'DELETE', headers: getHeaders() });
+      await fetch(`${API_URL}/inventory/flats/${id}`, { method: 'DELETE', headers: getHeaders() });
       fetchData();
     } catch { }
   };
@@ -143,7 +143,7 @@ export default function FlatsInventoryPage() {
     e.preventDefault();
     if (!newTowerName || !selectedProjId) return;
     try {
-      const res = await fetch('http://localhost:3001/inventory/towers', {
+      const res = await fetch(`${API_URL}/inventory/towers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getHeaders() },
         body: JSON.stringify({ name: newTowerName, projectId: selectedProjId, floorsCount: newTowerFloors }),
@@ -166,7 +166,7 @@ export default function FlatsInventoryPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <header className="flex justify-between items-center">
+      <header className="flex flex-wrap gap-3 justify-between items-center">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-950 tracking-tight">Flats & Inventory</h1>
           <p className="text-gray-400 text-sm mt-1">Manage apartment units, pricing, availability and floor allocations.</p>
@@ -177,7 +177,7 @@ export default function FlatsInventoryPage() {
       </header>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: 'Total Units', value: stats.total, color: 'text-gray-900' },
           { label: 'Available', value: stats.available, color: 'text-emerald-600' },
@@ -245,7 +245,7 @@ export default function FlatsInventoryPage() {
           <p className="text-sm text-gray-400">Add a tower to auto-generate floor and flat units.</p>
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {filteredFlats.map(flat => {
             const styles = STATUS_STYLES[flat.status];
             return (
@@ -278,7 +278,7 @@ export default function FlatsInventoryPage() {
                 {flat.floor?.tower?.name && (
                   <p className="text-[10px] text-gray-400 mt-1">🏢 {flat.floor.tower.name} · Floor {flat.floor.floorNumber}</p>
                 )}
-                <div className="border-t border-current/10 mt-3 pt-3 flex justify-between items-center">
+                <div className="border-t border-current/10 mt-3 pt-3 flex flex-wrap gap-3 justify-between items-center">
                   <span className="text-[10px] text-gray-500 font-bold">
                     {flat.orientation || 'N/A'}
                   </span>
@@ -468,7 +468,7 @@ export default function FlatsInventoryPage() {
                   setLoading(true);
                   try {
                     await Promise.all(selectedFlatIds.map(async id => {
-                      const response = await fetch(`http://localhost:3001/inventory/flats/${id}`, {
+                      const response = await fetch(`${API_URL}/inventory/flats/${id}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json', ...getHeaders() },
                         body: JSON.stringify({ status: act.status }),

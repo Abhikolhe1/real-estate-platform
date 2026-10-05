@@ -26,19 +26,31 @@ export class NavigationService {
 
   // Get menu by name (public, supports builderSlug fallback)
   async getMenuByName(headerTenantId: string, name: string, builderSlug?: string): Promise<NavigationMenu> {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     let finalTenantId = headerTenantId;
 
-    if (builderSlug && (!finalTenantId || finalTenantId === '00000000-0000-0000-0000-000000000000')) {
-      const builder = await this.builderRepo.findOne({ where: { slug: builderSlug } });
+    const targetSlug = builderSlug || 'aethelgard';
+    if (!finalTenantId || !UUID_REGEX.test(finalTenantId) || finalTenantId === '00000000-0000-0000-0000-000000000000') {
+      const builder = await this.builderRepo.findOne({ where: { slug: targetSlug } });
       if (builder) {
         finalTenantId = builder.id;
       }
     }
 
-    const menu = await this.menuRepo.findOne({
-      where: { name, tenantId: finalTenantId },
-      relations: ['items'],
-    });
+    let menu: NavigationMenu | null = null;
+    if (finalTenantId && UUID_REGEX.test(finalTenantId) && finalTenantId !== '00000000-0000-0000-0000-000000000000') {
+      menu = await this.menuRepo.findOne({
+        where: { name, tenantId: finalTenantId },
+        relations: ['items'],
+      });
+    }
+
+    if (!menu) {
+      menu = await this.menuRepo.findOne({
+        where: { name },
+        relations: ['items'],
+      });
+    }
 
     if (!menu) {
       // Return a basic fallback header/footer menu structure so the site never breaks!

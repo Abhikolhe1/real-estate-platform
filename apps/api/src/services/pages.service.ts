@@ -45,20 +45,32 @@ export class PagesService {
 
   // Get single page by slug
   async getPageBySlug(headerTenantId: string, slug: string, builderSlug?: string): Promise<any> {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     let finalTenantId = headerTenantId;
 
     // Fallback: If no tenant header is provided but builderSlug query is present, lookup builder
-    if (builderSlug && (!finalTenantId || finalTenantId === '00000000-0000-0000-0000-000000000000')) {
-      const builder = await this.builderRepo.findOne({ where: { slug: builderSlug } });
+    const targetSlug = builderSlug || 'aethelgard';
+    if (!finalTenantId || !UUID_REGEX.test(finalTenantId) || finalTenantId === '00000000-0000-0000-0000-000000000000') {
+      const builder = await this.builderRepo.findOne({ where: { slug: targetSlug } });
       if (builder) {
         finalTenantId = builder.id;
       }
     }
 
-    const page = await this.pageRepo.findOne({
-      where: { slug, tenantId: finalTenantId },
-      relations: ['websiteSections'],
-    });
+    let page: Page | null = null;
+    if (finalTenantId && UUID_REGEX.test(finalTenantId) && finalTenantId !== '00000000-0000-0000-0000-000000000000') {
+      page = await this.pageRepo.findOne({
+        where: { slug, tenantId: finalTenantId },
+        relations: ['websiteSections'],
+      });
+    }
+
+    if (!page) {
+      page = await this.pageRepo.findOne({
+        where: { slug },
+        relations: ['websiteSections'],
+      });
+    }
 
     if (!page) {
       // Return systemic default layout so the client page never crashes
@@ -79,7 +91,7 @@ export class PagesService {
               subtitle: 'Premium Residences',
               buttonText: 'Book Site Visit',
               buttonUrl: '#inquiry',
-              backgroundImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCeasfkI_suwcpRV_6250zNvP_BR0KoVsvLqrSxx8cmogEnaRDVVenavhi_YCekm4SaL6VvvdrbJLazm7giBQmN10B0oeeJTqtjHOVhx3AaxHqBMhemyrPk_cPi0wZ2WPm3tZZ-bgCnHIc4hDHEJGP7r-4hICejzEoyn9w96UHDAsF9-a4UQ0o-iQosIaniAZ71fTzoSLh6IdeTt48bOcV261qD2msDZuAW99EkUeeFoDW3tUygEMkSn9at1VY5V3lnpb_DgeSNc9E',
+              backgroundImage: '/images/hero-skyline.jpg',
               animation: 'fade-up',
               duration: 1.2,
               delay: 0.3
@@ -313,7 +325,7 @@ export class PagesService {
       subtitle: 'Built with Precision and Style',
       buttonText: 'Explore Units',
       buttonUrl: '#inventory',
-      backgroundImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCeasfkI_suwcpRV_6250zNvP_BR0KoVsvLqrSxx8cmogEnaRDVVenavhi_YCekm4SaL6VvvdrbJLazm7giBQmN10B0oeeJTqtjHOVhx3AaxHqBMhemyrPk_cPi0wZ2WPm3tZZ-bgCnHIc4hDHEJGP7r-4hICejzEoyn9w96UHDAsF9-a4UQ0o-iQosIaniAZ71fTzoSLh6IdeTt48bOcV261qD2msDZuAW99EkUeeFoDW3tUygEMkSn9at1VY5V3lnpb_DgeSNc9E',
+      backgroundImage: '/images/hero-skyline.jpg',
       animation: 'fade-up',
       duration: 1.2,
       delay: 0.3
@@ -338,8 +350,8 @@ export class PagesService {
             subtitle: 'Redefining Highrise Living',
             description: 'Experience luxury elevated. Every marble stone, every panoramic glass panel reflects signature craftsmanship.',
             features: [
-              { title: 'Private Sky Terraces', subtitle: 'Breathtaking 360 views', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuALub8tldhZ_oMsDBRNKvmeXkewkHSlaNawnWde8Xoltrq0FSdntj93gg8_tlgdCPs1sX8IUmXuDlrojoVQ9QLZjHLlaeN41Qp_MiMdpQ2C1neDNmt9MWzLGhTG6IiOVbDfeZbT8ip3VFdJ5gjtfB8mQj-9uU6Ear6AraJyfkHXMyT7S-q7BLRg0NQO3d1J_lhzuXOsyTBKlhZOKt0d2LNE5__yhPDr1aL2pU1cGStdoz1seLCZxe7JpdEIkwyWYpBxdOcVXoeUaEY' },
-              { title: 'Obsidian Lounges', subtitle: 'Ultra-exclusive owners club', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAr28uHqFUXU1-6oqJKy3H8H0P8wAh2ZOivH0xSDCfso4Y_Xb1gI-e8rBONeD9EF-H27ir1ARdke5aDiY1CvNLqDuihLjYmGKq1MoFG4Gl1LCXLHboR5rnB0LWIZnjPYXI4JBBVc_mHNuqF5FaaqjudHxOFXXErQBlWNhEfyoQXA7iWevn8AMNmdzjSalTnZ775wingAAKF2urxtQ-OSe0_bBOzzpU6HnTu4efJV85W_Y0VFve4ibvEtwe5_Ts1eB1tQxMwTe3wpsY' }
+              { title: 'Private Sky Terraces', subtitle: 'Breathtaking 360 views', image: '/images/suite-terrace.jpg' },
+              { title: 'Obsidian Lounges', subtitle: 'Ultra-exclusive owners club', image: '/images/infinity-pool.jpg' }
             ],
             animation: 'fade-left'
           }
@@ -350,7 +362,9 @@ export class PagesService {
             title: 'Visual Masterpieces',
             subtitle: 'A glance into curated spaces',
             images: [
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuALub8tldhZ_oMsDBRNKvmeXkewkHSlaNawnWde8Xoltrq0FSdntj93gg8_tlgdCPs1sX8IUmXuDlrojoVQ9QLZjHLlaeN41Qp_MiMdpQ2C1neDNmt9MWzLGhTG6IiOVbDfeZbT8ip3VFdJ5gjtfB8mQj-9uU6Ear6AraJyfkHXMyT7S-q7BLRg0NQO3d1J_lhzuXOsyTBKlhZOKt0d2LNE5__yhPDr1aL2pU1cGStdoz1seLCZxe7JpdEIkwyWYpBxdOcVXoeUaEY'
+              '/images/suite-terrace.jpg',
+              '/images/infinity-pool.jpg',
+              '/images/marble-interior.jpg'
             ],
             animation: 'zoom'
           }

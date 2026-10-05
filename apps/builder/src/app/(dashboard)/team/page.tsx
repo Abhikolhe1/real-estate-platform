@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { gsap } from 'gsap';
@@ -50,7 +51,7 @@ export default function TeamPage() {
 
   const fetchTeam = async () => {
     try {
-      const res = await fetch('http://localhost:3001/users/team', { headers: getHeaders() });
+      const res = await fetch(`${API_URL}/users/team`, { headers: getHeaders() });
       if (res.ok) setMembers(await res.json());
       setLoading(false);
     } catch { setLoading(false); }
@@ -68,7 +69,7 @@ export default function TeamPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch('http://localhost:3001/users/team', {
+      const res = await fetch(`${API_URL}/users/team`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getHeaders() },
         body: JSON.stringify(formData),
@@ -86,7 +87,7 @@ export default function TeamPage() {
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
     try {
-      await fetch(`http://localhost:3001/users/team/${id}/toggle`, {
+      await fetch(`${API_URL}/users/team/${id}/toggle`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...getHeaders() },
         body: JSON.stringify({ isActive: !isActive }),
@@ -98,7 +99,7 @@ export default function TeamPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Remove this team member from your workspace?')) return;
     try {
-      await fetch(`http://localhost:3001/users/team/${id}`, { method: 'DELETE', headers: getHeaders() });
+      await fetch(`${API_URL}/users/team/${id}`, { method: 'DELETE', headers: getHeaders() });
       fetchTeam();
     } catch { }
   };
@@ -131,7 +132,7 @@ export default function TeamPage() {
         </button>
       </header>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total Members', value: members.length, icon: '👥' },
           { label: 'Admins', value: members.filter(m => m.role === 'BUILDER_ADMIN').length, icon: '👑' },

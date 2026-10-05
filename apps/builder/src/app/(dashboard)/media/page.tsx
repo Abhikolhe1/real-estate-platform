@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { gsap } from 'gsap';
@@ -72,7 +73,7 @@ export default function MediaAssetsPage() {
   const fetchAssets = async () => {
     if (!token || !user?.tenantId) { setLoading(false); return; }
     try {
-      const res = await fetch('http://localhost:3001/media', { headers: getHeaders() });
+      const res = await fetch(`${API_URL}/media`, { headers: getHeaders() });
       if (res.ok) setAssets(await res.json());
     } catch { } finally { setLoading(false); }
   };
@@ -104,7 +105,7 @@ export default function MediaAssetsPage() {
     const interval = setInterval(() => setUploadProgress(p => Math.min(p + 15, 90)), 200);
 
     try {
-      const res = await fetch('http://localhost:3001/media/upload', {
+      const res = await fetch(`${API_URL}/media/upload`, {
         method: 'POST',
         headers: getHeaders(),
         body: formData,
@@ -127,7 +128,7 @@ export default function MediaAssetsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this media asset permanently?')) return;
     try {
-      const res = await fetch(`http://localhost:3001/media/${id}`, { method: 'DELETE', headers: getHeaders() });
+      const res = await fetch(`${API_URL}/media/${id}`, { method: 'DELETE', headers: getHeaders() });
       if (res.ok) setAssets(prev => prev.filter(a => a.id !== id));
     } catch { }
   };
@@ -193,7 +194,7 @@ export default function MediaAssetsPage() {
       </header>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { icon: '📦', label: '3D Models', value: categoryCounts['3D Models'], color: 'bg-purple-50' },
           { icon: '🖼️', label: 'Images', value: categoryCounts['Images'], color: 'bg-blue-50' },
@@ -274,7 +275,7 @@ export default function MediaAssetsPage() {
           <p className="text-sm text-gray-400">{search ? 'Try a different search term.' : 'Upload your first file to get started.'}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {filteredAssets.map(asset => {
             const icon = getFileIcon(asset.fileName, asset.fileType);
             const isImage = ['jpg', 'jpeg', 'png', 'webp'].includes(asset.fileName.split('.').pop()?.toLowerCase() || '');

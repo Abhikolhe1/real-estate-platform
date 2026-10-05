@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { gsap } from 'gsap';
@@ -24,7 +25,6 @@ interface Lead {
   createdAt: string;
 }
 
-const TENANT_ID = 'b0d39e2a-1cbe-4c28-bbbe-e6e788e99aa2';
 
 // Simple bar chart component
 function BarChart({ data, label, color = '#1f2937' }: { data: { label: string; value: number; max: number }[]; label: string; color?: string }) {
@@ -105,7 +105,7 @@ function DonutChart({ segments, size = 120 }: {
 export default function AnalyticsPage() {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
-  const tenantId = user?.tenantId || TENANT_ID;
+  const tenantId = user?.tenantId || '';
   const ref = useRef<HTMLDivElement>(null);
   const headers = () => ({
     'x-tenant-id': tenantId,
@@ -120,8 +120,8 @@ export default function AnalyticsPage() {
     const fetchAll = async () => {
       try {
         const [statsRes, leadsRes] = await Promise.all([
-          fetch('http://localhost:3001/inventory/stats', { headers: headers() }),
-          fetch('http://localhost:3001/leads', { headers: headers() }),
+          fetch(`${API_URL}/inventory/stats`, { headers: headers() }),
+          fetch(`${API_URL}/leads`, { headers: headers() }),
         ]);
         if (statsRes.ok) setStats(await statsRes.json());
         if (leadsRes.ok) setLeads(await leadsRes.json());
@@ -186,7 +186,7 @@ export default function AnalyticsPage() {
       </header>
 
       {/* Top KPI Row */}
-      <div className="grid grid-cols-4 gap-5 anim-up">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 anim-up">
         {[
           { icon: '💰', label: 'Est. Revenue', value: `₹${revenueInCr} Cr`, sub: `${stats?.bookedFlats ?? 0} units sold`, color: 'bg-emerald-50' },
           { icon: '🛏️', label: 'Inventory Sold', value: `${stats?.inventoryAllocationPct ?? 0}%`, sub: `${stats?.bookedFlats ?? 0} of ${stats?.totalFlats ?? 0} units`, color: 'bg-blue-50' },
@@ -205,7 +205,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-2 gap-6 anim-up">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 anim-up">
         {/* Inventory Donut */}
         <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
           <h3 className="text-sm font-bold text-gray-900 mb-6">Inventory Status Breakdown</h3>
@@ -244,7 +244,7 @@ export default function AnalyticsPage() {
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white anim-up relative overflow-hidden">
         <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl" />
         <h3 className="text-sm font-bold text-gray-400 mb-6">Revenue Intelligence</h3>
-        <div className="grid grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           {[
             { label: 'Total Estimated Revenue', value: `₹${revenueInCr} Cr` },
             { label: 'Avg Revenue / Unit', value: `₹${revenuePerUnit} Cr` },

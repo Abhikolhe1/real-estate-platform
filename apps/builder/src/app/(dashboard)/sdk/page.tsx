@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { Icon } from '@iconify/react';
@@ -70,7 +71,7 @@ export default function SdkManagerPage() {
   useEffect(() => {
     if (!token || !tenantId) return;
 
-    fetch('http://localhost:3001/projects', {
+    fetch(`${API_URL}/projects`, {
       headers: {
         'x-tenant-id': tenantId,
         'Authorization': `Bearer ${token}`,
@@ -89,7 +90,7 @@ export default function SdkManagerPage() {
   // Load SDK Keys
   const loadKeys = () => {
     if (!token || !tenantId) return;
-    fetch('http://localhost:3001/sdk/keys', {
+    fetch(`${API_URL}/sdk/keys`, {
       headers: {
         'x-tenant-id': tenantId,
         'Authorization': `Bearer ${token}`,
@@ -108,7 +109,7 @@ export default function SdkManagerPage() {
   const loadAnalytics = () => {
     if (!token || !tenantId || !selectedProjectId) return;
     setLoadingAnalytics(true);
-    fetch(`http://localhost:3001/sdk/analytics/summary?projectId=${selectedProjectId}`, {
+    fetch(`${API_URL}/sdk/analytics/summary?projectId=${selectedProjectId}`, {
       headers: {
         'x-tenant-id': tenantId,
         'Authorization': `Bearer ${token}`,
@@ -138,7 +139,7 @@ export default function SdkManagerPage() {
 
     setGenerating(true);
     try {
-      const res = await fetch('http://localhost:3001/sdk/keys', {
+      const res = await fetch(`${API_URL}/sdk/keys`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,7 +169,7 @@ export default function SdkManagerPage() {
     if (!token || !tenantId) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/sdk/keys/${id}`, {
+      const res = await fetch(`${API_URL}/sdk/keys/${id}`, {
         method: 'DELETE',
         headers: {
           'x-tenant-id': tenantId,
@@ -270,7 +271,7 @@ export function VirtualWalkthrough() {
       </header>
 
       {/* Tabs list */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex flex-wrap border-b border-gray-200">
         <button
           onClick={() => setActiveTab('keys')}
           className={`px-6 py-3 border-b-2 font-bold text-xs uppercase tracking-wider transition-colors ${

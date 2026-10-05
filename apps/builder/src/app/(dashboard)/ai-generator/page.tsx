@@ -1,5 +1,7 @@
 'use client';
 
+import { useAuthStore } from '@/store/authStore';
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect, useRef } from 'react';
 import PremiumButton from '@/components/premium-button';
 import { Icon } from '@iconify/react';
@@ -39,16 +41,24 @@ export default function AIFloorPlanGeneratorPage() {
   const [activeFP, setActiveFP] = useState<FloorPlan | null>(null);
   const [currentStep, setCurrentStep] = useState(1); // Steps 2 to 7 when activeFP exists
 
-  // Screen 1: Upload state
-  const [uploadName, setUploadName] = useState('');
+  // Screen 1: Dual Generation Mode state (Blueprint Upload vs Programmatic Code)
+  const [generationMode, setGenerationMode] = useState<'programmatic' | 'blueprint'>('programmatic');
+  const [uploadName, setUploadName] = useState('Aether Skyline Residences');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  const [numFloors, setNumFloors] = useState(3);
+  const [numFloors, setNumFloors] = useState(10);
   const [floorsConfig, setFloorsConfig] = useState<any[]>([
+    { floorNumber: 0, type: 'GRAND_LOBBY', fileName: '' },
     { floorNumber: 1, type: '2BHK', fileName: '' },
     { floorNumber: 2, type: '2BHK', fileName: '' },
-    { floorNumber: 3, type: '2BHK', fileName: '' }
+    { floorNumber: 3, type: '2BHK', fileName: '' },
+    { floorNumber: 4, type: '3BHK', fileName: '' },
+    { floorNumber: 5, type: '3BHK', fileName: '' },
+    { floorNumber: 6, type: '3BHK', fileName: '' },
+    { floorNumber: 7, type: '3BHK', fileName: '' },
+    { floorNumber: 8, type: '4BHK_PENTHOUSE', fileName: '' },
+    { floorNumber: 9, type: '4BHK_PENTHOUSE', fileName: '' },
   ]);
 
   // Screen 2: Floor Split state
@@ -101,7 +111,10 @@ export default function AIFloorPlanGeneratorPage() {
   // Screen 7: Embed code state
   const [embedTab, setEmbedTab] = useState<'iframe' | 'react' | 'next'>('iframe');
 
-  const tenantId = 'b0d39e2a-1cbe-4c28-bbbe-e6e788e99aa2';
+  const user = useAuthStore(state => state.user);
+  const token = useAuthStore(state => state.token);
+  const tenantId = user?.tenantId || '';
+  const authHeaders = { 'x-tenant-id': tenantId, ...(token ? { Authorization: 'Bearer ' + token } : {}) };
 
   // Polling, layer mapping, and snap tolerance states
   const [isPolling, setIsPolling] = useState(false);
@@ -119,8 +132,8 @@ export default function AIFloorPlanGeneratorPage() {
     
     const interval = setInterval(async () => {
       try {
-        const statusRes = await fetch(`http://localhost:3001/floorplans/${fpId}/status`, {
-          headers: { 'x-tenant-id': tenantId },
+        const statusRes = await fetch(`${API_URL}/floorplans/${fpId}/status`, {
+          headers: { ...authHeaders },
         });
         const statusData = await statusRes.json();
         if (statusData.success) {
@@ -131,16 +144,16 @@ export default function AIFloorPlanGeneratorPage() {
             setIsPolling(false);
             
             // Fetch updated floor plan details
-            const detailRes = await fetch(`http://localhost:3001/floorplans/${fpId}`, {
-              headers: { 'x-tenant-id': tenantId },
+            const detailRes = await fetch(`${API_URL}/floorplans/${fpId}`, {
+              headers: { ...authHeaders },
             });
             const detailData = await detailRes.json();
             setActiveFP(detailData);
             
             // If room count is less than 3, open the layer remapping modal
             if (detailData.roomCount < 3) {
-              const layersRes = await fetch(`http://localhost:3001/floorplans/${fpId}/layers`, {
-                headers: { 'x-tenant-id': tenantId },
+              const layersRes = await fetch(`${API_URL}/floorplans/${fpId}/layers`, {
+                headers: { ...authHeaders },
               });
               const layersData = await layersRes.json();
               if (layersData.success) {
@@ -182,8 +195,8 @@ export default function AIFloorPlanGeneratorPage() {
   const openParserSettings = async () => {
     if (!activeFP) return;
     try {
-      const layersRes = await fetch(`http://localhost:3001/floorplans/${activeFP.id}/layers`, {
-        headers: { 'x-tenant-id': tenantId },
+      const layersRes = await fetch(`${API_URL}/floorplans/${activeFP.id}/layers`, {
+        headers: { ...authHeaders },
       });
       const layersData = await layersRes.json();
       if (layersData.success) {
@@ -216,15 +229,15 @@ export default function AIFloorPlanGeneratorPage() {
   // Load initial data
   const loadInitialData = async () => {
     try {
-      const projRes = await fetch('http://localhost:3001/projects', {
-        headers: { 'x-tenant-id': tenantId },
+      const projRes = await fetch(`${API_URL}/projects`, {
+        headers: { ...authHeaders },
       });
       const projData = await projRes.json();
       setProjects(projData);
       if (projData.length > 0) setSelectedProjId(projData[0].id);
 
-      const fpRes = await fetch('http://localhost:3001/floorplans', {
-        headers: { 'x-tenant-id': tenantId },
+      const fpRes = await fetch(`${API_URL}/floorplans`, {
+        headers: { ...authHeaders },
       });
       const fpData = await fpRes.json();
       setFloorPlans(fpData);
@@ -236,8 +249,8 @@ export default function AIFloorPlanGeneratorPage() {
   };
 
   useEffect(() => {
-    loadInitialData();
-  }, []);
+    if (tenantId) loadInitialData();
+  }, [tenantId]);
 
   // Handle file select mapping to Configurable list
   useEffect(() => {
@@ -282,11 +295,11 @@ export default function AIFloorPlanGeneratorPage() {
       }));
 
       // 1. Create floor plan record
-      const res = await fetch('http://localhost:3001/floorplans', {
+      const res = await fetch(`${API_URL}/floorplans`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-tenant-id': tenantId,
+          ...authHeaders,
         },
         body: JSON.stringify({
           name: uploadName,
@@ -308,10 +321,10 @@ export default function AIFloorPlanGeneratorPage() {
         const formData = new FormData();
         formData.append('plan', uploadFile);
         
-        const uploadRes = await fetch(`http://localhost:3001/floorplans/${fpId}/upload`, {
+        const uploadRes = await fetch(`${API_URL}/floorplans/${fpId}/upload`, {
           method: 'POST',
           headers: {
-            'x-tenant-id': tenantId,
+            ...authHeaders,
           },
           body: formData
         });
@@ -321,11 +334,11 @@ export default function AIFloorPlanGeneratorPage() {
         }
       } else {
         // Trigger parsing of default DXF
-        const analyzeRes = await fetch(`http://localhost:3001/floorplans/${fpId}/analyze`, {
+        const analyzeRes = await fetch(`${API_URL}/floorplans/${fpId}/analyze`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-tenant-id': tenantId,
+            ...authHeaders,
           }
         });
         const analyzeData = await analyzeRes.json();
@@ -343,6 +356,77 @@ export default function AIFloorPlanGeneratorPage() {
     } catch (err) {
       console.error(err);
       alert('Failed to start Virtual Twin Pipeline: ' + (err as Error).message);
+      setIsUploading(false);
+    }
+  };
+
+  const handleProgrammaticGenerate = async () => {
+    setIsUploading(true);
+    setUploadProgress(25);
+    try {
+      const res = await fetch(`${API_URL}/floorplans/tower-template`);
+      const templateData = await res.json();
+      setUploadProgress(65);
+
+      const targetProjId = selectedProjId || (projects[0]?.id ?? 'default-proj');
+      const targetProjName = projects.find(p => p.id === targetProjId)?.name || 'Aether Prime Tower';
+
+      // Register or update floorplan record
+      let createdFp: any = null;
+      try {
+        const createRes = await fetch(`${API_URL}/floorplans`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders,
+          },
+          body: JSON.stringify({
+            name: uploadName || 'Aether Skyline Residences',
+            projectId: targetProjId,
+            imageUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1000&q=80',
+            floorsConfig: floorsConfig,
+            layoutData: {
+              floors: templateData.floors,
+              floorsConfig,
+              towerName: templateData.towerName,
+            }
+          }),
+        });
+        const createData = await createRes.json();
+        if (createData?.floorPlan) {
+          createdFp = createData.floorPlan;
+        }
+      } catch (postErr) {
+        console.warn('Backend record creation warning:', postErr);
+      }
+
+      setUploadProgress(100);
+
+      const fpData: FloorPlan = createdFp || {
+        id: `fp-prog-${Date.now()}`,
+        projectId: targetProjId,
+        name: uploadName || 'Aether Skyline Residences',
+        imageUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1000&q=80',
+        flatCount: 16,
+        roomCount: 48,
+        priceEstimate: 185000000,
+        isPaid: true,
+        status: 'GENERATED',
+        layoutData: {
+          floors: templateData.floors,
+          floorsConfig,
+          towerName: templateData.towerName,
+        },
+        project: { name: targetProjName }
+      };
+
+      setActiveFP(fpData);
+      setFloorPlans(prev => [fpData, ...prev]);
+      setCurrentStep(6); // Directly jump to 3D Walkthrough & Exterior View!
+    } catch (err) {
+      console.error('Error generating tower from code:', err);
+      alert('Could not generate tower from code: ' + (err as Error).message);
+    } finally {
       setIsUploading(false);
     }
   };
@@ -454,11 +538,11 @@ export default function AIFloorPlanGeneratorPage() {
     if (!activeFP) return;
     setIsAutoSplitting(true);
     try {
-      const res = await fetch(`http://localhost:3001/floorplans/${activeFP.id}/auto-split`, {
+      const res = await fetch(`${API_URL}/floorplans/${activeFP.id}/auto-split`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-tenant-id': tenantId,
+          ...authHeaders,
         },
         body: JSON.stringify({ eps, minSamples: 3 })
       });
@@ -477,11 +561,11 @@ export default function AIFloorPlanGeneratorPage() {
   const saveSplits = async () => {
     if (!activeFP) return;
     try {
-      const res = await fetch(`http://localhost:3001/floorplans/${activeFP.id}/split`, {
+      const res = await fetch(`${API_URL}/floorplans/${activeFP.id}/split`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-tenant-id': tenantId,
+          ...authHeaders,
         },
         body: JSON.stringify({ splitBoxes })
       });
@@ -682,11 +766,11 @@ export default function AIFloorPlanGeneratorPage() {
       apertures: valApertures
     };
     try {
-      const res = await fetch(`http://localhost:3001/floorplans/${activeFP.id}/layout`, {
+      const res = await fetch(`${API_URL}/floorplans/${activeFP.id}/layout`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'x-tenant-id': tenantId,
+          ...authHeaders,
         },
         body: JSON.stringify({ layoutData: updatedLayout })
       });
@@ -705,11 +789,11 @@ export default function AIFloorPlanGeneratorPage() {
     if (!activeFP || !themeImage) return;
     setIsDetectingStyle(true);
     try {
-      const res = await fetch(`http://localhost:3001/floorplans/${activeFP.id}/detect-style`, {
+      const res = await fetch(`${API_URL}/floorplans/${activeFP.id}/detect-style`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-tenant-id': tenantId,
+          ...authHeaders,
         },
         body: JSON.stringify({ imageUrl: themeImage })
       });
@@ -730,11 +814,11 @@ export default function AIFloorPlanGeneratorPage() {
   const saveThemeConfig = async () => {
     if (!activeFP) return;
     try {
-      const res = await fetch(`http://localhost:3001/floorplans/${activeFP.id}/theme`, {
+      const res = await fetch(`${API_URL}/floorplans/${activeFP.id}/theme`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-tenant-id': tenantId,
+          ...authHeaders,
         },
         body: JSON.stringify({ theme: selectedTheme, frontImageUrl: themeImage, detectedStyle })
       });
@@ -775,9 +859,9 @@ export default function AIFloorPlanGeneratorPage() {
         clearInterval(timer);
         setTimeout(async () => {
           try {
-            const res = await fetch(`http://localhost:3001/floorplans/${activeFP.id}/twin`, {
+            const res = await fetch(`${API_URL}/floorplans/${activeFP.id}/twin`, {
               method: 'POST',
-              headers: { 'x-tenant-id': tenantId }
+              headers: { ...authHeaders }
             });
             const data = await res.json();
             if (data.success) {
@@ -978,114 +1062,264 @@ export default function AIFloorPlanGeneratorPage() {
       {currentStep === 1 && (
         <div className="grid grid-cols-12 gap-8">
           {/* Form */}
-          <div className="col-span-4 bg-white border border-gray-150 rounded-3xl p-6 shadow-sm">
-            <h3 className="text-sm font-black text-gray-950 mb-4 uppercase tracking-wider">Upload Vector Drawing</h3>
-            <form onSubmit={handleUpload} className="flex flex-col gap-4">
-              <div>
-                <label className="text-xs font-bold text-gray-500 block mb-1">Associated Project Link</label>
-                <select
-                  value={selectedProjId}
-                  onChange={(e) => setSelectedProjId(e.target.value)}
-                  className="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-gray-950 font-semibold"
-                >
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
+          <div className="col-span-5 bg-white border border-gray-150 rounded-3xl p-6 shadow-sm">
+            {/* Mode Switcher Tabs */}
+            <div className="flex bg-gray-100 p-1.5 rounded-2xl mb-5">
+              <button
+                type="button"
+                onClick={() => setGenerationMode('programmatic')}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 ${
+                  generationMode === 'programmatic'
+                    ? 'bg-gray-950 text-white shadow-md'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                <span>⚡</span>
+                <span>Code Architecture</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setGenerationMode('blueprint')}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 ${
+                  generationMode === 'blueprint'
+                    ? 'bg-gray-950 text-white shadow-md'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                <span>📐</span>
+                <span>Upload Blueprint (DXF)</span>
+              </button>
+            </div>
 
-              <div>
-                <label className="text-xs font-bold text-gray-500 block mb-1">Blueprint Title / Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Tower A Wing Floorplan"
-                  value={uploadName}
-                  onChange={(e) => setUploadName(e.target.value)}
-                  className="w-full px-4 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-gray-950 font-semibold"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            {generationMode === 'programmatic' ? (
+              <div className="flex flex-col gap-4">
                 <div>
-                  <label className="text-xs font-bold text-gray-500 block mb-1">Floors Count</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={numFloors}
-                    onChange={(e) => setNumFloors(parseInt(e.target.value, 10) || 1)}
-                    className="w-full px-4 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none"
-                  />
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs font-bold text-gray-500">Quick Tower Presets</label>
+                    <span className="text-[10px] text-indigo-600 font-bold">2BHK • 3BHK • 4BHK</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNumFloors(10);
+                        setUploadName('Aether Heights Sky Residences');
+                        setFloorsConfig([
+                          { floorNumber: 0, type: 'GRAND_LOBBY', fileName: '' },
+                          { floorNumber: 1, type: '2BHK', fileName: '' },
+                          { floorNumber: 2, type: '2BHK', fileName: '' },
+                          { floorNumber: 3, type: '2BHK', fileName: '' },
+                          { floorNumber: 4, type: '3BHK', fileName: '' },
+                          { floorNumber: 5, type: '3BHK', fileName: '' },
+                          { floorNumber: 6, type: '3BHK', fileName: '' },
+                          { floorNumber: 7, type: '3BHK', fileName: '' },
+                          { floorNumber: 8, type: '4BHK_PENTHOUSE', fileName: '' },
+                          { floorNumber: 9, type: '4BHK_PENTHOUSE', fileName: '' },
+                        ]);
+                      }}
+                      className={`p-2.5 rounded-xl border text-left text-xs transition ${
+                        numFloors === 10 ? 'border-indigo-600 bg-indigo-50/50 text-indigo-950' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className="font-black">10-Floor Luxury</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">Lobby + 2BHK + 3BHK + 4BHK</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNumFloors(5);
+                        setUploadName('Aether Boutique Residences');
+                        setFloorsConfig([
+                          { floorNumber: 0, type: 'GRAND_LOBBY', fileName: '' },
+                          { floorNumber: 1, type: '2BHK', fileName: '' },
+                          { floorNumber: 2, type: '2BHK', fileName: '' },
+                          { floorNumber: 3, type: '3BHK', fileName: '' },
+                          { floorNumber: 4, type: '4BHK_PENTHOUSE', fileName: '' },
+                        ]);
+                      }}
+                      className={`p-2.5 rounded-xl border text-left text-xs transition ${
+                        numFloors === 5 ? 'border-indigo-600 bg-indigo-50/50 text-indigo-950' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className="font-black">5-Floor Boutique</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">Lobby + 2BHK + 3BHK + PH</p>
+                    </button>
+                  </div>
                 </div>
+
                 <div>
-                  <label className="text-xs font-bold text-gray-500 block mb-1">Modality</label>
+                  <label className="text-xs font-bold text-gray-500 block mb-1">Associated Project</label>
                   <select
-                    className="w-full px-4 py-2 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none"
-                    disabled
+                    value={selectedProjId}
+                    onChange={(e) => setSelectedProjId(e.target.value)}
+                    className="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-gray-950 font-semibold"
                   >
-                    <option value="single">Single Unified CAD</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
                   </select>
                 </div>
-              </div>
 
-              <div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Floor Configuration Setup</span>
-                <div className="flex flex-col gap-2 max-h-36 overflow-y-auto border border-gray-100 rounded-xl p-3 bg-gray-50">
-                  {floorsConfig.map((floor, idx) => (
-                    <div key={floor.floorNumber} className="flex gap-2 items-center text-xs">
-                      <span className="font-bold w-12 text-gray-600">Level {floor.floorNumber}:</span>
-                      <select
-                        value={floor.type}
-                        onChange={(e) => {
-                          const updated = [...floorsConfig];
-                          updated[idx].type = e.target.value;
-                          setFloorsConfig(updated);
-                        }}
-                        className="px-2 py-1 border border-gray-200 rounded-lg bg-white flex-1"
-                      >
-                        <option value="1BHK">1BHK (6 Units)</option>
-                        <option value="2BHK">2BHK (4 Units)</option>
-                        <option value="3BHK">3BHK (3 Units)</option>
-                        <option value="PENTHOUSE">Penthouse (1 Unit)</option>
-                      </select>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block">
-                  <input 
-                    type="file" 
-                    accept=".dxf,.pdf" 
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
-                      setUploadFile(file);
-                      if (file && !uploadName) {
-                        setUploadName(file.name.substring(0, file.name.lastIndexOf('.')) || file.name);
-                      }
-                    }}
-                    className="hidden" 
+                <div>
+                  <label className="text-xs font-bold text-gray-500 block mb-1">Tower Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Skyline Premier Residences"
+                    value={uploadName}
+                    onChange={(e) => setUploadName(e.target.value)}
+                    className="w-full px-4 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-gray-950 font-semibold"
                   />
-                  <div className="w-full py-6 border-2 border-dashed border-gray-250 rounded-2xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-gray-400 transition text-gray-400 hover:text-gray-600">
-                    <span className="text-2xl">📐</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest">Select CAD Blueprint (.DXF, .PDF)</span>
-                  </div>
-                  {uploadFile && <p className="text-[10px] text-emerald-600 font-bold mt-1 text-center truncate max-w-full">Selected: {uploadFile.name}</p>}
-                </label>
-              </div>
-
-              {isUploading && (
-                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-gray-950 h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
                 </div>
-              )}
 
-              <PremiumButton type="submit" variant="primary" disabled={isUploading}>
-                {isUploading ? 'Uploading DXF Vector Drawing...' : 'Start Virtual Twin Pipeline'}
-              </PremiumButton>
-            </form>
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Floor Layout Distribution</span>
+                  <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto border border-gray-150 rounded-xl p-3 bg-gray-50">
+                    {floorsConfig.map((floor, idx) => (
+                      <div key={floor.floorNumber} className="flex gap-2 items-center text-xs">
+                        <span className="font-bold w-16 text-gray-600">L{floor.floorNumber}:</span>
+                        <select
+                          value={floor.type}
+                          onChange={(e) => {
+                            const updated = [...floorsConfig];
+                            updated[idx].type = e.target.value;
+                            setFloorsConfig(updated);
+                          }}
+                          className="px-2.5 py-1.5 border border-gray-200 rounded-lg bg-white flex-1 font-semibold text-xs text-gray-800"
+                        >
+                          <option value="GRAND_LOBBY">🏛️ Double-Height Grand Lobby & Cafe</option>
+                          <option value="2BHK">🛋️ Dual 2BHK Layout (Unit A & B)</option>
+                          <option value="3BHK">💎 Dual 3BHK Executive (Balconies)</option>
+                          <option value="4BHK_PENTHOUSE">👑 Ultra 4BHK Penthouse Suite</option>
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {isUploading && (
+                  <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div className="bg-indigo-600 h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+                  </div>
+                )}
+
+                <PremiumButton 
+                  type="button" 
+                  variant="primary" 
+                  disabled={isUploading}
+                  onClick={handleProgrammaticGenerate}
+                >
+                  {isUploading ? 'Generating 3D Architecture...' : '⚡ Generate Full 3D Digital Twin from Code'}
+                </PremiumButton>
+              </div>
+            ) : (
+              <form onSubmit={handleUpload} className="flex flex-col gap-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 block mb-1">Associated Project Link</label>
+                  <select
+                    value={selectedProjId}
+                    onChange={(e) => setSelectedProjId(e.target.value)}
+                    className="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-gray-950 font-semibold"
+                  >
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-500 block mb-1">Blueprint Title / Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Tower A Wing Floorplan"
+                    value={uploadName}
+                    onChange={(e) => setUploadName(e.target.value)}
+                    className="w-full px-4 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-gray-950 font-semibold"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 block mb-1">Floors Count</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={numFloors}
+                      onChange={(e) => setNumFloors(parseInt(e.target.value, 10) || 1)}
+                      className="w-full px-4 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 block mb-1">Modality</label>
+                    <select
+                      className="w-full px-4 py-2 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none"
+                      disabled
+                    >
+                      <option value="single">Single Unified CAD</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Floor Configuration Setup</span>
+                  <div className="flex flex-col gap-2 max-h-36 overflow-y-auto border border-gray-100 rounded-xl p-3 bg-gray-50">
+                    {floorsConfig.map((floor, idx) => (
+                      <div key={floor.floorNumber} className="flex gap-2 items-center text-xs">
+                        <span className="font-bold w-12 text-gray-600">Level {floor.floorNumber}:</span>
+                        <select
+                          value={floor.type}
+                          onChange={(e) => {
+                            const updated = [...floorsConfig];
+                            updated[idx].type = e.target.value;
+                            setFloorsConfig(updated);
+                          }}
+                          className="px-2 py-1 border border-gray-200 rounded-lg bg-white flex-1"
+                        >
+                          <option value="1BHK">1BHK (6 Units)</option>
+                          <option value="2BHK">2BHK (4 Units)</option>
+                          <option value="3BHK">3BHK (3 Units)</option>
+                          <option value="PENTHOUSE">Penthouse (1 Unit)</option>
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block">
+                    <input 
+                      type="file" 
+                      accept=".dxf,.pdf" 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setUploadFile(file);
+                        if (file && !uploadName) {
+                          setUploadName(file.name.substring(0, file.name.lastIndexOf('.')) || file.name);
+                        }
+                      }}
+                      className="hidden" 
+                    />
+                    <div className="w-full py-6 border-2 border-dashed border-gray-250 rounded-2xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-gray-400 transition text-gray-400 hover:text-gray-600">
+                      <span className="text-2xl">📐</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest">Select CAD Blueprint (.DXF, .PDF)</span>
+                    </div>
+                    {uploadFile && <p className="text-[10px] text-emerald-600 font-bold mt-1 text-center truncate max-w-full">Selected: {uploadFile.name}</p>}
+                  </label>
+                </div>
+
+                {isUploading && (
+                  <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-gray-950 h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+                  </div>
+                )}
+
+                <PremiumButton type="submit" variant="primary" disabled={isUploading}>
+                  {isUploading ? 'Uploading & Parsing CAD Blueprint...' : 'Start Virtual Twin Pipeline'}
+                </PremiumButton>
+              </form>
+            )}
           </div>
 
           {/* Configured grid */}
@@ -1557,9 +1791,22 @@ export default function AIFloorPlanGeneratorPage() {
               </div>
             </div>
 
-            <PremiumButton variant="primary" onClick={() => setCurrentStep(7)} className="w-full">
-              Get Copyable Embed Codes
-            </PremiumButton>
+            <div className="flex flex-col gap-2.5">
+              <a
+                href="http://localhost:3000/explorer"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all hover:scale-[1.02] active:scale-98"
+              >
+                <span>🌟</span>
+                <span>Launch Real-World 3D Tour</span>
+                <Icon icon="solar:arrow-right-up-linear" className="text-sm" />
+              </a>
+
+              <PremiumButton variant="primary" onClick={() => setCurrentStep(7)} className="w-full">
+                Get Copyable Embed Codes
+              </PremiumButton>
+            </div>
           </div>
         </div>
       )}
@@ -1725,11 +1972,11 @@ export default function AIFloorPlanGeneratorPage() {
                   if (!activeFP) return;
                   setIsReparsing(true);
                   try {
-                    const res = await fetch(`http://localhost:3001/floorplans/${activeFP.id}/analyze`, {
+                    const res = await fetch(`${API_URL}/floorplans/${activeFP.id}/analyze`, {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
-                        'x-tenant-id': tenantId
+                        ...authHeaders
                       },
                       body: JSON.stringify({
                         snapTolerance,

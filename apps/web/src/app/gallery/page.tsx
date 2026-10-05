@@ -10,38 +10,38 @@ export default function GalleryPage() {
 
   const images = [
     {
-      url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCeasfkI_suwcpRV_6250zNvP_BR0KoVsvLqrSxx8cmogEnaRDVVenavhi_YCekm4SaL6VvvdrbJLazm7giBQmN10B0oeeJTqtjHOVhx3AaxHqBMhemyrPk_cPi0wZ2WPm3tZZ-bgCnHIc4hDHEJGP7r-4hICejzEoyn9w96UHDAsF9-a4UQ0o-iQosIaniAZ71fTzoSLh6IdeTt48bOcV261qD2msDZuAW99EkUeeFoDW3tUygEMkSn9at1VY5V3lnpb_DgeSNc9E',
+      url: '/images/hero-skyline.jpg',
       title: 'Obsidian Twilight Skyscraper',
       desc: 'The dramatic silhouette of Aethelgard against twilight skies.',
       category: 'Night View'
     },
     {
-      url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuALub8tldhZ_oMsDBRNKvmeXkewkHSlaNawnWde8Xoltrq0FSdntj93gg8_tlgdCPs1sX8IUmXuDlrojoVQ9QLZjHLlaeN41Qp_MiMdpQ2C1neDNmt9MWzLGhTG6IiOVbDfeZbT8ip3VFdJ5gjtfB8mQj-9uU6Ear6AraJyfkHXMyT7S-q7BLRg0NQO3d1J_lhzuXOsyTBKlhZOKt0d2LNE5__yhPDr1aL2pU1cGStdoz1seLCZxe7JpdEIkwyWYpBxdOcVXoeUaEY',
+      url: '/images/suite-terrace.jpg',
       title: 'Private Sky Penthouse Terraces',
       desc: 'Sunrise flooding modern velvet textures and broad-plank oak.',
       category: 'Interior'
     },
     {
-      url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAr28uHqFUXU1-6oqJKy3H8H0P8wAh2ZOivH0xSDCfso4Y_Xb1gI-e8rBONeD9EF-H27ir1ARdke5aDiY1CvNLqDuihLjYmGKq1MoFG4Gl1LCXLHboR5rnB0LWIZnjPYXI4JBBVc_mHNuqF5FaaqjudHxOFXXErQBlWNhEfyoQXA7iWevn8AMNmdzjSalTnZ775wingAAKF2urxtQ-OSe0_bBOzzpU6HnTu4efJV85W_Y0VFve4ibvEtwe5_Ts1eB1tQxMwTe3wpsY',
+      url: '/images/infinity-pool.jpg',
       title: 'Level 42 Infinity Oasis',
       desc: 'Zero-edge pool reflecting basalt walls under underwater lighting.',
       category: 'Amenities'
     },
     {
-      url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuARVrp_cpUsHq2kW7_GHWoI5Rv07QzT9JC3CTOepqQzqsN-WoIji4_Cpv6Be3YuPpe7Hf1zKpBfwaJLD1KYl5KXhNYTtYhCtm1Mwon5z7gCY67oZZeMpnePklZv3iqLM7E_ZD8Xz9CXqFZdKeTSUDXb4bmReanQSJKF8y5lVJbOtEbm5vMDlWBpC4xKT_j18vPzbZxle3-mbF7ohFVDd76xvyVCBiyiNaJ5rW00q92EA6a768YkTJbe1CblAVLqlXpi283ka4qBryU',
+      url: '/images/marble-interior.jpg',
       title: 'Bespoke Marble Interior Installation',
       desc: 'High-end slab matching in the grand lobbies.',
       category: 'Interior'
     },
     {
-      url: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=1000',
+      url: '/images/facade.jpg',
       title: 'Architectural Facade',
       desc: 'The geometric precision of the outer shell.',
       category: 'Exterior'
     },
     {
-      url: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1000',
-      title: 'Sky Garden Retreat',
+      url: '/images/spa-wellness.jpg',
+      title: 'Sky Garden Retreat & Spa',
       desc: 'Lush greenery integrated into high-altitude terraces.',
       category: 'Exterior'
     }

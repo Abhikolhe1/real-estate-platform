@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { gsap } from 'gsap';
@@ -20,12 +21,11 @@ interface Project {
   location?: string;
 }
 
-const TENANT_ID = 'b0d39e2a-1cbe-4c28-bbbe-e6e788e99aa2';
 
 export default function TowersPage() {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
-  const tenantId = user?.tenantId || TENANT_ID;
+  const tenantId = user?.tenantId || '';
   const headers = () => ({
     'x-tenant-id': tenantId,
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -49,8 +49,8 @@ export default function TowersPage() {
   const fetchData = async () => {
     try {
       const [towersRes, projRes] = await Promise.all([
-        fetch('http://localhost:3001/inventory/towers', { headers: headers() }),
-        fetch('http://localhost:3001/projects', { headers: headers() }),
+        fetch(`${API_URL}/inventory/towers`, { headers: headers() }),
+        fetch(`${API_URL}/projects`, { headers: headers() }),
       ]);
       if (towersRes.ok) setTowers(await towersRes.json());
       if (projRes.ok) {
@@ -87,13 +87,13 @@ export default function TowersPage() {
     setSaving(true);
     try {
       if (editTower) {
-        await fetch(`http://localhost:3001/inventory/towers/${editTower.id}`, {
+        await fetch(`${API_URL}/inventory/towers/${editTower.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', ...headers() },
           body: JSON.stringify({ name: formData.name, description: formData.description }),
         });
       } else {
-        await fetch('http://localhost:3001/inventory/towers', {
+        await fetch(`${API_URL}/inventory/towers`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...headers() },
           body: JSON.stringify({
@@ -112,7 +112,7 @@ export default function TowersPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this tower? All floors and flats under it will also be removed.')) return;
     try {
-      await fetch(`http://localhost:3001/inventory/towers/${id}`, { method: 'DELETE', headers: headers() });
+      await fetch(`${API_URL}/inventory/towers/${id}`, { method: 'DELETE', headers: headers() });
       fetchData();
     } catch { }
   };

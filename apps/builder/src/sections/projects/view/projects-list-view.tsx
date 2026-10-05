@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { paths } from '@/routes/paths';
@@ -54,7 +55,6 @@ const PROJECT_STATUS_COLORS: Record<string, string> = {
 };
 
 // Tenant ID - from seeded data. In production this comes from auth token.
-const TENANT_ID = 'b0d39e2a-1cbe-4c28-bbbe-e6e788e99aa2';
 
 export default function DashboardOverviewPage() {
   const token = useAuthStore((state) => state.token);
@@ -65,7 +65,7 @@ export default function DashboardOverviewPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const tenantId = user?.tenantId || TENANT_ID;
+  const tenantId = user?.tenantId || '';
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -74,9 +74,9 @@ export default function DashboardOverviewPage() {
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
         const [statsRes, projRes, leadsRes] = await Promise.all([
-          fetch('http://localhost:3001/inventory/stats', { headers }),
-          fetch('http://localhost:3001/projects', { headers }),
-          fetch('http://localhost:3001/leads', { headers }),
+          fetch(`${API_URL}/inventory/stats`, { headers }),
+          fetch(`${API_URL}/projects`, { headers }),
+          fetch(`${API_URL}/leads`, { headers }),
         ]);
 
         if (statsRes.ok) setStats(await statsRes.json());
@@ -183,7 +183,7 @@ export default function DashboardOverviewPage() {
       </header>
 
       {/* Revenue + Allocation Banner */}
-      <div className="grid grid-cols-2 gap-5 anim-up">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 anim-up">
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Estimated Revenue</p>
@@ -301,7 +301,7 @@ export default function DashboardOverviewPage() {
       </div>
 
       {/* Quick Action Cards */}
-      <div className="grid grid-cols-3 gap-5 anim-up">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 anim-up">
         {[
           { label: 'Add Tower', desc: 'Create new building tower with floors', icon: '🏢', link: paths.dashboard.towers, color: 'hover:border-blue-200 hover:bg-blue-50/30' },
           { label: 'Upload Media', desc: 'Add GLB models, renders, blueprints', icon: '📁', link: paths.dashboard.media, color: 'hover:border-amber-200 hover:bg-amber-50/30' },

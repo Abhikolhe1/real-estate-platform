@@ -5,6 +5,7 @@ import { Tower } from '../entities/tower.entity';
 import { Floor } from '../entities/floor.entity';
 import { Flat } from '../entities/flat.entity';
 import { Lead } from '../entities/lead.entity';
+import { AnalyticsEvent } from '../entities/analytics-event.entity';
 import { GeneratedStructure } from '../entities/generated-structure.entity';
 import { FloorPlan } from '../entities/floorplan.entity';
 import { TenantId } from '../interceptors/tenant.decorator';
@@ -20,6 +21,8 @@ export class InventoryController {
     private readonly flatRepo: Repository<Flat>,
     @InjectRepository(Lead)
     private readonly leadRepo: Repository<Lead>,
+    @InjectRepository(AnalyticsEvent)
+    private readonly analyticsRepo: Repository<AnalyticsEvent>,
     @InjectRepository(GeneratedStructure)
     private readonly generatedStructureRepo: Repository<GeneratedStructure>,
   ) {}
@@ -133,7 +136,7 @@ export class InventoryController {
     }
 
     if (body.status) flat.status = body.status;
-    if (body.price) flat.price = body.price;
+    if (body.price !== undefined) flat.price = body.price;
     if (body.sizeSqFt) flat.sizeSqFt = body.sizeSqFt;
     if (body.orientation) flat.orientation = body.orientation;
 
@@ -340,13 +343,14 @@ export class InventoryController {
   // Builder dashboard stats summary
   @Get('stats')
   async getDashboardStats(@TenantId() tenantId: string) {
-    const [totalFlats, bookedFlats, heldFlats, totalTowers, totalLeads, hotLeads] = await Promise.all([
+    const [totalFlats, bookedFlats, heldFlats, totalTowers, totalLeads, hotLeads, walkthroughVisits] = await Promise.all([
       this.flatRepo.count({ where: { tenantId } }),
       this.flatRepo.count({ where: { tenantId, status: 'BOOKED' } }),
       this.flatRepo.count({ where: { tenantId, status: 'HOLD' } }),
       this.towerRepo.count({ where: { tenantId } }),
       this.leadRepo.count({ where: { tenantId } }),
       this.leadRepo.count({ where: { tenantId, status: 'HOT' } }),
+      this.analyticsRepo.count({ where: { tenantId, eventName: 'viewer_opened' } }),
     ]);
 
     const availableFlats = totalFlats - bookedFlats - heldFlats;
@@ -366,7 +370,7 @@ export class InventoryController {
       totalLeads,
       hotLeads,
       estimatedRevenue: totalRevenue,
-      walkthroughVisits: 1840 + Math.floor(Math.random() * 200), // Placeholder until analytics engine
+      walkthroughVisits,
     };
   }
 }

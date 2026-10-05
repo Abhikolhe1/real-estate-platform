@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { gsap } from 'gsap';
@@ -62,7 +63,7 @@ function SuperAdminPageContent() {
     if (!token) return;
     try {
       // 1. Fetch builders
-      const buildersRes = await fetch('http://localhost:3001/builders', {
+      const buildersRes = await fetch(`${API_URL}/builders`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (buildersRes.ok) {
@@ -75,7 +76,7 @@ function SuperAdminPageContent() {
       }
 
       // 2. Fetch aggregated stats
-      const statsRes = await fetch('http://localhost:3001/builders/stats/summary', {
+      const statsRes = await fetch(`${API_URL}/builders/stats/summary`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (statsRes.ok) {
@@ -111,7 +112,7 @@ function SuperAdminPageContent() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('http://localhost:3001/builders', {
+      const res = await fetch(`${API_URL}/builders`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -155,7 +156,7 @@ function SuperAdminPageContent() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(`http://localhost:3001/builders/${selectedBuilder.id}`, {
+      const res = await fetch(`${API_URL}/builders/${selectedBuilder.id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -187,7 +188,7 @@ function SuperAdminPageContent() {
   const handleToggleActive = async (builder: Builder) => {
     if (!token) return;
     try {
-      const res = await fetch(`http://localhost:3001/builders/${builder.id}`, {
+      const res = await fetch(`${API_URL}/builders/${builder.id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -211,7 +212,7 @@ function SuperAdminPageContent() {
     if (!doubleCheck) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/builders/${builderId}`, {
+      const res = await fetch(`${API_URL}/builders/${builderId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -253,7 +254,7 @@ function SuperAdminPageContent() {
       {/* -------------------- 1. OVERVIEW VIEW -------------------- */}
       {activeTab === 'overview' && (
         <div className="space-y-10">
-          <header className="flex justify-between items-center anim-fade-in">
+          <header className="flex flex-wrap gap-4 justify-between items-center anim-fade-in">
             <div>
               <h1 className="text-3xl font-black text-slate-100 tracking-tight">Governance Intelligence</h1>
               <p className="text-slate-500 text-xs mt-1">Global command deck monitoring real estate tenant allocation, subscriptions metrics, and storage.</p>
@@ -268,7 +269,7 @@ function SuperAdminPageContent() {
           </header>
 
           {/* Stats Aggregations */}
-          <section className="grid grid-cols-4 gap-6 anim-fade-in">
+          <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 anim-fade-in">
             <div className="bg-slate-950/40 border border-slate-900 p-6 rounded-2xl relative overflow-hidden shadow-sm">
               <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 blur-2xl rounded-full"></div>
               <span className="text-2xl">🏢</span>
@@ -311,7 +312,7 @@ function SuperAdminPageContent() {
               </span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <div className="w-full overflow-x-auto"><table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-950/60 border-b border-slate-900 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                      <th className="py-4 px-6">Company Detail</th>
@@ -365,7 +366,7 @@ function SuperAdminPageContent() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           </section>
         </div>
@@ -374,7 +375,7 @@ function SuperAdminPageContent() {
       {/* -------------------- 2. BUILDERS DIRECTORY VIEW -------------------- */}
       {activeTab === 'builders' && (
         <div className="space-y-10">
-          <header className="flex justify-between items-center anim-fade-in">
+          <header className="flex flex-wrap gap-4 justify-between items-center anim-fade-in">
             <div>
               <h1 className="text-3xl font-black text-slate-100 tracking-tight">Builders Directory</h1>
               <p className="text-slate-500 text-xs mt-1">Inspect developer credentials, configure custom domains, or remove SaaS tenancies.</p>
@@ -389,7 +390,7 @@ function SuperAdminPageContent() {
 
           <section className="bg-slate-950/40 border border-slate-900 rounded-2xl overflow-hidden shadow-sm anim-fade-in">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <div className="w-full overflow-x-auto"><table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-950/60 border-b border-slate-900 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                     <th className="py-4 px-6">Builder details</th>
@@ -447,7 +448,7 @@ function SuperAdminPageContent() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           </section>
         </div>
@@ -461,7 +462,7 @@ function SuperAdminPageContent() {
             <p className="text-slate-500 text-xs mt-1">Review active SaaS pricing plans, monitor MRC values, and track revenue generation.</p>
           </header>
 
-          <section className="grid grid-cols-3 gap-6 anim-fade-in">
+          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 anim-fade-in">
             <div className="bg-slate-950/40 border border-slate-900 p-6 rounded-2xl relative overflow-hidden">
               <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 uppercase tracking-widest">
                 Starter Tier
@@ -509,7 +510,7 @@ function SuperAdminPageContent() {
             <div className="p-6 border-b border-slate-900">
               <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Tenant Subscription Register</h3>
             </div>
-            <table className="w-full text-left border-collapse">
+            <div className="w-full overflow-x-auto"><table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-950/60 border-b border-slate-900 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                   <th className="py-4 px-6">Developer Account</th>
@@ -549,7 +550,7 @@ function SuperAdminPageContent() {
                   );
                 })}
               </tbody>
-            </table>
+            </table></div>
           </section>
         </div>
       )}
@@ -566,7 +567,7 @@ function SuperAdminPageContent() {
             <section className="col-span-3 bg-slate-950/40 border border-slate-900 rounded-2xl p-6 space-y-6">
               <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider border-b border-slate-900 pb-4">Global Cloud Settings</h3>
               
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">AWS S3 Bucket Location</label>
                   <input 

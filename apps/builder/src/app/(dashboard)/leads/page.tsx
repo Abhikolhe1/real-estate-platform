@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { gsap } from 'gsap';
@@ -23,12 +24,11 @@ const PIPELINE_STAGES: { key: Lead['status']; label: string; color: string; bg: 
   { key: 'CLOSED', label: 'Closed ✅', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: '✅' },
 ];
 
-const TENANT_ID = 'b0d39e2a-1cbe-4c28-bbbe-e6e788e99aa2';
 
 export default function LeadsCRMPage() {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
-  const tenantId = user?.tenantId || TENANT_ID;
+  const tenantId = user?.tenantId || '';
   const getHeaders = () => ({
     'x-tenant-id': tenantId,
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -48,7 +48,7 @@ export default function LeadsCRMPage() {
 
   const fetchLeads = async () => {
     try {
-      const res = await fetch('http://localhost:3001/leads', { headers: getHeaders() });
+      const res = await fetch(`${API_URL}/leads`, { headers: getHeaders() });
       if (res.ok) setLeads(await res.json());
       setLoading(false);
     } catch { setLoading(false); }
@@ -83,7 +83,7 @@ export default function LeadsCRMPage() {
     if (!selectedLead) return;
     setIsSaving(true);
     try {
-      const res = await fetch(`http://localhost:3001/leads/${selectedLead.id}`, {
+      const res = await fetch(`${API_URL}/leads/${selectedLead.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...getHeaders() },
         body: JSON.stringify({ status: statusInput, notes: notesInput }),
@@ -95,7 +95,7 @@ export default function LeadsCRMPage() {
   const handleDeleteLead = async (id: string) => {
     if (!confirm('Remove this lead from your CRM?')) return;
     try {
-      await fetch(`http://localhost:3001/leads/${id}`, { method: 'DELETE', headers: getHeaders() });
+      await fetch(`${API_URL}/leads/${id}`, { method: 'DELETE', headers: getHeaders() });
       fetchLeads();
     } catch { }
   };
@@ -103,7 +103,7 @@ export default function LeadsCRMPage() {
   const handleAddLead = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch('http://localhost:3001/leads', {
+      await fetch(`${API_URL}/leads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getHeaders() },
         body: JSON.stringify({ ...addForm, builderSlug: 'aethelgard' }),
@@ -116,7 +116,7 @@ export default function LeadsCRMPage() {
 
   const handleQuickStatusChange = async (leadId: string, newStatus: Lead['status']) => {
     try {
-      await fetch(`http://localhost:3001/leads/${leadId}`, {
+      await fetch(`${API_URL}/leads/${leadId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...getHeaders() },
         body: JSON.stringify({ status: newStatus }),

@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { gsap } from 'gsap';
@@ -25,12 +26,11 @@ const STATUS_BADGES: Record<string, string> = {
   SOLD_OUT: 'bg-gray-100 text-gray-500 border-gray-200',
 };
 
-const TENANT_ID = 'b0d39e2a-1cbe-4c28-bbbe-e6e788e99aa2';
 
 export default function ProjectsPage() {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
-  const tenantId = user?.tenantId || TENANT_ID;
+  const tenantId = user?.tenantId || '';
   const headers = () => ({ 'x-tenant-id': tenantId, ...(token ? { Authorization: `Bearer ${token}` } : {}) });
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -58,7 +58,7 @@ export default function ProjectsPage() {
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch('http://localhost:3001/projects', { headers: headers() });
+      const res = await fetch(`${API_URL}/projects`, { headers: headers() });
       if (res.ok) setProjects(await res.json());
       setLoading(false);
     } catch { setLoading(false); }
@@ -114,7 +114,7 @@ export default function ProjectsPage() {
 
     setUploadingTexture(true);
     try {
-      const res = await fetch('http://localhost:3001/media/upload', {
+      const res = await fetch(`${API_URL}/media/upload`, {
         method: 'POST',
         headers: {
           'x-tenant-id': tenantId,
@@ -147,7 +147,7 @@ export default function ProjectsPage() {
     setSaving(true);
     const payload = { ...formData, slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-') };
     try {
-      const url = editProject ? `http://localhost:3001/projects/${editProject.id}` : 'http://localhost:3001/projects';
+      const url = editProject ? `${API_URL}/projects/${editProject.id}` : `${API_URL}/projects`;
       const res = await fetch(url, {
         method: editProject ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', ...headers() },
@@ -160,7 +160,7 @@ export default function ProjectsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this project? All towers, floors, and flats will also be removed.')) return;
     try {
-      await fetch(`http://localhost:3001/projects/${id}`, { method: 'DELETE', headers: headers() });
+      await fetch(`${API_URL}/projects/${id}`, { method: 'DELETE', headers: headers() });
       fetchProjects();
     } catch { }
   };
@@ -227,7 +227,7 @@ export default function ProjectsPage() {
           <p className="text-sm text-gray-400">{search ? 'Try a different search query.' : 'Click "+ New Project" to create your first property.'}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map(project => (
             <div key={project.id} className="proj-card bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
               <div className="flex justify-between items-start mb-4">

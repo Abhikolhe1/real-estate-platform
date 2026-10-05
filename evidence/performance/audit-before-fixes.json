@@ -1,0 +1,302 @@
+[
+  {
+    "app": "web",
+    "route": "/",
+    "status": 200,
+    "ms": 1246,
+    "title": "The Peak of Luxury LivingAethelgard Sky Penthouses",
+    "overflow": true,
+    "bodyLength": 1420,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/about",
+    "status": 200,
+    "ms": 1210,
+    "title": "Crafting Architectural IconsAbout Aethelgard Residences",
+    "overflow": false,
+    "bodyLength": 740,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/amenities",
+    "status": 200,
+    "ms": 1338,
+    "title": "A Private Sanctuary of LeisureAethelgard Premium Amenities",
+    "overflow": false,
+    "bodyLength": 622,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/contact",
+    "status": 200,
+    "ms": 1263,
+    "title": "Experience personalized consultationsGet in Touch",
+    "overflow": false,
+    "bodyLength": 544,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/gallery",
+    "status": 200,
+    "ms": 1516,
+    "title": "Visual Showcase",
+    "overflow": false,
+    "bodyLength": 1061,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/inventory",
+    "status": 200,
+    "ms": 2139,
+    "title": "Find your next home",
+    "overflow": false,
+    "bodyLength": 1195,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/location",
+    "status": 200,
+    "ms": 1694,
+    "title": "Location & Neighborhood",
+    "overflow": false,
+    "bodyLength": 1058,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/virtual-tour",
+    "status": 200,
+    "ms": 1248,
+    "title": "Step inside Aethelgard virtual realityInteractive Experience",
+    "overflow": false,
+    "bodyLength": 482,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "route": "/explorer",
+    "status": 200,
+    "ms": 1450,
+    "title": "Explore the architecture",
+    "overflow": false,
+    "bodyLength": 789,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "web",
+    "mobile": {
+      "width": 390,
+      "scrollWidth": 440
+    }
+  },
+  {
+    "app": "admin",
+    "route": "/",
+    "status": 200,
+    "ms": 1331,
+    "overflow": false,
+    "bodyLength": 104,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "admin",
+    "route": "/?tab=builders",
+    "status": 200,
+    "ms": 1282,
+    "overflow": false,
+    "bodyLength": 104,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "admin",
+    "route": "/?tab=billing",
+    "status": 200,
+    "ms": 973,
+    "overflow": false,
+    "bodyLength": 104,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "admin",
+    "route": "/?tab=settings",
+    "status": 200,
+    "ms": 898,
+    "overflow": false,
+    "bodyLength": 104,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "admin",
+    "mobile": {
+      "width": 390,
+      "scrollWidth": 390
+    }
+  },
+  {
+    "app": "builder",
+    "route": "/",
+    "status": 200,
+    "ms": 1115,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/projects",
+    "status": 200,
+    "ms": 1726,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/towers",
+    "status": 200,
+    "ms": 1325,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/floors",
+    "status": 200,
+    "ms": 1286,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/flats",
+    "status": 200,
+    "ms": 1397,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/analytics",
+    "status": 200,
+    "ms": 1340,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/amenities",
+    "status": 200,
+    "ms": 2754,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/leads",
+    "status": 200,
+    "ms": 1566,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/team",
+    "status": 200,
+    "ms": 3346,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/media",
+    "status": 200,
+    "ms": 1512,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/website",
+    "status": 200,
+    "ms": 1586,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/sdk",
+    "status": 200,
+    "ms": 1770,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/ai-generator",
+    "status": 200,
+    "ms": 2141,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "route": "/walkthroughs",
+    "status": 200,
+    "ms": 3105,
+    "overflow": false,
+    "bodyLength": 150,
+    "errors": [],
+    "failures": []
+  },
+  {
+    "app": "builder",
+    "mobile": {
+      "width": 390,
+      "scrollWidth": 390
+    }
+  }
+]

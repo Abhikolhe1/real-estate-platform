@@ -1,0 +1,48 @@
+{
+  "origin": "http://localhost:3200",
+  "network": "4 Mbps download, 40 ms latency, cache disabled, D3D11, 1440x1000",
+  "results": [
+    {
+      "trial": 0,
+      "readyMs": 5123.299999952316,
+      "ttfbMs": 87.19999992847443,
+      "fcpMs": 3264,
+      "modelLoadMs": 1423.6999999284744,
+      "scriptBytes": 1398309,
+      "scriptCount": 23,
+      "themeRequests": 2,
+      "longTaskMs": 172,
+      "meshCount": 277,
+      "error": "",
+      "errors": []
+    },
+    {
+      "trial": 1,
+      "readyMs": 2794.899999976158,
+      "ttfbMs": 5.899999976158142,
+      "fcpMs": 960,
+      "modelLoadMs": 1408,
+      "scriptBytes": 1398309,
+      "scriptCount": 23,
+      "themeRequests": 2,
+      "longTaskMs": 50,
+      "meshCount": 277,
+      "error": "",
+      "errors": []
+    },
+    {
+      "trial": 2,
+      "readyMs": 2799,
+      "ttfbMs": 6.200000047683716,
+      "fcpMs": 960,
+      "modelLoadMs": 1417.0999999046326,
+      "scriptBytes": 1398309,
+      "scriptCount": 23,
+      "themeRequests": 2,
+      "longTaskMs": 46,
+      "meshCount": 277,
+      "error": "",
+      "errors": []
+    }
+  ]
+}

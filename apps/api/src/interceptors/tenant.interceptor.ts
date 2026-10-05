@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class TenantInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -18,7 +20,16 @@ export class TenantInterceptor implements NestInterceptor {
     if (!tenantId) {
       const host = request.headers.host || '';
       const parts = host.split('.');
-      if (parts.length > 2 && parts[0] !== 'www' && parts[0] !== 'admin') {
+      if (
+        parts.length > 2 &&
+        parts[0] !== 'www' &&
+        parts[0] !== 'admin' &&
+        !host.includes('trycloudflare.com') &&
+        !host.includes('localhost') &&
+        !host.includes('ngrok') &&
+        !host.includes('127.0.0.1') &&
+        !host.includes('loca.lt')
+      ) {
         tenantId = parts[0]; // Subdomain fallback slug
       }
     }
@@ -27,7 +38,7 @@ export class TenantInterceptor implements NestInterceptor {
     const isPublicSuperAdminPath = path.startsWith('/builders') && request.method === 'POST';
     const isAuth = path.startsWith('/auth');
 
-    if (!tenantId && !isPublicSuperAdminPath && !isAuth) {
+    if (!tenantId || !UUID_REGEX.test(tenantId)) {
       tenantId = '00000000-0000-0000-0000-000000000000'; // Default systemic fallback
     }
 

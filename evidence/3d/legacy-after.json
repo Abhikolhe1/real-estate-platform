@@ -1,0 +1,41 @@
+{
+  "browser": "153.0.8010.12",
+  "viewport": "1280x900",
+  "renderer": "headless SwiftShader",
+  "results": [
+    {
+      "name": "exterior",
+      "contexts": 3,
+      "gpu": "WebKit WebGL",
+      "fps": 0.4760884572367057,
+      "p50Ms": 3666.5,
+      "p95Ms": 4299.899999999994,
+      "drawsPerFrame": 4775,
+      "trianglesPerFrame": 96350,
+      "canvasCount": 1
+    },
+    {
+      "name": "floor-change",
+      "contexts": 3,
+      "gpu": "WebKit WebGL",
+      "fps": 1.397317151069944,
+      "p50Ms": 733.3999999999942,
+      "p95Ms": 1550,
+      "drawsPerFrame": 3820,
+      "trianglesPerFrame": 77080,
+      "canvasCount": 1
+    },
+    {
+      "name": "walkthrough",
+      "contexts": 3,
+      "gpu": "WebKit WebGL",
+      "fps": 0.2760524499668563,
+      "p50Ms": 4183.199999999997,
+      "p95Ms": 4183.199999999997,
+      "drawsPerFrame": 252,
+      "trianglesPerFrame": 5418,
+      "canvasCount": 2
+    }
+  ],
+  "errors": []
+}

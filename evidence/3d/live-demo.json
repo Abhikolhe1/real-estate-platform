@@ -1,0 +1,9 @@
+{
+  "result": "PASS",
+  "apiMocked": false,
+  "model": "bsi-duplex-v1",
+  "meshCount": 277,
+  "canvasCount": 1,
+  "error": "",
+  "errors": []
+}

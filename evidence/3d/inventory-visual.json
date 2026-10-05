@@ -1,0 +1,95 @@
+{
+  "results": [],
+  "errors": [],
+  "details": [
+    {
+      "name": "inventory-visual-fixture",
+      "snapshot": {
+        "stats": {
+          "rendererId": 1,
+          "samples": 229,
+          "fps": 15.82014987510408,
+          "p50Ms": 17.600000023841858,
+          "p95Ms": 78.79999995231628,
+          "slowFrames": 22,
+          "drawCalls": 188,
+          "triangles": 4064,
+          "geometries": 2068,
+          "textures": 26,
+          "programs": 24
+        },
+        "mode": "walkthrough",
+        "submode": "floorplan",
+        "camera": [
+          17.5,
+          63.24999999997,
+          5.00006
+        ],
+        "rootId": "2ce01223-26ce-4cc6-bf81-4300768fac25",
+        "cachedGroups": 2,
+        "rebuildReason": "floors,project,amenities",
+        "tourPlaying": false,
+        "tourIndex": 0,
+        "tourCount": 1,
+        "projection": [
+          0.07051499717034522,
+          0,
+          0,
+          0,
+          0,
+          0.06666666666666667,
+          0,
+          0,
+          0,
+          0,
+          -0.00200010000500025,
+          0,
+          0,
+          0,
+          -1.00010000500025,
+          1
+        ],
+        "viewMatrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0.0000010000000000287555,
+          0.9999999999994998,
+          0,
+          0,
+          -0.9999999999994998,
+          0.0000010000000000287555,
+          0,
+          -17.499999999999996,
+          4.999996749997498,
+          -63.25000499999837,
+          1
+        ],
+        "doors": [
+          {
+            "name": "doorGroup_ap-door-1",
+            "position": [
+              -9.547918011776346e-17,
+              4.3,
+              7.43
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-2",
+            "position": [
+              5,
+              4.3,
+              6.57
+            ],
+            "rotation": 0,
+            "open": false
+          }
+        ]
+      }
+    }
+  ]
+}

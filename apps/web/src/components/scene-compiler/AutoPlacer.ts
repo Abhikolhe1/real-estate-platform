@@ -83,6 +83,33 @@ export class AutoPlacer {
           z: Math.round((room.z + room.depth - 0.5) * 100) / 100,
           rotation: 180,
         });
+      } else if (nameLower.includes('elevator') || nameLower.includes('lift')) {
+        furniture.push({
+          id: `auto-f-${count++}`,
+          type: 'elevator',
+          roomId: room.id,
+          x: Math.round(cx * 100) / 100,
+          z: Math.round((room.z + room.depth - 0.15) * 100) / 100,
+          rotation: 180,
+        });
+      } else if (nameLower.includes('stair')) {
+        furniture.push({
+          id: `auto-f-${count++}`,
+          type: 'stairs',
+          roomId: room.id,
+          x: Math.round(cx * 100) / 100,
+          z: Math.round((room.z + 0.5) * 100) / 100,
+          rotation: 0,
+        });
+      } else if (nameLower.includes('lobby') || nameLower.includes('reception')) {
+        furniture.push({
+          id: `auto-f-${count++}`,
+          type: 'counter',
+          roomId: room.id,
+          x: Math.round(cx * 100) / 100,
+          z: Math.round((room.z + 1.2) * 100) / 100,
+          rotation: 0,
+        });
       }
     });
 

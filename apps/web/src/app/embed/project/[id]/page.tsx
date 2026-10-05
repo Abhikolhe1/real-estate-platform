@@ -1,5 +1,6 @@
 'use client';
 
+import { API_URL } from '@/config/api';
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import BuildingViewer from '@/components/building-viewer';
@@ -41,7 +42,7 @@ function EmbedContent({ projectId }: { projectId: string }) {
     setLoading(true);
     setError(null);
 
-    fetch(`http://localhost:3001/sdk/embeds/resolve?apiKey=${sdkKey}&projectId=${projectId}`)
+    fetch(`${API_URL}/sdk/embeds/resolve?apiKey=${sdkKey}&projectId=${projectId}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error('Invalid SDK Key, unauthorized domain, or incorrect project ID.');

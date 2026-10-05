@@ -1,0 +1,399 @@
+{
+  "sourceBytes": 2380763,
+  "glbBytes": 2051496,
+  "meshes": 277,
+  "triangles": 26348,
+  "bounds": [
+    [
+      -0.24150000512599945,
+      -1.5499999523162842,
+      -4.3827338218688965
+    ],
+    [
+      9.041500091552734,
+      6.634799957275391,
+      22.1827335357666
+    ]
+  ],
+  "spaces": [
+    {
+      "id": "0BTBFw6f90Nfh9rP1dlXrr",
+      "code": "A101",
+      "name": "Foyer",
+      "floorId": "1xS3BCk291UvhgP2dvNMKI",
+      "bounds": [
+        [
+          6.2,
+          0.019,
+          8.075
+        ],
+        [
+          8.383,
+          2.6,
+          17.383
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dlXri",
+      "code": "A201",
+      "name": "Hallway",
+      "floorId": "1xS3BCk291UvhgP2dvNMQJ",
+      "bounds": [
+        [
+          6.418,
+          3.119,
+          6.25
+        ],
+        [
+          8.383,
+          6.0,
+          11.55
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dl_3P",
+      "code": "B104",
+      "name": "Bathroom 1",
+      "floorId": "1xS3BCk291UvhgP2dvNMKI",
+      "bounds": [
+        [
+          2.574,
+          0.013,
+          7.554
+        ],
+        [
+          4.03,
+          2.6,
+          9.725
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dl_3Q",
+      "code": "B101",
+      "name": "Foyer",
+      "floorId": "1xS3BCk291UvhgP2dvNMKI",
+      "bounds": [
+        [
+          0.417,
+          0.019,
+          0.417
+        ],
+        [
+          2.6,
+          2.6,
+          9.725
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dl_3G",
+      "code": "B201",
+      "name": "Hallway",
+      "floorId": "1xS3BCk291UvhgP2dvNMQJ",
+      "bounds": [
+        [
+          0.417,
+          3.119,
+          6.25
+        ],
+        [
+          2.382,
+          6.0,
+          11.55
+        ]
+      ]
+    },
+    {
+      "id": "2gRXFgjRn2HPE$YoDLX3FV",
+      "code": "A205",
+      "name": "Utility",
+      "floorId": "1xS3BCk291UvhgP2dvNMQJ",
+      "bounds": [
+        [
+          4.77,
+          3.113,
+          6.79
+        ],
+        [
+          6.294,
+          5.7,
+          7.72138
+        ]
+      ]
+    },
+    {
+      "id": "2gRXFgjRn2HPE$YoDLX3FC",
+      "code": "B205",
+      "name": "Utility",
+      "floorId": "1xS3BCk291UvhgP2dvNMQJ",
+      "bounds": [
+        [
+          2.506,
+          3.113,
+          10.09405
+        ],
+        [
+          4.03,
+          5.7,
+          11.01
+        ]
+      ]
+    },
+    {
+      "id": "10mjSDZJj9gPS2PrQaxa3z",
+      "code": "A105",
+      "name": "Stair",
+      "floorId": "1xS3BCk291UvhgP2dvNMKI",
+      "bounds": [
+        [
+          7.3686,
+          0.019,
+          8.075
+        ],
+        [
+          8.383,
+          5.7,
+          11.825
+        ]
+      ]
+    },
+    {
+      "id": "10mjSDZJj9gPS2PrQaxa4o",
+      "code": "B105",
+      "name": "Room",
+      "floorId": "1xS3BCk291UvhgP2dvNMKI",
+      "bounds": [
+        [
+          0.417,
+          0.019,
+          5.975
+        ],
+        [
+          1.4314,
+          5.7,
+          9.725
+        ]
+      ]
+    },
+    {
+      "id": "0pNy6pOyf7JPmXRLgxs3sW",
+      "code": "R301",
+      "name": "Roof",
+      "floorId": "1xS3BCk291UvhgP2dvNtSE",
+      "bounds": [
+        [
+          0.417,
+          6.0,
+          0.417
+        ],
+        [
+          8.383,
+          9.0,
+          17.383
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dl_CZ",
+      "code": "B102",
+      "name": "Living Room",
+      "floorId": "1xS3BCk291UvhgP2dvNMKI",
+      "bounds": [
+        [
+          2.6,
+          0.019,
+          0.417
+        ],
+        [
+          8.383,
+          2.6,
+          5.2
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dlXr2",
+      "code": "A102",
+      "name": "Living Room",
+      "floorId": "1xS3BCk291UvhgP2dvNMKI",
+      "bounds": [
+        [
+          0.417,
+          0.019,
+          12.6
+        ],
+        [
+          6.2,
+          2.6,
+          17.383
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dlXr$",
+      "code": "A103",
+      "name": "Kitchen",
+      "floorId": "1xS3BCk291UvhgP2dvNMKI",
+      "bounds": [
+        [
+          0.417,
+          0.013,
+          10.37
+        ],
+        [
+          6.226,
+          2.6,
+          12.6
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dl_3S",
+      "code": "B103",
+      "name": "Kitchen",
+      "floorId": "1xS3BCk291UvhgP2dvNMKI",
+      "bounds": [
+        [
+          2.574,
+          0.013,
+          5.2
+        ],
+        [
+          8.383,
+          2.6,
+          7.43
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dl_3C",
+      "code": "B204",
+      "name": "Bathroom 2",
+      "floorId": "1xS3BCk291UvhgP2dvNMQJ",
+      "bounds": [
+        [
+          2.506,
+          3.113,
+          6.85
+        ],
+        [
+          4.03,
+          5.7,
+          9.97005
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dlXre",
+      "code": "A204",
+      "name": "Bathroom 2",
+      "floorId": "1xS3BCk291UvhgP2dvNMQJ",
+      "bounds": [
+        [
+          4.77,
+          3.113,
+          7.84538
+        ],
+        [
+          6.294,
+          5.7,
+          10.95
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dlXru",
+      "code": "A104",
+      "name": "Bathroom 1",
+      "floorId": "1xS3BCk291UvhgP2dvNMKI",
+      "bounds": [
+        [
+          4.77,
+          0.013,
+          8.075
+        ],
+        [
+          6.226,
+          2.6,
+          10.246
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dl_39",
+      "code": "B203",
+      "name": "Bedroom 2",
+      "floorId": "1xS3BCk291UvhgP2dvNMQJ",
+      "bounds": [
+        [
+          0.417,
+          3.119,
+          0.417
+        ],
+        [
+          4.125,
+          5.7,
+          6.666
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dlXrc",
+      "code": "A202",
+      "name": "Bedroom 1",
+      "floorId": "1xS3BCk291UvhgP2dvNMQJ",
+      "bounds": [
+        [
+          4.675,
+          3.119,
+          0.417
+        ],
+        [
+          8.383,
+          5.7,
+          6.666
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dl_3A",
+      "code": "B202",
+      "name": "Bedroom 1",
+      "floorId": "1xS3BCk291UvhgP2dvNMQJ",
+      "bounds": [
+        [
+          0.417,
+          3.119,
+          11.134
+        ],
+        [
+          4.125,
+          5.7,
+          17.383
+        ]
+      ]
+    },
+    {
+      "id": "0BTBFw6f90Nfh9rP1dlXrb",
+      "code": "A203",
+      "name": "Bedroom 2",
+      "floorId": "1xS3BCk291UvhgP2dvNMQJ",
+      "bounds": [
+        [
+          4.675,
+          3.119,
+          11.134
+        ],
+        [
+          8.383,
+          5.7,
+          17.383
+        ]
+      ]
+    }
+  ],
+  "failures": []
+}

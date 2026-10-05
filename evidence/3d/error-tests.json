@@ -1,0 +1,21 @@
+[
+  {
+    "url": "/models/missing.glb",
+    "result": "PASS",
+    "error": "Model HTTP 404: file not found"
+  },
+  {
+    "url": "/models/unsupported.ifc",
+    "result": "PASS",
+    "error": "Use an HTTP(S) GLB/GLTF or manifest URL with the expected extension."
+  },
+  {
+    "url": "/models/corrupt.glb",
+    "result": "PASS",
+    "error": "Invalid or unsupported GLB/GLTF: Unexpected token 'o', \"not a glb\" is not valid JSON. Export uncompressed GLB; Draco/KTX2 decoders are not bundled."
+  },
+  {
+    "name": "Recovery loads actual GLB",
+    "result": "PASS"
+  }
+]

@@ -1,0 +1,27 @@
+const {chromium}=require('playwright');const fs=require('fs');
+(async()=>{
+ const browser=await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ const page=await browser.newPage({viewport:{width:1440,height:1100}});const errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.route('http://localhost:3001/**',r=>r.fulfill({json:[]}));
+ await page.goto('http://localhost:3000/explorer',{waitUntil:'domcontentloaded',timeout:120000});
+ await page.waitForFunction(()=>{const el=document.querySelector('[data-testid=property-canvas]');return el?.getViewerSnapshot?.().state.manifest||document.querySelector('[role=alert]')},{timeout:120000});
+ await page.waitForTimeout(5000);
+ const snapshot=()=>page.locator('[data-testid=property-canvas]').evaluate(el=>el.getViewerSnapshot());
+ const result={errors,initial:await snapshot()};
+ await page.screenshot({path:'evidence/3d/imported-exterior.png',fullPage:true});
+ if(result.initial.state.error)throw new Error(result.initial.state.error);
+ const floor=result.initial.state.manifest.floors.find(f=>f.name==='Ground floor');
+ await page.getByLabel('Floor',{exact:true}).selectOption(floor.id);await page.waitForTimeout(1500);
+ result.floor=await snapshot();await page.screenshot({path:'evidence/3d/imported-floor.png',fullPage:true});
+ const living=floor.flats[0].rooms.find(r=>/Living/.test(r.name));
+ await page.getByLabel('Room',{exact:true}).selectOption(living.id);
+ await page.getByRole('button',{name:'Enter room',exact:true}).click();await page.waitForTimeout(1800);
+ result.walk=await snapshot();await page.screenshot({path:'evidence/3d/imported-interior.png',fullPage:true});
+ await page.keyboard.down('w');await page.waitForTimeout(3000);await page.keyboard.up('w');result.moved=await snapshot();
+ await page.getByRole('button',{name:'Furnish room',exact:true}).click();await page.getByRole('button',{name:'Add sofa',exact:true}).click();await page.waitForTimeout(1000);result.furniture=await snapshot();
+ await page.getByRole('button',{name:'Rotate',exact:true}).click();await page.getByRole('button',{name:'Save configuration',exact:true}).click();result.saved=await snapshot();
+ await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>document.querySelector('[data-testid=property-canvas]')?.getViewerSnapshot?.().state.manifest,{timeout:60000});result.restored=await snapshot();
+ fs.writeFileSync('evidence/3d/smoke.json',JSON.stringify(result,null,2));
+ console.log(JSON.stringify({errors,initial:result.initial.stats,floor:result.floor.visibleMeshes,walk:result.walk.camera,moved:result.moved.camera,furniture:result.furniture.state.furniture,notice:result.furniture.state.notice,restored:result.restored.state.furniture},null,2));await browser.close();
+})().catch(e=>{console.error(e);process.exit(1)});

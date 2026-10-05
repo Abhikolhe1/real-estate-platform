@@ -44,3 +44,6 @@ yarn-error.log*
 # log files
 **/logs/
 *.log
+
+# Local BIM tooling and baseline snapshots
+.cache/

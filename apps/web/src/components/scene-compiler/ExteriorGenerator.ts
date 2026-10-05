@@ -1,7 +1,8 @@
 import * as THREE from 'three';
+import { TextureGenerator } from './TextureGenerator';
 
 export interface ExteriorConfig {
-  facadeType?: 'Concrete' | 'Brick' | 'Glass' | 'Stone' | 'Sandstone';
+  facadeType?: 'Concrete' | 'Brick' | 'Glass' | 'Stone' | 'Sandstone' | 'Luxury';
   customTextureUrl?: string;
 }
 
@@ -13,7 +14,7 @@ export interface ExteriorGeneratorOptions {
 export class ExteriorGenerator {
   static compile(options: ExteriorGeneratorOptions): THREE.Group {
     const group = new THREE.Group();
-    group.name = 'exterior_shell';
+    group.name = 'exterior_environment_and_shell';
 
     const { floorsInfo, exteriorConfig } = options;
     if (!floorsInfo || floorsInfo.length === 0) {
@@ -23,7 +24,7 @@ export class ExteriorGenerator {
     // Sort floors by floor number ascending
     const sorted = [...floorsInfo].sort((a, b) => a.floor.floorNumber - b.floor.floorNumber);
 
-    // Compute footprint bounds using the ground floor structureJson (or union if ground is missing)
+    // Compute footprint bounds using structureJson
     let minX = Infinity, maxX = -Infinity;
     let minZ = Infinity, maxZ = -Infinity;
 
@@ -52,7 +53,7 @@ export class ExteriorGenerator {
     });
 
     if (minX === Infinity) {
-      minX = -10; maxX = 10;
+      minX = -12; maxX = 12;
       minZ = -10; maxZ = 10;
     }
 
@@ -69,383 +70,360 @@ export class ExteriorGenerator {
       totalHeight += h + slabThickness;
     });
 
-    // Resolve Facade Materials
-    const facadeType = exteriorConfig?.facadeType || 'Concrete';
-    const customTextureUrl = exteriorConfig?.customTextureUrl;
+    // =========================================================================
+    // 1. REAL-WORLD OUTDOOR ENVIRONMENT (GROUND, ROADS, SIDEWALKS, TREES, SKY)
+    // =========================================================================
+    const envGroup = new THREE.Group();
+    envGroup.name = 'real_world_landscape';
 
-    let facadeMat: THREE.Material;
+    // Sky Dome - Realistic daylight gradient with sun glow and clouds
+    const skyGeo = new THREE.SphereGeometry(260, 32, 16);
+    const skyMat = new THREE.MeshBasicMaterial({
+      map: TextureGenerator.getSkyDomeTexture(),
+      side: THREE.BackSide,
+      depthWrite: false,
+    });
+    const skyDome = new THREE.Mesh(skyGeo, skyMat);
+    skyDome.position.set(centerX, 0, centerZ);
+    envGroup.add(skyDome);
 
-    if (customTextureUrl) {
-      const loader = new THREE.TextureLoader();
-      const texture = loader.load(customTextureUrl);
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      // Repeat every 3.0 meters
-      texture.repeat.set(width / 3.0, totalHeight / 3.0);
-      facadeMat = new THREE.MeshStandardMaterial({
-        map: texture,
-        roughness: 0.8,
-        metalness: 0.1
-      });
-    } else {
-      switch (facadeType) {
-        case 'Brick':
-          facadeMat = new THREE.MeshStandardMaterial({
-            color: 0xb5652b, // Terracotta brick color
-            roughness: 0.95,
-            metalness: 0.0
-          });
-          break;
-        case 'Glass':
-          facadeMat = new THREE.MeshStandardMaterial({
-            color: 0x88b4d4,
-            roughness: 0.1,
-            metalness: 0.8,
-            transparent: true,
-            opacity: 0.7
-          });
-          break;
-        case 'Stone':
-          facadeMat = new THREE.MeshStandardMaterial({
-            color: 0x8b7355, // Sand/granite gray-brown
-            roughness: 0.85,
-            metalness: 0.0
-          });
-          break;
-        case 'Sandstone':
-          facadeMat = new THREE.MeshStandardMaterial({
-            color: 0xd2b48c,
-            roughness: 0.8,
-            metalness: 0.1
-          });
-          break;
-        case 'Concrete':
-        default:
-          facadeMat = new THREE.MeshStandardMaterial({
-            color: 0xc8c4be,
-            roughness: 0.9,
-            metalness: 0.0
-          });
-          break;
-      }
+    // A. Manicured Green Grass Lawn (Broad landscape ground)
+    const grassGeo = new THREE.PlaneGeometry(260, 260);
+    const grassMat = new THREE.MeshStandardMaterial({
+      color: 0x2e7d32, // Vibrant lush grass green
+      roughness: 0.9,
+      metalness: 0.0,
+    });
+    const grassMesh = new THREE.Mesh(grassGeo, grassMat);
+    grassMesh.rotation.x = -Math.PI / 2;
+    grassMesh.position.set(centerX, -0.05, centerZ);
+    grassMesh.receiveShadow = true;
+    envGroup.add(grassMesh);
+
+    // B. Asphalt Access Road & Circular Drop-off Roundabout
+    const roadWidth = 8.0;
+    const roadLength = 120.0;
+    const asphaltMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b, // Dark charcoal asphalt
+      roughness: 0.85,
+      metalness: 0.1,
+    });
+
+    // Main entrance access avenue
+    const roadGeo = new THREE.PlaneGeometry(roadWidth, roadLength);
+    const roadMesh = new THREE.Mesh(roadGeo, asphaltMat);
+    roadMesh.rotation.x = -Math.PI / 2;
+    roadMesh.position.set(centerX, 0.01, maxZ + roadLength / 2 + 6.0);
+    roadMesh.receiveShadow = true;
+    envGroup.add(roadMesh);
+
+    // Road White Center Dashed Line Markings
+    const dashLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    for (let d = 0; d < 10; d++) {
+      const dashGeo = new THREE.PlaneGeometry(0.2, 5.0);
+      const dash = new THREE.Mesh(dashGeo, dashLineMat);
+      dash.rotation.x = -Math.PI / 2;
+      dash.position.set(centerX, 0.02, maxZ + 12.0 + d * 10.0);
+      envGroup.add(dash);
     }
 
-    // 1. Build the 4 Exterior Wall Faces (North, South, East, West)
-    const wallThickness = 0.05;
-    
-    // North Wall
-    const northGeo = new THREE.BoxGeometry(width + wallThickness, totalHeight, wallThickness);
-    const northMesh = new THREE.Mesh(northGeo, facadeMat);
-    northMesh.position.set(centerX, totalHeight / 2, minZ - wallThickness / 2);
-    northMesh.castShadow = true;
-    northMesh.receiveShadow = true;
-    group.add(northMesh);
+    // Paved Sidewalks along the Road
+    const sidewalkMat = new THREE.MeshStandardMaterial({
+      color: 0x94a3b8, // Light concrete paver gray
+      roughness: 0.75,
+      metalness: 0.05,
+    });
 
-    // South Wall
-    const southGeo = new THREE.BoxGeometry(width + wallThickness, totalHeight, wallThickness);
-    const southMesh = new THREE.Mesh(southGeo, facadeMat);
-    southMesh.position.set(centerX, totalHeight / 2, maxZ + wallThickness / 2);
-    southMesh.castShadow = true;
-    southMesh.receiveShadow = true;
-    group.add(southMesh);
+    [-roadWidth / 2 - 1.25, roadWidth / 2 + 1.25].forEach((swX) => {
+      const swGeo = new THREE.BoxGeometry(2.5, 0.14, roadLength);
+      const sw = new THREE.Mesh(swGeo, sidewalkMat);
+      sw.position.set(centerX + swX, 0.07, maxZ + roadLength / 2 + 6.0);
+      sw.receiveShadow = true;
+      envGroup.add(sw);
+    });
 
-    // West Wall
-    const westGeo = new THREE.BoxGeometry(wallThickness, totalHeight, depth - wallThickness);
-    const westMesh = new THREE.Mesh(westGeo, facadeMat);
-    westMesh.position.set(minX - wallThickness / 2, totalHeight / 2, centerZ);
-    westMesh.castShadow = true;
-    westMesh.receiveShadow = true;
-    group.add(westMesh);
-
-    // East Wall
-    const eastGeo = new THREE.BoxGeometry(wallThickness, totalHeight, depth - wallThickness);
-    const eastMesh = new THREE.Mesh(eastGeo, facadeMat);
-    eastMesh.position.set(maxX + wallThickness / 2, totalHeight / 2, centerZ);
-    eastMesh.castShadow = true;
-    eastMesh.receiveShadow = true;
-    group.add(eastMesh);
-
-    // 2. Add Cornice bands around building at floor level edges
-    const bandMat = new THREE.MeshStandardMaterial({
-      color: 0x475569, // Charcoal slate gray
+    // Paved Plaza Surrounding Building Footprint
+    const plazaWidth = width + 14.0;
+    const plazaDepth = depth + 14.0;
+    const plazaGeo = new THREE.BoxGeometry(plazaWidth, 0.12, plazaDepth);
+    const plazaMat = new THREE.MeshStandardMaterial({
+      color: 0xe2e8f0, // Elegant light stone plaza
       roughness: 0.7,
-      metalness: 0.2
+      metalness: 0.05,
     });
-    
-    let currentElevation = 0;
-    sorted.forEach(({ floor }) => {
-      const h = Number(floor.floorHeight) || 3.0;
-      
-      // Horizontal slab cornice band: slightly wider than the building
-      const bandGeo = new THREE.BoxGeometry(width + 0.15, 0.1, depth + 0.15);
-      const bandMesh = new THREE.Mesh(bandGeo, bandMat);
-      bandMesh.position.set(centerX, currentElevation + h, centerZ);
-      bandMesh.receiveShadow = true;
-      bandMesh.castShadow = true;
-      group.add(bandMesh);
+    const plaza = new THREE.Mesh(plazaGeo, plazaMat);
+    plaza.position.set(centerX, 0.06, centerZ);
+    plaza.receiveShadow = true;
+    envGroup.add(plaza);
 
-      currentElevation += h + slabThickness;
+    // C. 3D Procedural Trees & Landscaping
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3728, roughness: 0.9 });
+    const foliageMats = [
+      new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.8 }),
+      new THREE.MeshStandardMaterial({ color: 0x388e3c, roughness: 0.75 }),
+      new THREE.MeshStandardMaterial({ color: 0x1b5e20, roughness: 0.85 }),
+    ];
+
+    const createTree = (tx: number, tz: number, scale = 1.0) => {
+      const tree = new THREE.Group();
+      tree.position.set(tx, 0.1, tz);
+      tree.scale.setScalar(scale);
+
+      // Trunk
+      const trunkGeo = new THREE.CylinderGeometry(0.18, 0.28, 3.2, 8);
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.y = 1.6;
+      trunk.castShadow = true;
+      tree.add(trunk);
+
+      // Multi-tier organic foliage canopy
+      [
+        [0, 3.2, 0, 1.4, 0],
+        [-0.3, 4.2, 0.2, 1.2, 1],
+        [0.3, 4.4, -0.2, 1.15, 2],
+        [0, 5.2, 0, 0.9, 0],
+      ].forEach(([fx, fy, fz, r, matIdx]) => {
+        const foliageGeo = new THREE.DodecahedronGeometry(r as number, 1);
+        const foliage = new THREE.Mesh(foliageGeo, foliageMats[matIdx as number]);
+        foliage.position.set(fx as number, fy as number, fz as number);
+        foliage.castShadow = true;
+        tree.add(foliage);
+      });
+
+      return tree;
+    };
+
+    // Plant Perimeter Trees around the Plaza & Boulevard
+    const treePositions = [
+      // Left boulevard
+      [centerX - roadWidth / 2 - 4.5, maxZ + 15],
+      [centerX - roadWidth / 2 - 4.5, maxZ + 35],
+      [centerX - roadWidth / 2 - 4.5, maxZ + 55],
+      // Right boulevard
+      [centerX + roadWidth / 2 + 4.5, maxZ + 15],
+      [centerX + roadWidth / 2 + 4.5, maxZ + 35],
+      [centerX + roadWidth / 2 + 4.5, maxZ + 55],
+      // Plaza Garden corners
+      [minX - 6.0, minZ - 6.0],
+      [maxX + 6.0, minZ - 6.0],
+      [minX - 6.0, maxZ + 4.0],
+      [maxX + 6.0, maxZ + 4.0],
+      [centerX - width * 0.4, minZ - 6.0],
+      [centerX + width * 0.4, minZ - 6.0],
+    ];
+
+    treePositions.forEach(([tx, tz], i) => {
+      const scale = 0.85 + (i % 3) * 0.15;
+      envGroup.add(createTree(tx, tz, scale));
     });
 
-    // 3. Add Podium Base (ground floor plinth)
-    const podiumHeight = 1.5;
-    const podiumGeo = new THREE.BoxGeometry(width + 0.6, podiumHeight, depth + 0.6);
-    const podiumMat = new THREE.MeshStandardMaterial({
-      color: 0x334155, // Dark slate
-      roughness: 0.8,
-      metalness: 0.1
-    });
-    const podiumMesh = new THREE.Mesh(podiumGeo, podiumMat);
-    podiumMesh.position.set(centerX, podiumHeight / 2, centerZ);
-    podiumMesh.receiveShadow = true;
-    podiumMesh.castShadow = true;
-    group.add(podiumMesh);
-
-    // 4. Generate Windows & Frames Grid
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b, // Dark steel frame
-      roughness: 0.4,
-      metalness: 0.8
+    // D. Modern Pathway LED Bollards & Dual-Arm Streetlamps
+    const lampMetal = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.85, roughness: 0.3 });
+    const lampGlow = new THREE.MeshStandardMaterial({
+      color: 0xfffbeb,
+      emissive: new THREE.Color(0xfef08a),
+      emissiveIntensity: 1.2,
+      roughness: 0.2,
     });
 
-    const windowGlassMat = new THREE.MeshStandardMaterial({
-      color: 0xadd8e6,
+    const createStreetLamp = (lx: number, lz: number) => {
+      const lamp = new THREE.Group();
+      lamp.position.set(lx, 0.1, lz);
+
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 5.5, 8), lampMetal);
+      pole.position.y = 2.75;
+      pole.castShadow = true;
+      lamp.add(pole);
+
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 0.08), lampMetal);
+      arm.position.set(0, 5.4, 0);
+      lamp.add(arm);
+
+      [-0.55, 0.55].forEach((hx) => {
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.15), lampGlow);
+        head.position.set(hx, 5.34, 0);
+        lamp.add(head);
+      });
+
+      return lamp;
+    };
+
+    [
+      [centerX - roadWidth / 2 - 2.8, maxZ + 25],
+      [centerX + roadWidth / 2 + 2.8, maxZ + 25],
+      [centerX - roadWidth / 2 - 2.8, maxZ + 45],
+      [centerX + roadWidth / 2 + 2.8, maxZ + 45],
+    ].forEach(([lx, lz]) => {
+      envGroup.add(createStreetLamp(lx, lz));
+    });
+
+    group.add(envGroup);
+
+    // =========================================================================
+    // 2. ARCHITECTURAL EXTERIOR BUILDING SHELL & CURTAIN WALL FACADE
+    // =========================================================================
+    const facadeGroup = new THREE.Group();
+    facadeGroup.name = 'architectural_facade';
+
+    const curtainGlassMat = new THREE.MeshPhysicalMaterial({
+      color: 0x60a5fa, // Elegant azure reflection
       transparent: true,
-      opacity: 0.6,
-      roughness: 0.1,
-      metalness: 0.9
+      opacity: 0.45,
+      roughness: 0.08,
+      metalness: 0.85,
+      transmission: 0.6,
+      thickness: 0.4,
     });
 
-    currentElevation = 0;
-    sorted.forEach(({ floor, structureJson }) => {
-      const h = Number(floor.floorHeight) || 3.0;
-      if (structureJson) {
-        const walls = structureJson.walls || [];
-        const apertures = structureJson.apertures || [];
+    const frameMullionMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b, // Matte architectural dark bronze
+      roughness: 0.35,
+      metalness: 0.8,
+    });
 
-        apertures.forEach((ap: any) => {
-          if (ap.type !== 'window') return;
+    const slabEdgeMat = new THREE.MeshStandardMaterial({
+      color: 0x334155, // Charcoal slate slab edge
+      roughness: 0.7,
+      metalness: 0.15,
+    });
 
-          // Find parent wall
-          const w = walls.find((wall: any) => wall.id === ap.wallId);
-          if (!w) return;
+    const railingGlassMat = new THREE.MeshPhysicalMaterial({
+      color: 0xdbeafe,
+      transparent: true,
+      opacity: 0.3,
+      roughness: 0.05,
+      metalness: 0.9,
+    });
 
-          // Compute global position of this window
-          const dx = w.endX - w.startX;
-          const dz = w.endZ - w.startZ;
-          const wallLength = Math.sqrt(dx * dx + dz * dz);
-          if (wallLength === 0) return;
+    // Floor Slabs & Cantilevered Balconies along building height
+    let currentElevation = 0;
+    sorted.forEach(({ floor }, fIdx) => {
+      const floorHeight = Number(floor.floorHeight) || 3.0;
 
-          const ux = dx / wallLength;
-          const uz = dz / wallLength;
+      // Floor horizontal architectural trim slab
+      const slabMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(width + 0.6, slabThickness, depth + 0.6),
+        slabEdgeMat
+      );
+      slabMesh.position.set(centerX, currentElevation, centerZ);
+      slabMesh.castShadow = true;
+      slabMesh.receiveShadow = true;
+      facadeGroup.add(slabMesh);
 
-          const globalX = w.startX + ux * (ap.startOffset + ap.width / 2);
-          const globalZ = w.startZ + uz * (ap.startOffset + ap.width / 2);
-          const globalY = currentElevation + ap.elevation + ap.height / 2;
+      // Add Cantilevered Glass Balconies on South & North Facades for residential floors
+      if (fIdx > 0) {
+        // South Balcony Deck
+        const balcDeckGeo = new THREE.BoxGeometry(width * 0.65, 0.15, 2.0);
+        const balcDeck = new THREE.Mesh(balcDeckGeo, slabEdgeMat);
+        balcDeck.position.set(centerX, currentElevation + 0.08, maxZ + 1.0);
+        balcDeck.castShadow = true;
+        balcDeck.receiveShadow = true;
+        facadeGroup.add(balcDeck);
 
-          // Determine which facade it fits closest to
-          const distW = Math.abs(globalX - minX);
-          const distE = Math.abs(globalX - maxX);
-          const distN = Math.abs(globalZ - minZ);
-          const distS = Math.abs(globalZ - maxZ);
+        // Balcony Glass Safety Railing
+        const railGlassGeo = new THREE.BoxGeometry(width * 0.65, 1.05, 0.03);
+        const railGlass = new THREE.Mesh(railGlassGeo, railingGlassMat);
+        railGlass.position.set(centerX, currentElevation + 0.65, maxZ + 1.98);
+        facadeGroup.add(railGlass);
 
-          const minDist = Math.min(distW, distE, distN, distS);
-
-          let windowX = globalX;
-          let windowZ = globalZ;
-          let rotY = 0;
-
-          const recess = 0.03;
-
-          if (minDist === distW) {
-            windowX = minX + recess;
-            rotY = -Math.PI / 2;
-          } else if (minDist === distE) {
-            windowX = maxX - recess;
-            rotY = Math.PI / 2;
-          } else if (minDist === distN) {
-            windowZ = minZ + recess;
-            rotY = Math.PI;
-          } else {
-            windowZ = maxZ - recess;
-            rotY = 0;
-          }
-
-          // Find which room this window belongs to
-          const rooms = structureJson.rooms || [];
-          const room = rooms.find((r: any) => {
-            const pad = 0.35; // tolerance
-            return globalX >= r.x - pad && globalX <= r.x + r.width + pad &&
-                   globalZ >= r.z - pad && globalZ <= r.z + r.depth + pad;
-          });
-
-          // Create glass plane
-          const glassGeo = new THREE.PlaneGeometry(ap.width, ap.height);
-          const glassMesh = new THREE.Mesh(glassGeo, windowGlassMat);
-          glassMesh.position.set(windowX, globalY, windowZ);
-          glassMesh.rotation.y = rotY;
-          glassMesh.userData = {
-            type: 'windowGlass',
-            flatId: room?.flatId || room?.id,
-            floorId: floor.id
-          };
-          group.add(glassMesh);
-
-          // Add frame box outlines
-          const frameWidth = 0.04;
-          const frameDepth = 0.04;
-
-          const frameGroup = new THREE.Group();
-          frameGroup.position.set(windowX, globalY, windowZ);
-          frameGroup.rotation.y = rotY;
-
-          // Top frame
-          const topGeo = new THREE.BoxGeometry(ap.width + frameWidth, frameWidth, frameDepth);
-          const topMesh = new THREE.Mesh(topGeo, frameMat);
-          topMesh.position.set(0, ap.height / 2, 0);
-          frameGroup.add(topMesh);
-
-          // Bottom frame
-          const bottomMesh = new THREE.Mesh(topGeo, frameMat);
-          bottomMesh.position.set(0, -ap.height / 2, 0);
-          frameGroup.add(bottomMesh);
-
-          // Left frame
-          const leftGeo = new THREE.BoxGeometry(frameWidth, ap.height + frameWidth, frameDepth);
-          const leftMesh = new THREE.Mesh(leftGeo, frameMat);
-          leftMesh.position.set(-ap.width / 2, 0, 0);
-          frameGroup.add(leftMesh);
-
-          // Right frame
-          const rightMesh = new THREE.Mesh(leftGeo, frameMat);
-          rightMesh.position.set(ap.width / 2, 0, 0);
-          frameGroup.add(rightMesh);
-
-          group.add(frameGroup);
-        });
-
-        // 5. Generate Protruding Balconies
-        const rooms = structureJson.rooms || [];
-        rooms.forEach((r: any) => {
-          if (!r.name.toLowerCase().includes('balcony')) return;
-
-          const width = r.width || 2.0;
-          const depth = r.depth || 1.2;
-          const cx = r.node?.x ?? (r.x + width / 2);
-          const cz = r.node?.z ?? (r.z + depth / 2);
-          const by = currentElevation;
-
-          // Protruding floor slab box
-          const balSlabGeo = new THREE.BoxGeometry(width, 0.08, depth);
-          const balSlabMesh = new THREE.Mesh(balSlabGeo, bandMat);
-          balSlabMesh.position.set(cx, by + 0.04, cz);
-          balSlabMesh.receiveShadow = true;
-          balSlabMesh.castShadow = true;
-          balSlabMesh.userData = {
-            type: 'balconySlab',
-            flatId: r.flatId || r.id,
-            floorId: floor.id
-          };
-          group.add(balSlabMesh);
-
-          // Glass Railings (North, South, East, West edges where exposed)
-          // Since the balcony extends beyond the building core, add a 1m tall glass railing around exposed edges
-          const distW = Math.abs(cx - minX);
-          const distE = Math.abs(cx - maxX);
-          const distN = Math.abs(cz - minZ);
-          const distS = Math.abs(cz - maxZ);
-
-          const closestEdge = Math.min(distW, distE, distN, distS);
-
-          // Render front and side glass panels
-          const glassRailingMat = new THREE.MeshStandardMaterial({
-            color: 0x88b4d4,
-            transparent: true,
-            opacity: 0.35,
-            roughness: 0.1,
-            metalness: 0.9
-          });
-          const postMat = frameMat;
-
-          // Render a simple wrapping glass barrier
-          const railHeight = 1.0;
-          const railThickness = 0.02;
-
-          // Determine balcony orientation and render railing shape
-          if (closestEdge === distS) {
-            // South-facing balcony: Railings on West, South, East
-            // South edge
-            const sGeo = new THREE.BoxGeometry(width, railHeight, railThickness);
-            const sMesh = new THREE.Mesh(sGeo, glassRailingMat);
-            sMesh.position.set(cx, by + railHeight / 2, cz + depth / 2);
-            group.add(sMesh);
-
-            // West edge
-            const wGeo = new THREE.BoxGeometry(railThickness, railHeight, depth);
-            const wMesh = new THREE.Mesh(wGeo, glassRailingMat);
-            wMesh.position.set(cx - width / 2, by + railHeight / 2, cz);
-            group.add(wMesh);
-
-            // East edge
-            const eMesh = new THREE.Mesh(wGeo, glassRailingMat);
-            eMesh.position.set(cx + width / 2, by + railHeight / 2, cz);
-            group.add(eMesh);
-          } else if (closestEdge === distN) {
-            // North edge
-            const nGeo = new THREE.BoxGeometry(width, railHeight, railThickness);
-            const nMesh = new THREE.Mesh(nGeo, glassRailingMat);
-            nMesh.position.set(cx, by + railHeight / 2, cz - depth / 2);
-            group.add(nMesh);
-
-            // West edge
-            const wGeo = new THREE.BoxGeometry(railThickness, railHeight, depth);
-            const wMesh = new THREE.Mesh(wGeo, glassRailingMat);
-            wMesh.position.set(cx - width / 2, by + railHeight / 2, cz);
-            group.add(wMesh);
-
-            // East edge
-            const eMesh = new THREE.Mesh(wGeo, glassRailingMat);
-            eMesh.position.set(cx + width / 2, by + railHeight / 2, cz);
-            group.add(eMesh);
-          } else if (closestEdge === distW) {
-            // West edge
-            const wGeo = new THREE.BoxGeometry(railThickness, railHeight, depth);
-            const wMesh = new THREE.Mesh(wGeo, glassRailingMat);
-            wMesh.position.set(cx - width / 2, by + railHeight / 2, cz);
-            group.add(wMesh);
-
-            // North edge
-            const nGeo = new THREE.BoxGeometry(width, railHeight, railThickness);
-            const nMesh = new THREE.Mesh(nGeo, glassRailingMat);
-            nMesh.position.set(cx, by + railHeight / 2, cz - depth / 2);
-            group.add(nMesh);
-
-            // South edge
-            const sMesh = new THREE.Mesh(nGeo, glassRailingMat);
-            sMesh.position.set(cx, by + railHeight / 2, cz + depth / 2);
-            group.add(sMesh);
-          } else {
-            // East edge
-            const eGeo = new THREE.BoxGeometry(railThickness, railHeight, depth);
-            const eMesh = new THREE.Mesh(eGeo, glassRailingMat);
-            eMesh.position.set(cx + width / 2, by + railHeight / 2, cz);
-            group.add(eMesh);
-
-            // North edge
-            const nGeo = new THREE.BoxGeometry(width, railHeight, railThickness);
-            const nMesh = new THREE.Mesh(nGeo, glassRailingMat);
-            nMesh.position.set(cx, by + railHeight / 2, cz - depth / 2);
-            group.add(nMesh);
-
-            // South edge
-            const sMesh = new THREE.Mesh(nGeo, glassRailingMat);
-            sMesh.position.set(cx, by + railHeight / 2, cz + depth / 2);
-            group.add(sMesh);
-          }
-        });
+        // Balcony Top Handrail
+        const handrailGeo = new THREE.BoxGeometry(width * 0.66, 0.06, 0.08);
+        const handrail = new THREE.Mesh(handrailGeo, frameMullionMat);
+        handrail.position.set(centerX, currentElevation + 1.18, maxZ + 1.98);
+        facadeGroup.add(handrail);
       }
-      currentElevation += h + slabThickness;
+
+      currentElevation += floorHeight + slabThickness;
     });
+
+    // Roof Slab & Parapet
+    const roofSlab = new THREE.Mesh(
+      new THREE.BoxGeometry(width + 0.8, slabThickness, depth + 0.8),
+      slabEdgeMat
+    );
+    roofSlab.position.set(centerX, currentElevation, centerZ);
+    roofSlab.castShadow = true;
+    roofSlab.receiveShadow = true;
+    facadeGroup.add(roofSlab);
+
+    // =========================================================================
+    // 3. ROOFTOP SKY LOUNGE & TIMBER PERGOLA
+    // =========================================================================
+    const rooftopGroup = new THREE.Group();
+    rooftopGroup.position.set(centerX, currentElevation + slabThickness / 2, centerZ);
+
+    // Rooftop Glass Perimeter Parapet
+    const parapetHeight = 1.2;
+    [
+      [0, parapetHeight / 2, -depth / 2 - 0.2, width + 0.4, 0.04],
+      [0, parapetHeight / 2, depth / 2 + 0.2, width + 0.4, 0.04],
+      [-width / 2 - 0.2, parapetHeight / 2, 0, 0.04, depth + 0.4],
+      [width / 2 + 0.2, parapetHeight / 2, 0, 0.04, depth + 0.4],
+    ].forEach(([px, py, pz, pw, pd]) => {
+      const pg = new THREE.Mesh(new THREE.BoxGeometry(pw, parapetHeight, pd), railingGlassMat);
+      pg.position.set(px, py, pz);
+      rooftopGroup.add(pg);
+    });
+
+    // Rooftop Timber Pergola Louvers
+    const woodLouverMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.65 });
+    const pergolaWidth = width * 0.5;
+    const pergolaDepth = depth * 0.5;
+
+    // 4 Pergola Columns
+    [
+      [-pergolaWidth / 2, -pergolaDepth / 2],
+      [pergolaWidth / 2, -pergolaDepth / 2],
+      [-pergolaWidth / 2, pergolaDepth / 2],
+      [pergolaWidth / 2, pergolaDepth / 2],
+    ].forEach(([cx, cz]) => {
+      const col = new THREE.Mesh(new THREE.BoxGeometry(0.18, 3.0, 0.18), frameMullionMat);
+      col.position.set(cx, 1.5, cz);
+      col.castShadow = true;
+      rooftopGroup.add(col);
+    });
+
+    // Pergola Slats
+    for (let s = 0; s < 12; s++) {
+      const slat = new THREE.Mesh(new THREE.BoxGeometry(pergolaWidth + 0.4, 0.08, 0.12), woodLouverMat);
+      slat.position.set(0, 3.05, -pergolaDepth / 2 + (s / 11) * pergolaDepth);
+      slat.castShadow = true;
+      rooftopGroup.add(slat);
+    }
+
+    facadeGroup.add(rooftopGroup);
+
+    // =========================================================================
+    // 4. GRAND GROUND FLOOR ENTRANCE CANOPY & STOREFRONT
+    // =========================================================================
+    const entranceGroup = new THREE.Group();
+    entranceGroup.position.set(centerX, 0, maxZ + 0.2);
+
+    // Cantilevered Architectural Canopy
+    const canopyWidth = 9.0;
+    const canopyDepth = 4.5;
+    const canopyHeight = 0.25;
+    const canopy = new THREE.Mesh(new THREE.BoxGeometry(canopyWidth, canopyHeight, canopyDepth), frameMullionMat);
+    canopy.position.set(0, 3.6, canopyDepth / 2);
+    canopy.castShadow = true;
+    entranceGroup.add(canopy);
+
+    // Canopy Under-ceiling Warm LED Spotlights
+    const spotGlowMat = new THREE.MeshBasicMaterial({ color: 0xffedd5 });
+    [-2.5, 0, 2.5].forEach((sx) => {
+      const spot = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.02, 12), spotGlowMat);
+      spot.position.set(sx, 3.47, canopyDepth / 2);
+      entranceGroup.add(spot);
+    });
+
+    // Double-Height Glass Storefront Doors
+    const entryGlass = new THREE.Mesh(new THREE.BoxGeometry(canopyWidth - 0.4, 3.4, 0.04), curtainGlassMat);
+    entryGlass.position.set(0, 1.7, 0.05);
+    entranceGroup.add(entryGlass);
+
+    facadeGroup.add(entranceGroup);
+
+    group.add(facadeGroup);
 
     return group;
   }

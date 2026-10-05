@@ -1,5 +1,7 @@
 'use client';
 
+import { defaultLayoutData } from './default-layout';
+import { API_URL } from '@/config/api';
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { SceneCompiler } from './scene-compiler/SceneCompiler';
@@ -10,6 +12,10 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { MapControls } from 'three/examples/jsm/controls/MapControls.js';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 import { gsap } from 'gsap';
+import { Surface } from './property-viewer/Surface';
+import { SceneIndex, disposeTree, visible } from './property-viewer/model';
+import { TextureGenerator } from './scene-compiler/TextureGenerator';
+import PropertyExperience from './property-viewer/PropertyExperience';
 import { Icon } from '@iconify/react';
 
 // ---------------------------------------------------------------------------
@@ -178,6 +184,73 @@ const buildFurnitureMesh = (THREE: any, type: string, color: string) => {
     const foliage = new THREE.Mesh(leafGeo, leafMat);
     foliage.position.y = 0.7;
     furnGroup.add(foliage);
+  } else if (type === 'elevator' || type === 'lift') {
+    // Twin Brushed Stainless Steel High-Speed Elevator Doors
+    const frameGeo = new THREE.BoxGeometry(2.2, 2.5, 0.12);
+    const frameMat = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.3, metalness: 0.8 });
+    const frame = new THREE.Mesh(frameGeo, frameMat);
+    frame.position.set(0, 1.25, 0);
+    furnGroup.add(frame);
+
+    const doorGeo = new THREE.BoxGeometry(0.9, 2.2, 0.05);
+    const doorMat = new THREE.MeshStandardMaterial({ color: '#cbd5e1', roughness: 0.2, metalness: 0.9 });
+    const doorL = new THREE.Mesh(doorGeo, doorMat);
+    doorL.position.set(-0.48, 1.12, 0.04);
+    const doorR = new THREE.Mesh(doorGeo, doorMat);
+    doorR.position.set(0.48, 1.12, 0.04);
+    furnGroup.add(doorL, doorR);
+
+    // Glowing Cyan LED Floor Indicator
+    const dispGeo = new THREE.BoxGeometry(0.6, 0.2, 0.04);
+    const dispMat = new THREE.MeshBasicMaterial({ color: 0x00f5d4 });
+    const disp = new THREE.Mesh(dispGeo, dispMat);
+    disp.position.set(0, 2.34, 0.07);
+    furnGroup.add(disp);
+
+    // Call Buttons
+    const callBox = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.25, 0.03), frameMat);
+    callBox.position.set(1.05, 1.2, 0.06);
+    const btnMat = new THREE.MeshBasicMaterial({ color: 0x00f5d4 });
+    const btn1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.02, 8), btnMat);
+    btn1.rotation.x = Math.PI / 2;
+    btn1.position.set(1.05, 1.25, 0.08);
+    const btn2 = btn1.clone();
+    btn2.position.y = 1.15;
+    furnGroup.add(callBox, btn1, btn2);
+  } else if (type === 'stairs' || type === 'staircase') {
+    // 3D Architectural Concrete/Marble Staircase flight
+    const numSteps = 8;
+    const stepW = 1.4;
+    const stepD = 0.26;
+    const stepH = 0.18;
+    const stepMat = new THREE.MeshStandardMaterial({ color: '#cbd5e1', roughness: 0.5 });
+    const nosingMat = new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.3 });
+
+    for (let i = 0; i < numSteps; i++) {
+      const step = new THREE.Mesh(new THREE.BoxGeometry(stepW, stepH * (i + 1), stepD), stepMat);
+      step.position.set(0, (stepH * (i + 1)) / 2, i * stepD);
+      furnGroup.add(step);
+
+      const nosing = new THREE.Mesh(new THREE.BoxGeometry(stepW + 0.02, 0.02, 0.04), nosingMat);
+      nosing.position.set(0, (i + 1) * stepH, (i + 0.45) * stepD);
+      furnGroup.add(nosing);
+    }
+
+    // Handrail Tubes
+    const railLen = Math.hypot(numSteps * stepD, numSteps * stepH);
+    const railAngle = Math.atan2(numSteps * stepH, numSteps * stepD);
+    const railMat = new THREE.MeshStandardMaterial({ color: '#0f172a', metalness: 0.9, roughness: 0.2 });
+    [-stepW / 2 + 0.05, stepW / 2 - 0.05].forEach(rx => {
+      const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, railLen, 8), railMat);
+      rail.position.set(rx, (numSteps * stepH) / 2 + 0.85, (numSteps * stepD) / 2);
+      rail.rotation.x = -railAngle + Math.PI / 2;
+      furnGroup.add(rail);
+    });
+
+    // Glowing Green Emergency Exit Sign
+    const exitSign = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.04), new THREE.MeshBasicMaterial({ color: 0x22c55e }));
+    exitSign.position.set(0, 2.3, 0);
+    furnGroup.add(exitSign);
   } else {
     const boxGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
     const boxMat = new THREE.MeshStandardMaterial({ color: '#999999' });
@@ -189,60 +262,7 @@ const buildFurnitureMesh = (THREE: any, type: string, color: string) => {
   return furnGroup;
 };
 
-const defaultLayoutData = {
-  rooms: [
-    { id: 'room-lobby-2bhk', name: 'Lobby Corridor', x: -8, z: 4, width: 16, depth: 2, color: '#374151', node: { x: 0, z: 5.0 } },
-    { id: 'room-living-a-2bhk', name: 'Flat A - Living Room', x: -8, z: -1, width: 8, depth: 5, color: '#f5efe6', node: { x: -4, z: 1.5 } },
-    { id: 'room-kitchen-a-2bhk', name: 'Flat A - Kitchen', x: -8, z: -5, width: 4, depth: 4, color: '#f4ece1', node: { x: -6, z: -3.0 } },
-    { id: 'room-bedroom-a-2bhk', name: 'Flat A - Bedroom', x: -4, z: -5, width: 4, depth: 4, color: '#ece8f2', node: { x: -2, z: -3.0 } },
-    { id: 'room-balcony-a-2bhk', name: 'Flat A - Balcony', x: -4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: -2, z: -5.75 } },
-    { id: 'room-living-b-2bhk', name: 'Flat B - Living Room', x: 0, z: -1, width: 8, depth: 5, color: '#f5efe6', node: { x: 4, z: 1.5 } },
-    { id: 'room-kitchen-b-2bhk', name: 'Flat B - Kitchen', x: 0, z: -5, width: 4, depth: 4, color: '#f4ece1', node: { x: 2, z: -3.0 } },
-    { id: 'room-bedroom-b-2bhk', name: 'Flat B - Bedroom', x: 4, z: -5, width: 4, depth: 4, color: '#ece8f2', node: { x: 6, z: -3.0 } },
-    { id: 'room-balcony-b-2bhk', name: 'Flat B - Balcony', x: 4, z: -6.5, width: 4, depth: 1.5, color: '#faf5ef', node: { x: 6, z: -5.75 } }
-  ],
-  walls: [
-    // Outer boundaries
-    { id: 'w-2bhk-out-top', startX: -8, startZ: -5, endX: 8, endZ: -5, thickness: 0.2, height: 3.0 },
-    { id: 'w-2bhk-out-right', startX: 8, startZ: -5, endX: 8, endZ: 6, thickness: 0.2, height: 3.0 },
-    { id: 'w-2bhk-out-bottom', startX: 8, startZ: 6, endX: -8, endZ: 6, thickness: 0.2, height: 3.0 },
-    { id: 'w-2bhk-out-left', startX: -8, startZ: 6, endX: -8, endZ: -5, thickness: 0.2, height: 3.0 },
-    // Internal partitions
-    { id: 'w-2bhk-int-mid', startX: 0, startZ: -5, endX: 0, endZ: 4, thickness: 0.15, height: 3.0 }, // Mid wall separating Flat A/B
-    { id: 'w-2bhk-int-lobby', startX: -8, startZ: 4, endX: 8, endZ: 4, thickness: 0.15, height: 3.0 }, // Corridor separator
-    { id: 'w-2bhk-int-flat-a-horiz', startX: -8, startZ: -1, endX: 0, endZ: -1, thickness: 0.15, height: 3.0 },
-    { id: 'w-2bhk-int-flat-b-horiz', startX: 0, startZ: -1, endX: 8, endZ: -1, thickness: 0.15, height: 3.0 },
-    { id: 'w-2bhk-int-flat-a-vert', startX: -4, startZ: -5, endX: -4, endZ: -1, thickness: 0.15, height: 3.0 },
-    { id: 'w-2bhk-int-flat-b-vert', startX: 4, startZ: -5, endX: 4, endZ: -1, thickness: 0.15, height: 3.0 }
-  ],
-  apertures: [
-    // Entrance doors from Lobby Corridor (interactive swinging doors)
-    { id: 'ap-entrance-a-2bhk', wallId: 'w-2bhk-int-lobby', type: 'door', startOffset: 3.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-    { id: 'ap-entrance-b-2bhk', wallId: 'w-2bhk-int-lobby', type: 'door', startOffset: 11.5, width: 1.0, height: 2.1, elevation: 0.0, swing: -1 },
-    // Flat A Bedrooms/Kitchen
-    { id: 'ap-door-bedroom-a-2bhk', wallId: 'w-2bhk-int-flat-a-horiz', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-    { id: 'ap-arch-kitchen-a-2bhk', wallId: 'w-2bhk-int-flat-a-horiz', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 }, // Open archway
-    // Flat B Bedrooms/Kitchen
-    { id: 'ap-door-bedroom-b-2bhk', wallId: 'w-2bhk-int-flat-b-horiz', type: 'door', startOffset: 5.5, width: 0.9, height: 2.1, elevation: 0.0, swing: -1 },
-    { id: 'ap-arch-kitchen-b-2bhk', wallId: 'w-2bhk-int-flat-b-horiz', type: 'arch', startOffset: 1.5, width: 1.2, height: 2.1, elevation: 0.0 }, // Open archway
-    // Balcony Doors
-    { id: 'ap-balcony-door-a-2bhk', wallId: 'w-2bhk-out-top', type: 'door', startOffset: 5.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
-    { id: 'ap-balcony-door-b-2bhk', wallId: 'w-2bhk-out-top', type: 'door', startOffset: 13.5, width: 1.0, height: 2.1, elevation: 0.0, swing: 1 },
-    // Windows
-    { id: 'ap-win-kitchen-a-2bhk', wallId: 'w-2bhk-out-top', type: 'window', startOffset: 1.5, width: 1.2, height: 1.2, elevation: 0.9 },
-    { id: 'ap-win-kitchen-b-2bhk', wallId: 'w-2bhk-out-top', type: 'window', startOffset: 9.5, width: 1.2, height: 1.2, elevation: 0.9 },
-    { id: 'ap-win-living-a-2bhk', wallId: 'w-2bhk-out-left', type: 'window', startOffset: 4.0, width: 1.5, height: 1.2, elevation: 0.9 },
-    { id: 'ap-win-living-b-2bhk', wallId: 'w-2bhk-out-right', type: 'window', startOffset: 6.0, width: 1.5, height: 1.2, elevation: 0.9 }
-  ],
-  furniture: [
-    { id: 'f-sofa-a-2bhk', type: 'sofa', roomId: 'room-living-a-2bhk', x: -4.0, z: 1.5, rotation: 0 },
-    { id: 'f-table-a-2bhk', type: 'table', roomId: 'room-living-a-2bhk', x: -4.0, z: 2.5, rotation: 0 },
-    { id: 'f-bed-a-2bhk', type: 'bed', roomId: 'room-bedroom-a-2bhk', x: -2.0, z: -3.5, rotation: 90 },
-    { id: 'f-sofa-b-2bhk', type: 'sofa', roomId: 'room-living-b-2bhk', x: 4.0, z: 1.5, rotation: 0 },
-    { id: 'f-table-b-2bhk', type: 'table', roomId: 'room-living-b-2bhk', x: 4.0, z: 2.5, rotation: 0 },
-    { id: 'f-bed-b-2bhk', type: 'bed', roomId: 'room-bedroom-b-2bhk', x: 6.0, z: -3.5, rotation: 90 }
-  ]
-};
+export { defaultLayoutData } from './default-layout';
 
 function buildFloorPlanMesh(
   layout: any,
@@ -883,7 +903,121 @@ const createRoomLabelSprite = (text: string): THREE.Sprite => {
   return sprite;
 };
 
-export default function BuildingViewer({
+const createMatterportDimensionBadge = (
+  room: { name: string; width: number; depth: number; areaSqFt?: number },
+  isImperial: boolean
+): THREE.Sprite => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 384;
+  canvas.height = 140;
+  const ctx = canvas.getContext('2d')!;
+
+  const wM = room.width;
+  const dM = room.depth;
+  const areaSqFt = room.areaSqFt || Math.round(wM * dM * 10.7639);
+  const areaM2 = (wM * dM).toFixed(1);
+
+  let dimStr = '';
+  let areaStr = '';
+  if (isImperial) {
+    const wFt = Math.floor(wM * 3.28084);
+    const wIn = Math.round((wM * 3.28084 - wFt) * 12);
+    const dFt = Math.floor(dM * 3.28084);
+    const dIn = Math.round((dM * 3.28084 - dFt) * 12);
+    dimStr = `${wFt}'${wIn}" × ${dFt}'${dIn}"`;
+    areaStr = `${areaSqFt} sq. ft.`;
+  } else {
+    dimStr = `${wM.toFixed(1)}m × ${dM.toFixed(1)}m`;
+    areaStr = `${areaM2} m² (${areaSqFt} sq ft)`;
+  }
+
+  // Modern Matterport glass pill badge
+  ctx.fillStyle = 'rgba(12, 15, 22, 0.90)';
+  if (ctx.roundRect) {
+    ctx.roundRect(4, 4, 376, 132, 18);
+  } else {
+    ctx.rect(4, 4, 376, 132);
+  }
+  ctx.fill();
+
+  ctx.strokeStyle = '#00f5d4';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Room title
+  ctx.fillStyle = '#00f5d4';
+  ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(room.name.toUpperCase(), 192, 18);
+
+  // Dimensions
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
+  ctx.fillText(dimStr, 192, 54);
+
+  // Area
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '600 18px system-ui, -apple-system, sans-serif';
+  ctx.fillText(areaStr, 192, 96);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(3.2, 1.17, 1.0);
+  sprite.name = `dimBadge_${room.name}`;
+  return sprite;
+};
+
+const createMeasureTagSprite = (text: string): THREE.Sprite => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = 'rgba(0, 245, 212, 0.95)';
+  if (ctx.roundRect) ctx.roundRect(2, 2, 252, 60, 14);
+  else ctx.rect(2, 2, 252, 60);
+  ctx.fill();
+
+  ctx.fillStyle = '#0c0f16';
+  ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 32);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(1.8, 0.45, 1.0);
+  return sprite;
+};
+
+const getRoomIcon = (name: string): string => {
+  const n = name.toLowerCase();
+  if (n.includes('elevator') || n.includes('lift')) return 'solar:double-alt-arrow-up-bold-duotone';
+  if (n.includes('stair') || n.includes('fire')) return 'solar:stairs-bold-duotone';
+  if (n.includes('lobby') || n.includes('corridor') || n.includes('reception')) return 'solar:city-bold-duotone';
+  if (n.includes('living') || n.includes('lounge')) return 'solar:sofa-bold-duotone';
+  if (n.includes('bed') || n.includes('suite')) return 'solar:bed-bold-duotone';
+  if (n.includes('kitchen')) return 'solar:chef-hat-heart-bold-duotone';
+  if (n.includes('dining')) return 'solar:cup-bold-duotone';
+  if (n.includes('bath') || n.includes('powder')) return 'solar:bath-bold-duotone';
+  if (n.includes('balcony') || n.includes('terrace') || n.includes('deck')) return 'solar:sun-fog-bold-duotone';
+  if (n.includes('foyer') || n.includes('entry')) return 'solar:door-line-duotone';
+  if (n.includes('study') || n.includes('office')) return 'solar:notebook-bold-duotone';
+  return 'solar:home-smile-bold-duotone';
+};
+
+
+export default function BuildingViewer(props: BuildingViewerProps) {
+  const imported = React.useMemo(() => props.initialModels?.filter(m => /\.(glb|gltf)(?:[?#]|$)/i.test(m.modelUrl)), [props.initialModels]);
+  if (imported?.length) return <PropertyExperience models={imported} layout={props.layoutData} projectId={props.projectId} navigation={props} />;
+  return <ProceduralBuildingViewer {...props} />;
+}
+
+function ProceduralBuildingViewer({
   activeFloor,
   setActiveFloor,
   viewMode,
@@ -903,13 +1037,29 @@ export default function BuildingViewer({
   const [localLayout, setLocalLayout] = useState<any>(initialLayoutData || defaultLayoutData);
   const [layoutData, setLayoutData] = useState<any>(null); // External data from fetch
 
-  // 2. Refs
+  // Ref to container div
   const containerRef = useRef<HTMLDivElement>(null);
   const minimapCanvasRef = useRef<HTMLCanvasElement>(null);
   const tourTweenRef = useRef<any>(null);
   const tourTimeoutRef = useRef<any>(null);
   const tourAudioRef = useRef<HTMLAudioElement | null>(null);
   const tourAutoplayStartedRef = useRef(false);
+
+  // Matterport Spatial Engine States
+  const [matterportMode, setMatterportMode] = useState<'inside' | 'dollhouse' | 'floorplan'>('inside');
+  const [showDimensions, setShowDimensions] = useState(true);
+  const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric');
+  const [isMeasuring, setIsMeasuring] = useState(false);
+  const [measureCount, setMeasureCount] = useState(0);
+  const [liveMeasureText, setLiveMeasureText] = useState<string | null>(null);
+
+  // Matterport Refs
+  const dimensionGroupRef = useRef<THREE.Group | null>(null);
+  const measurementsGroupRef = useRef<THREE.Group>(new THREE.Group());
+  const activeMeasureStartRef = useRef<THREE.Vector3 | null>(null);
+  const liveMeasureLineRef = useRef<THREE.Line | null>(null);
+  const liveMeasureBadgeRef = useRef<THREE.Sprite | null>(null);
+  const startPinRef = useRef<THREE.Mesh | null>(null);
 
   // Phase 6 Inventory and Filtering States
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -1030,7 +1180,7 @@ export default function BuildingViewer({
   useEffect(() => {
     if (!selectedTower || !tenantId) return;
     const fetchFlats = () => {
-      fetch(`http://localhost:3001/inventory/flats?towerId=${selectedTower.id}`, {
+      fetch(`${API_URL}/inventory/flats?towerId=${selectedTower.id}`, {
         headers: { 'x-tenant-id': tenantId }
       })
         .then(res => res.json())
@@ -1095,7 +1245,7 @@ export default function BuildingViewer({
     const hasPriceFilter = filters.priceMin > 0 || filters.priceMax < 100000000;
     const filtersActive = hasBhkFilter || hasStatusFilter || hasFacingFilter || hasFloorFilter || hasPriceFilter;
 
-    scene.traverse((child) => {
+    Array.from(sceneIndexRef.current?.byFlat.values() || []).flat().forEach((child) => {
       if (child instanceof THREE.Mesh) {
         const userData = child.userData;
         const type = userData?.type;
@@ -1110,14 +1260,16 @@ export default function BuildingViewer({
             }
 
             if (!child.userData.hasClonedMaterial) {
-              child.material = child.material.clone();
+              child.userData.inventoryOriginalMaterial = child.material;
+              const cloneOwned = (m: THREE.Material) => { const copy = m.clone(); copy.userData.shared = false; return copy; };
+              child.material = Array.isArray(child.material) ? child.material.map(cloneOwned) : cloneOwned(child.material);
               child.userData.hasClonedMaterial = true;
               child.userData.originalColor = (child.material as any).color?.clone();
               child.userData.originalOpacity = (child.material as any).opacity;
               child.userData.originalTransparent = (child.material as any).transparent;
             }
 
-            const mat = child.material as any;
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
             let colorHex = '#6b7280';
             if (flat.status === 'AVAILABLE') colorHex = '#22c55e';
             else if (flat.status === 'HOLD') colorHex = '#f59e0b';
@@ -1125,6 +1277,7 @@ export default function BuildingViewer({
 
             const targetColor = new THREE.Color(colorHex);
 
+            mats.forEach((mat: any) => {
             if (type === 'windowGlass') {
               mat.color.copy(targetColor);
               mat.transparent = true;
@@ -1138,13 +1291,14 @@ export default function BuildingViewer({
               mat.transparent = true;
               mat.opacity = isHighlighted ? 0.35 : 0.1;
             }
+            });
           }
         }
       }
     });
 
     if (filtersActive) {
-      scene.traverse((child) => {
+      Array.from(sceneIndexRef.current?.byFlat.values() || []).flat().forEach((child) => {
         if (child instanceof THREE.Mesh && child.userData?.flatId) {
           const flat = flatsList.find(f => f.flatNumber === String(child.userData.flatId)) || getFlatDbInfo(String(child.userData.flatId), flatsList);
           if (flat && matchesFilter(flat)) {
@@ -1220,6 +1374,255 @@ export default function BuildingViewer({
     }
   };
 
+  // ── Matterport Spatial Engine Navigation ───────────────────────────
+  const switchMatterportMode = useCallback((newMode: 'inside' | 'dollhouse' | 'floorplan') => {
+    setMatterportMode(newMode);
+    let camera = cameraRef.current;
+    let controls = controlsRef.current;
+    const scene = sceneRef.current;
+    if (!camera || !controls || !scene) return;
+
+    let floorOffset = 0;
+    if (towerFloors && towerFloors.length > 0) {
+      const sorted = [...towerFloors].sort((a, b) => a.floorNumber - b.floorNumber);
+      for (const f of sorted) {
+        if (f.floorNumber === activeFloor) break;
+        floorOffset += (Number(f.floorHeight) || 3.0) + 0.25;
+      }
+    } else {
+      floorOffset = activeFloor * 3.2;
+    }
+
+    const activeF = towerFloors?.find(f => f.floorNumber === activeFloor);
+    const floorLayout = activeF?.structureJson || getLayoutForFloor(localLayout, activeFloor);
+    const rooms = floorLayout?.rooms || [];
+
+    // Calculate flat bounds
+    let minX = 0, maxX = 0, minZ = 0, maxZ = 0;
+    if (rooms.length > 0) {
+      minX = Math.min(...rooms.map((r: any) => r.x));
+      maxX = Math.max(...rooms.map((r: any) => r.x + r.width));
+      minZ = Math.min(...rooms.map((r: any) => r.z));
+      maxZ = Math.max(...rooms.map((r: any) => r.z + r.depth));
+    }
+    const centerX = (minX + maxX) / 2;
+    const centerZ = (minZ + maxZ) / 2;
+    const flatSpan = Math.max(maxX - minX, maxZ - minZ) || 20;
+
+    // Toggle ceiling visibility (ceilings hidden in dollhouse & floorplan cutaways!)
+    scene.traverse((child) => {
+      if (child.userData.exteriorContext) child.visible = newMode === 'inside';
+      if (child instanceof THREE.Mesh) {
+        if (child.userData?.type === 'ceiling' || child.name.includes('ceiling')) {
+          child.visible = (newMode === 'inside');
+        }
+      }
+    });
+
+    if (newMode === 'inside') {
+      setIs2DMode(false);
+      cameraRef.current = perspCameraRef.current as any;
+      controlsRef.current = orbitControlsRef.current as any;
+      camera = cameraRef.current!; controls = controlsRef.current;
+      if (mapControlsRef.current) mapControlsRef.current.enabled = false;
+      if (orbitControlsRef.current) orbitControlsRef.current.enabled = true;
+
+      const startRoom = rooms.find((r: any) => r.name === activeRoom) ||
+                        rooms.find((r: any) => r.name.includes('Living') || r.name.includes('Foyer') || r.name.includes('Lobby')) ||
+                        rooms[0];
+      const cx = startRoom?.node?.x ?? (startRoom ? startRoom.x + startRoom.width / 2 : centerX);
+      const cz = startRoom?.node?.z ?? (startRoom ? startRoom.z + startRoom.depth / 2 : centerZ);
+
+      if (perspCameraRef.current) {
+        perspCameraRef.current.fov = 68;
+        perspCameraRef.current.near = 0.05;
+        perspCameraRef.current.updateProjectionMatrix();
+      }
+
+      controls.enabled = false;
+      gsap.to(camera.position, {
+        x: cx,
+        y: 1.65 + floorOffset,
+        z: cz + 1.2,
+        duration: 1.2,
+        ease: 'power2.inOut',
+      });
+      gsap.to(controls.target, {
+        x: cx,
+        y: 1.65 + floorOffset,
+        z: cz - 0.5,
+        duration: 1.2,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          controls.enabled = true;
+          controls.enableZoom = true;
+          controls.enablePan = true;
+          controls.minDistance = 0.05;
+          controls.maxDistance = 25;
+        },
+      });
+    } else if (newMode === 'dollhouse') {
+      setIs2DMode(false);
+      cameraRef.current = perspCameraRef.current as any;
+      controlsRef.current = orbitControlsRef.current as any;
+      camera = cameraRef.current!; controls = controlsRef.current;
+      if (mapControlsRef.current) mapControlsRef.current.enabled = false;
+      if (orbitControlsRef.current) orbitControlsRef.current.enabled = true;
+
+      if (perspCameraRef.current) {
+        perspCameraRef.current.fov = 48;
+        perspCameraRef.current.near = 0.1;
+        perspCameraRef.current.updateProjectionMatrix();
+      }
+
+      const camDist = flatSpan * 1.1;
+      controls.enabled = false;
+      gsap.to(camera.position, {
+        x: centerX + camDist * 0.7,
+        y: floorOffset + camDist * 0.75,
+        z: centerZ + camDist * 0.8,
+        duration: 1.4,
+        ease: 'power2.inOut',
+      });
+      gsap.to(controls.target, {
+        x: centerX,
+        y: floorOffset + 0.8,
+        z: centerZ,
+        duration: 1.4,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          controls.enabled = true;
+          controls.enableZoom = true;
+          controls.enablePan = true;
+          controls.minDistance = 2.0;
+          controls.maxDistance = 80;
+        },
+      });
+    } else if (newMode === 'floorplan') {
+      setIs2DMode(true);
+      cameraRef.current = orthoCameraRef.current as any;
+      controlsRef.current = mapControlsRef.current as any;
+      if (orbitControlsRef.current) orbitControlsRef.current.enabled = false;
+      if (mapControlsRef.current) mapControlsRef.current.enabled = true;
+
+      if (orthoCameraRef.current && mapControlsRef.current) {
+        orthoCameraRef.current.position.set(centerX, floorOffset + 60, centerZ);
+        orthoCameraRef.current.lookAt(centerX, floorOffset, centerZ);
+        mapControlsRef.current.target.set(centerX, floorOffset, centerZ);
+        mapControlsRef.current.update();
+      }
+    }
+  }, [activeFloor, activeRoom, towerFloors, localLayout]);
+
+  const handleJumpToRoom = (r: any) => {
+    setActiveRoom(r.name);
+    if (matterportMode !== 'inside') {
+      switchMatterportMode('inside');
+    }
+
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    if (!camera || !controls) return;
+
+    let floorOffset = 0;
+    if (towerFloors && towerFloors.length > 0) {
+      const sorted = [...towerFloors].sort((a, b) => a.floorNumber - b.floorNumber);
+      for (const f of sorted) {
+        if (f.floorNumber === activeFloor) break;
+        floorOffset += (Number(f.floorHeight) || 3.0) + 0.25;
+      }
+    } else {
+      floorOffset = activeFloor * 3.2;
+    }
+
+    const cx = r.node?.x ?? (r.x + r.width / 2);
+    const cz = r.node?.z ?? (r.z + r.depth / 2);
+
+    controls.enabled = false;
+    gsap.to(camera.position, {
+      x: cx,
+      y: 1.65 + floorOffset,
+      z: cz + 1.0,
+      duration: 1.4,
+      ease: 'power2.inOut',
+    });
+    gsap.to(controls.target, {
+      x: cx,
+      y: 1.65 + floorOffset,
+      z: cz - 0.5,
+      duration: 1.4,
+      ease: 'power2.inOut',
+      onComplete: () => {
+        controls.enabled = true;
+        controls.enableZoom = true;
+        controls.enablePan = true;
+        controls.minDistance = 0.05;
+        controls.maxDistance = 25;
+      },
+    });
+  };
+
+  const clearMeasurements = () => {
+    if (measurementsGroupRef.current) {
+      while (measurementsGroupRef.current.children.length > 0) {
+        measurementsGroupRef.current.remove(measurementsGroupRef.current.children[0]);
+      }
+    }
+    if (liveMeasureLineRef.current && sceneRef.current) {
+      sceneRef.current.remove(liveMeasureLineRef.current);
+      liveMeasureLineRef.current = null;
+    }
+    if (liveMeasureBadgeRef.current && sceneRef.current) {
+      sceneRef.current.remove(liveMeasureBadgeRef.current);
+      liveMeasureBadgeRef.current = null;
+    }
+    if (startPinRef.current && sceneRef.current) {
+      sceneRef.current.remove(startPinRef.current);
+      startPinRef.current = null;
+    }
+    activeMeasureStartRef.current = null;
+    setLiveMeasureText(null);
+    setMeasureCount(0);
+  };
+
+  // Re-render dimension badges whenever unitSystem, activeFloor, or localLayout changes
+  useEffect(() => {
+    if (!dimensionGroupRef.current) return;
+    const activeF = towerFloors?.find(f => f.floorNumber === activeFloor);
+    const floorLayout = activeF?.structureJson || getLayoutForFloor(localLayout, activeFloor);
+    const rooms = floorLayout?.rooms || [];
+
+    while (dimensionGroupRef.current.children.length > 0) {
+      disposeTree(dimensionGroupRef.current.children[0]);
+    }
+
+    let floorOffset = 0;
+    if (towerFloors && towerFloors.length > 0) {
+      const sorted = [...towerFloors].sort((a, b) => a.floorNumber - b.floorNumber);
+      for (const f of sorted) {
+        if (f.floorNumber === activeFloor) break;
+        floorOffset += (Number(f.floorHeight) || 3.0) + 0.25;
+      }
+    } else {
+      floorOffset = activeFloor * 3.2;
+    }
+
+    rooms.forEach((r: any) => {
+      const cx = r.node?.x ?? (r.x + r.width / 2);
+      const cz = r.node?.z ?? (r.z + r.depth / 2);
+      const badge = createMatterportDimensionBadge(r, unitSystem === 'imperial');
+      badge.position.set(cx, 0.45 + floorOffset, cz);
+      dimensionGroupRef.current?.add(badge);
+    });
+  }, [unitSystem, activeFloor, towerFloors, localLayout]);
+
+  // Sync dimensions visibility
+  useEffect(() => {
+    if (dimensionGroupRef.current) {
+      dimensionGroupRef.current.visible = showDimensions;
+    }
+  }, [showDimensions]);
+
   const [showExteriorBuilding, setShowExteriorBuilding] = useState(true);
   const [projectData, setProjectData] = useState<any>(null);
 
@@ -1228,7 +1631,7 @@ export default function BuildingViewer({
     const activeProjId = projectId || activeModel?.projectId || selectedTower?.projectId || towersList[0]?.projectId;
     if (!activeProjId || !tenantId) return;
     
-    fetch(`http://localhost:3001/projects/${activeProjId}`, {
+    fetch(`${API_URL}/projects/${activeProjId}`, {
       headers: { 'x-tenant-id': tenantId },
     })
       .then(r => r.json())
@@ -1243,7 +1646,7 @@ export default function BuildingViewer({
     const activeProjId = projectId || activeModel?.projectId || selectedTower?.projectId || towersList[0]?.projectId;
     if (!activeProjId || !tenantId) return;
     
-    fetch(`http://localhost:3001/projects/${activeProjId}/amenities`, {
+    fetch(`${API_URL}/projects/${activeProjId}/amenities`, {
       headers: { 'x-tenant-id': tenantId },
     })
       .then(r => r.json())
@@ -1259,7 +1662,7 @@ export default function BuildingViewer({
   useEffect(() => {
     if (isEmbedded) return;
     if (!tenantId) return;
-    fetch(`http://localhost:3001/inventory/towers`, {
+    fetch(`${API_URL}/inventory/towers`, {
       headers: { 'x-tenant-id': tenantId },
     })
       .then(r => r.json())
@@ -1272,23 +1675,52 @@ export default function BuildingViewer({
       .catch(err => console.error('Error fetching towers:', err));
   }, [tenantId, isEmbedded]);
 
-  // Once a tower is selected, fetch its floors with their structures
+  // Once a tower is selected, fetch its floors with their structures and merge with rich template geometry
   useEffect(() => {
     if (isEmbedded) return;
     if (!tenantId || !selectedTower) return;
     setLoading(true);
-    fetch(`http://localhost:3001/inventory/towers/${selectedTower.id}/floors`, {
+    fetch(`${API_URL}/inventory/towers/${selectedTower.id}/floors`, {
       headers: { 'x-tenant-id': tenantId },
     })
       .then(r => r.json())
-      .then(data => {
+      .then(async (data) => {
+        const needsTemplate = !Array.isArray(data) || data.length < 10 || data.some((f: any) => !f.structureJson);
+        if (needsTemplate) {
+          try {
+            const tmplRes = await fetch(`${API_URL}/floorplans/tower-template`);
+            const tmplData = await tmplRes.json();
+            if (tmplData?.floors && Array.isArray(tmplData.floors)) {
+              const mergedFloors = tmplData.floors.map((tf: any) => {
+                const matchedDbFloor = Array.isArray(data) ? data.find((df: any) => df.floorNumber === tf.floorNumber) : null;
+                return {
+                  ...tf,
+                  id: matchedDbFloor?.id || tf.id,
+                  flats: matchedDbFloor?.flats && matchedDbFloor.flats.length > 0 ? matchedDbFloor.flats : tf.flats,
+                };
+              });
+              setTowerFloors(mergedFloors);
+              setLoading(false);
+              return;
+            }
+          } catch (tmplErr) {
+            console.warn('Could not fetch tower template fallback:', tmplErr);
+          }
+        }
         if (Array.isArray(data)) {
           setTowerFloors(data);
         }
         setLoading(false);
       })
-      .catch(err => {
-        console.error('Error fetching tower floors:', err);
+      .catch(async (err) => {
+        console.error('Error fetching tower floors, attempting template fallback:', err);
+        try {
+          const tmplRes = await fetch(`${API_URL}/floorplans/tower-template`);
+          const tmplData = await tmplRes.json();
+          if (tmplData?.floors && Array.isArray(tmplData.floors)) {
+            setTowerFloors(tmplData.floors);
+          }
+        } catch (e) {}
         setLoading(false);
       });
   }, [tenantId, selectedTower, isEmbedded]);
@@ -1332,6 +1764,7 @@ export default function BuildingViewer({
               const mats = Array.isArray(child.material) ? child.material : [child.material];
               const clonedMats = mats.map(m => {
                 const cloned = m.clone();
+                cloned.userData.shared = false;
                 cloned.transparent = true;
                 cloned.opacity = opacity;
                 return cloned;
@@ -1418,6 +1851,20 @@ export default function BuildingViewer({
   const originalMaterials = useRef<Map<string, THREE.Material>>(new Map());
   const highlightMaterial = useRef<THREE.MeshStandardMaterial | null>(null);
   
+  const surfaceRef = useRef<Surface | null>(null);
+  const sceneIndexRef = useRef<SceneIndex | null>(null);
+  const liveStateRef = useRef({ matterportMode, isMeasuring, activeRoom, isPlayingTour, tourIndex, tours });
+  liveStateRef.current = { matterportMode, isMeasuring, activeRoom, isPlayingTour, tourIndex, tours };
+  const uiFrameRef = useRef<() => void>(() => {});
+  const lastViewRef = useRef<string>('');
+  const contentCacheRef = useRef<{ inputs: unknown[]; groups: Map<string, { group: THREE.Group; floors: Map<string, THREE.Group>; dimensions: THREE.Group | null }> }>({ inputs: [], groups: new Map() });
+  useEffect(() => () => {
+    contentCacheRef.current.groups.forEach(entry => disposeTree(entry.group));
+    contentCacheRef.current.groups.clear();
+    surfaceRef.current?.dispose(); surfaceRef.current = null; lastViewRef.current = '';
+    highlightMaterial.current?.dispose();
+  }, []);
+
   // Dynamic navigation refs
   const targetCameraPosRef = useRef<THREE.Vector3>(new THREE.Vector3());
   const targetControlsTargetRef = useRef<THREE.Vector3>(new THREE.Vector3());
@@ -1455,7 +1902,7 @@ export default function BuildingViewer({
 
     // 2. Log event to NestJS SDK Analytics API
     if (isEmbedded && sdkKey && projectId) {
-      fetch('http://localhost:3001/sdk/analytics', {
+      fetch(`${API_URL}/sdk/analytics`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1498,13 +1945,13 @@ export default function BuildingViewer({
         const builderSlug = urlParams.get('builder') || 'aethelgard';
         
         // 1. Fetch builder theme to get builder ID (tenantId)
-        const themeRes = await fetch(`http://localhost:3001/builders/theme-by-slug/${builderSlug}`);
+        const themeRes = await fetch(`${API_URL}/builders/theme-by-slug/${builderSlug}`);
         const themeData = await themeRes.json();
         if (themeData && themeData.id) {
           setTenantId(themeData.id);
 
           // 2. Fetch digital twin models
-          const modelsRes = await fetch(`http://localhost:3001/digital-twin/models`, {
+          const modelsRes = await fetch(`${API_URL}/digital-twin/models`, {
             headers: { 'x-tenant-id': themeData.id },
           });
           const modelsData = await modelsRes.json();
@@ -1519,7 +1966,6 @@ export default function BuildingViewer({
 
   // Sync activeModel based on viewMode
   useEffect(() => {
-    if (models.length === 0) return;
     const modelType = viewMode === 'building' ? 'exterior' : 'interior';
     const found = models.find((m) => m.modelType === modelType);
     if (found) {
@@ -1530,7 +1976,7 @@ export default function BuildingViewer({
         id: 'fallback',
         projectId: 'fallback',
         name: viewMode === 'building' ? 'Aethelgard Exterior' : 'Luxury Corridor',
-        modelUrl: viewMode === 'building' ? '/building.glb' : '/floor_walkthrough.glb',
+        modelUrl: '', // Procedural fallback has no imported asset.
         modelType,
       });
     }
@@ -1545,19 +1991,25 @@ export default function BuildingViewer({
       return;
     }
 
+    const abort = new AbortController();
+    setHotspots([]); setTours([]); setIsPlayingTour(false);
+    tourTweenRef.current?.kill();
+    if (tourTimeoutRef.current) clearTimeout(tourTimeoutRef.current);
     const headers = { 'x-tenant-id': tenantId };
     
     Promise.all([
-      fetch(`http://localhost:3001/digital-twin/models/${activeModel.id}/hotspots`, { headers }).then((r) => r.json()),
-      fetch(`http://localhost:3001/digital-twin/models/${activeModel.id}/tours`, { headers }).then((r) => r.json()),
+      fetch(`${API_URL}/digital-twin/models/${activeModel.id}/hotspots`, { headers, signal: abort.signal }).then((r) => r.json()),
+      fetch(`${API_URL}/digital-twin/models/${activeModel.id}/tours`, { headers, signal: abort.signal }).then((r) => r.json()),
     ])
       .then(([hotspotsData, toursData]) => {
+        if (abort.signal.aborted) return;
         setHotspots(hotspotsData || []);
         setTours(toursData || []);
         setTourIndex(0);
         setIsPlayingTour(false);
       })
-      .catch((err) => console.error('Error fetching digital twin assets:', err));
+      .catch((err) => { if (!abort.signal.aborted) console.error('Error fetching digital twin assets:', err); });
+    return () => abort.abort();
   }, [activeModel, tenantId, isEmbedded]);
 
   // Telemetry Triggers for Embed tracking
@@ -1616,35 +2068,47 @@ export default function BuildingViewer({
     });
   }, [activeFloor, viewMode, loading]);
 
-  // Handle "Back to Lobby" – only fires when parent explicitly resets activeRoom to null
-  // (e.g., clicking the ← Lobby button in explorer/page.tsx)
-  // All other camera navigation is handled DIRECTLY inside click/WASD handlers.
+  // Handle "Back to Floor View" – reset camera to primary room of current floor
   useEffect(() => {
     if (viewMode !== 'walkthrough' || !cameraRef.current || !controlsRef.current) return;
-    if (activeRoom !== null) return; // ← key fix: do NOT react to room-name changes here
+    if (activeRoom !== null) return;
 
     const camera = cameraRef.current;
     const controls = controlsRef.current;
-    const floorOffset = activeFloor * 3.2;
+    let floorOffset = 0;
+    if (towerFloors && towerFloors.length > 0) {
+      const sorted = [...towerFloors].sort((a, b) => a.floorNumber - b.floorNumber);
+      for (const f of sorted) {
+        if (f.floorNumber === activeFloor) break;
+        floorOffset += (Number(f.floorHeight) || 3.0) + 0.25;
+      }
+    } else {
+      floorOffset = activeFloor * 3.2;
+    }
 
-    // Glide back to lobby corridor entry point
+    const activeF = towerFloors?.find(f => f.floorNumber === activeFloor);
+    const floorLayout = activeF?.structureJson || getLayoutForFloor(localLayout, activeFloor);
+    const startRoom = floorLayout?.rooms?.find((r: any) => r.name.includes('Living') || r.name.includes('Foyer') || r.name.includes('Lobby')) || floorLayout?.rooms?.[0];
+    const startX = startRoom?.node?.x ?? (startRoom ? startRoom.x + startRoom.width / 2 : 0);
+    const startZ = startRoom?.node?.z ?? (startRoom ? startRoom.z + startRoom.depth / 2 : 2);
+
     controls.enabled = false;
-    gsap.to(camera.position, { x: 0, y: 1.6 + floorOffset, z: 5.0, duration: 1.8, ease: 'power2.inOut' });
+    gsap.to(camera.position, { x: startX, y: 1.65 + floorOffset, z: startZ + 1.2, duration: 1.5, ease: 'power2.inOut' });
     gsap.to(controls.target, {
-      x: 0,
-      y: 1.6 + floorOffset,
-      z: 5.05,
-      duration: 1.8,
+      x: startX,
+      y: 1.65 + floorOffset,
+      z: startZ - 0.5,
+      duration: 1.5,
       ease: 'power2.inOut',
       onComplete: () => {
         controls.enabled = true;
-        controls.enableZoom = false;
-        controls.enablePan = false;
-        controls.minDistance = 0.01;
-        controls.maxDistance = 0.1;
+        controls.enableZoom = true;
+        controls.enablePan = true;
+        controls.minDistance = 0.05;
+        controls.maxDistance = 25;
       },
     });
-  }, [activeRoom, viewMode, activeFloor]);
+  }, [activeRoom, viewMode, activeFloor, towerFloors]);
 
 
 
@@ -1656,104 +2120,23 @@ export default function BuildingViewer({
     const width = container.clientWidth;
     const height = container.clientHeight || 550;
 
-    // 1. Scene
-    const scene = new THREE.Scene();
-    sceneRef.current = scene;
-    scene.background = new THREE.Color(0x0c0f16);
-
-    // 2. Perspective Camera
-    const perspCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    perspCameraRef.current = perspCamera;
-
-    // 2b. Orthographic Camera for 2D mode
-    const aspect = width / height;
-    const d = 15;
-    const orthoCamera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 1000);
-    orthoCamera.position.set(0, 100, 0); // Top-down look down
-    orthoCamera.lookAt(0, 0, 0);
-    orthoCameraRef.current = orthoCamera;
-
-    // Initial active camera
-    const camera = is2DMode ? orthoCamera : perspCamera;
-    cameraRef.current = camera;
-
-    const isMobileDevice = navigator.maxTouchPoints > 0;
-    // 3. Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = !isMobileDevice;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
-    container.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
-
-    // 4. Orbit Controls (Perspective)
-    const orbitControls = new OrbitControls(perspCamera, renderer.domElement);
-    orbitControls.enableDamping = true;
-    orbitControls.dampingFactor = 0.05;
-    orbitControlsRef.current = orbitControls;
-
-    // 4b. Map Controls (Orthographic)
-    const mapControls = new MapControls(orthoCamera, renderer.domElement);
-    mapControls.enableDamping = true;
-    mapControls.dampingFactor = 0.05;
-    mapControls.screenSpacePanning = false; // pan X-Z
-    mapControls.maxPolarAngle = 0;
-    mapControls.minPolarAngle = 0;
-    mapControls.enableRotate = false;
-    mapControlsRef.current = mapControls;
-
-    // Initial active controls
-    const controls = is2DMode ? mapControls : orbitControls;
-    controlsRef.current = controls;
-
-    orbitControls.enabled = !is2DMode;
-    mapControls.enabled = is2DMode;
-
-    // ── Pointer Lock Controls Setup ───────────────────────────────────
-    const pointerControls = new PointerLockControls(perspCamera, renderer.domElement);
+    const surface = surfaceRef.current || (surfaceRef.current = new Surface(container));
+    const { scene, renderer, camera: perspCamera, ortho: orthoCamera, orbit: orbitControls, map: mapControls, pointer: pointerControls } = surface;
+    sceneRef.current = scene; rendererRef.current = renderer;
+    perspCameraRef.current = perspCamera; orthoCameraRef.current = orthoCamera;
+    orbitControlsRef.current = orbitControls; mapControlsRef.current = mapControls;
     pointerControlsRef.current = pointerControls;
-    scene.add(pointerControls.object);
-
-    pointerControls.addEventListener('lock', () => {
-      controls.enabled = false;
-      setIsLocked(true);
-    });
-
-    pointerControls.addEventListener('unlock', () => {
-      setIsLocked(false);
-      controls.enabled = true;
-      
-      const lookDir = new THREE.Vector3();
-      camera.getWorldDirection(lookDir);
-      controls.target.copy(camera.position).add(lookDir.multiplyScalar(0.05));
-    });
-
-    // 5. Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
-    scene.add(ambientLight);
-
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.25);
-    dirLight1.position.set(25, 40, 15);
-    dirLight1.castShadow = !isMobileDevice;
-    dirLight1.shadow.mapSize.width = isMobileDevice ? 512 : 1024;
-    dirLight1.shadow.mapSize.height = isMobileDevice ? 512 : 1024;
-    scene.add(dirLight1);
-
-    const dirLight2 = new THREE.DirectionalLight(0x00f5d4, 0.4); // Neon cyan fill light
-    dirLight2.position.set(-25, 20, -15);
-    scene.add(dirLight2);
-
-    // Grid helper
-    const gridHelper = new THREE.GridHelper(80, 40, 0x00f5d4, 0x1f2937);
-    gridHelper.position.y = -0.5;
-    if (gridHelper.material instanceof THREE.Material) {
-      gridHelper.material.opacity = 0.15;
-      gridHelper.material.transparent = true;
-    }
-    scene.add(gridHelper);
+    const camera = is2DMode ? orthoCamera : perspCamera;
+    const controls = is2DMode ? mapControls : orbitControls;
+    cameraRef.current = camera; controlsRef.current = controls;
+    orbitControls.enabled = !is2DMode; mapControls.enabled = is2DMode;
+    const onLock = () => { controls.enabled = false; setIsLocked(true); };
+    const onUnlock = () => {
+      setIsLocked(false); controls.enabled = true;
+      controls.target.copy(camera.position).add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(.05));
+    };
+    pointerControls.addEventListener('lock', onLock);
+    pointerControls.addEventListener('unlock', onUnlock);
 
     // Configs based on type
     setLoading(true);
@@ -1795,6 +2178,7 @@ export default function BuildingViewer({
       return nearAperture;
     };
 
+    if (lastViewRef.current !== viewMode || viewMode === 'walkthrough') {
     if (viewMode === 'building') {
       perspCamera.fov = 45;
       perspCamera.updateProjectionMatrix();
@@ -1806,73 +2190,61 @@ export default function BuildingViewer({
       orbitControls.enableZoom = true;
       orbitControls.enablePan = true;
     } else {
-      const floorOffset = activeFloor * 3.2;
-      perspCamera.fov = 70;
+      let floorOffset = 0;
+      if (towerFloors && towerFloors.length > 0) {
+        const sorted = [...towerFloors].sort((a, b) => a.floorNumber - b.floorNumber);
+        for (const f of sorted) {
+          if (f.floorNumber === activeFloor) break;
+          floorOffset += (Number(f.floorHeight) || 3.0) + 0.25;
+        }
+      } else {
+        floorOffset = activeFloor * 3.2;
+      }
+
+      const activeF = towerFloors?.find(f => f.floorNumber === activeFloor);
+      const floorLayout = activeF?.structureJson || getLayoutForFloor(localLayout, activeFloor);
+      const startRoom = floorLayout?.rooms?.find((r: any) => r.name.includes('Living') || r.name.includes('Foyer') || r.name.includes('Lobby')) || floorLayout?.rooms?.[0];
+      const startX = startRoom?.node?.x ?? (startRoom ? startRoom.x + startRoom.width / 2 : 0);
+      const startZ = startRoom?.node?.z ?? (startRoom ? startRoom.z + startRoom.depth / 2 : 2);
+
+      perspCamera.fov = 68;
+      perspCamera.near = 0.05;
+      perspCamera.far = 1000;
       perspCamera.updateProjectionMatrix();
-      perspCamera.position.set(0, 1.6 + floorOffset, 4.0);
-      orbitControls.target.set(0, 1.6 + floorOffset, 4.05);
-      orbitControls.maxPolarAngle = Math.PI / 2 - 0.02;
-      orbitControls.minDistance = 0.01;
-      orbitControls.maxDistance = 0.1;
-      orbitControls.enableZoom = false;
-      orbitControls.enablePan = false;
+      perspCamera.position.set(startX, 1.65 + floorOffset, startZ + 1.2);
+      orbitControls.target.set(startX, 1.65 + floorOffset, startZ - 0.5);
+      orbitControls.maxPolarAngle = Math.PI - 0.1;
+      orbitControls.minPolarAngle = 0.1;
+      orbitControls.minDistance = 0.05;
+      orbitControls.maxDistance = 25;
+      orbitControls.enableZoom = true;
+      orbitControls.enablePan = true;
     }
 
+    }
+    lastViewRef.current = viewMode;
+
+    const cache = contentCacheRef.current;
+    const inputs = [localLayout, towerFloors, projectData, amenitiesList];
+    if (inputs.some((input, i) => input !== cache.inputs[i])) {
+      container.dataset.rebuildReason = ['layout','floors','project','amenities'].filter((_,i)=>inputs[i]!==cache.inputs[i]).join(',');
+      cache.groups.forEach(entry => disposeTree(entry.group)); cache.groups.clear(); cache.inputs = inputs;
+    }
+    const cacheKey = viewMode === 'building' ? 'building' : `floor-${activeFloor}`;
+    const cached = cache.groups.get(cacheKey);
+    let proceduralGroup: THREE.Group;
+    if (cached) {
+      proceduralGroup = cached.group; scene.add(proceduralGroup);
+      floorGroupsRef.current = cached.floors; dimensionGroupRef.current = cached.dimensions;
+      setLoading(false);
+    } else {
+      floorGroupsRef.current = new Map(); dimensionGroupRef.current = null;
     // Generate Procedural Structure from Layout
-    const proceduralGroup = new THREE.Group();
+    proceduralGroup = new THREE.Group();
     proceduralGroup.name = "procedural_building";
 
     if (viewMode === 'building') {
-      if (showExteriorBuilding && towerFloors && towerFloors.length > 0) {
-        // Compile the exterior building shell
-        const floorsInfo = towerFloors.map((f) => ({
-          floor: {
-            id: f.id,
-            floorNumber: f.floorNumber,
-            floorHeight: Number(f.floorHeight) || 3.0,
-            flatType: f.flatType,
-            unitsPerFloor: f.unitsPerFloor,
-            description: f.description,
-          },
-          structureJson: f.structureJson,
-        }));
-
-        try {
-          const extGroup = ExteriorGenerator.compile({
-            floorsInfo,
-            exteriorConfig: projectData?.exteriorConfig
-          });
-          proceduralGroup.add(extGroup);
-
-          // Add large green ground plane
-          const groundGeo = new THREE.PlaneGeometry(300, 300);
-          const groundMat = new THREE.MeshStandardMaterial({
-            color: 0x2e7d32, // Grass green
-            roughness: 0.9,
-            metalness: 0.1
-          });
-          const ground = new THREE.Mesh(groundGeo, groundMat);
-          ground.rotation.x = -Math.PI / 2;
-          ground.position.y = -0.5; // Align with base grid
-          ground.receiveShadow = true;
-          proceduralGroup.add(ground);
-
-          // Add gradient/skybox sphere
-          const skyGeo = new THREE.SphereGeometry(300, 32, 15);
-          const skyMat = new THREE.MeshBasicMaterial({
-            color: 0xbae6fd, // Sky blue
-            side: THREE.BackSide
-          });
-          const sky = new THREE.Mesh(skyGeo, skyMat);
-          proceduralGroup.add(sky);
-
-          // Update sky color background
-          scene.background = new THREE.Color(0xbae6fd);
-        } catch (err) {
-          console.error('Error compiling building exterior:', err);
-        }
-      } else if (towerFloors && towerFloors.length > 0) {
-        // Stack real database floors using TowerCompiler!
+      if (towerFloors && towerFloors.length > 0) {
         const floorsInfo: TowerFloorInfo[] = towerFloors.map((f) => ({
           floor: {
             id: f.id,
@@ -1886,11 +2258,19 @@ export default function BuildingViewer({
         }));
 
         try {
+          // 1. Compile physical tower structure (slabs, columns, rooms, walls, doors, windows, furniture)
           const { group: compiledTower, floorGroups } = TowerCompiler.compile(floorsInfo);
           proceduralGroup.add(compiledTower);
           floorGroupsRef.current = floorGroups;
+
+          // 2. Compile real-world outdoor environment (sky dome, lawn, boulevard, sidewalks, 3D trees, streetlamps, entrance canopy, balconies)
+          const extGroup = ExteriorGenerator.compile({
+            floorsInfo,
+            exteriorConfig: projectData?.exteriorConfig
+          });
+          proceduralGroup.add(extGroup);
         } catch (err) {
-          console.error('Error compiling tower:', err);
+          console.error('Error compiling building exterior and structure:', err);
         }
       } else {
         // Fallback: stack multiple floors (procedural building shell from localLayout config)
@@ -1986,6 +2366,31 @@ export default function BuildingViewer({
             floorOffset += (Number(f.floorHeight) || 3.0) + 0.25;
           }
         }
+
+        // Add real-world outdoor environment so when looking out windows or standing on balcony,
+        // it looks like the real world with trees, road, and daylight sky!
+        try {
+          const floorsInfo: TowerFloorInfo[] = towerFloors.map((f) => ({
+            floor: {
+              id: f.id,
+              floorNumber: f.floorNumber,
+              floorHeight: Number(f.floorHeight) || 3.0,
+              flatType: f.flatType,
+              unitsPerFloor: f.unitsPerFloor,
+              description: f.description,
+            },
+            structureJson: f.structureJson,
+          }));
+          const extGroup = ExteriorGenerator.compile({
+            floorsInfo,
+            exteriorConfig: projectData?.exteriorConfig
+          });
+          extGroup.userData.exteriorContext = true;
+          extGroup.visible = liveStateRef.current.matterportMode === 'inside';
+          proceduralGroup.add(extGroup);
+        } catch (err) {
+          console.error('Error compiling walkthrough exterior:', err);
+        }
       } else {
         floorOffset = activeFloor * 3.2;
         floorLayout = getLayoutForFloor(localLayout, activeFloor);
@@ -2029,68 +2434,160 @@ export default function BuildingViewer({
         });
       }
 
+      // Matterport Dimension Badges Layer
+      const dimensionGroup = new THREE.Group();
+      dimensionGroup.name = "matterport_dimensions";
+      dimensionGroupRef.current = dimensionGroup;
+
+      if (floorLayout.rooms) {
+        floorLayout.rooms.forEach((r: any) => {
+          const cx = r.node?.x ?? (r.x + r.width / 2);
+          const cz = r.node?.z ?? (r.z + r.depth / 2);
+          const badge = createMatterportDimensionBadge(r, unitSystem === 'imperial');
+          badge.position.set(cx, 0.45 + floorOffset, cz);
+          dimensionGroup.add(badge);
+        });
+      }
+      dimensionGroup.visible = showDimensions;
+      proceduralGroup.add(dimensionGroup);
+
+      // Measurements group for virtual tape measure
+      if (!measurementsGroupRef.current) {
+        measurementsGroupRef.current = new THREE.Group();
+      }
+      measurementsGroupRef.current.name = "matterport_measurements";
+      scene.add(measurementsGroupRef.current);
+
       scene.add(proceduralGroup);
 
-      // Position camera appropriately
+      // Walkthrough Interior Lighting System (warm ambient + ceiling downlights)
+      const interiorAmbient = new THREE.AmbientLight(0xfff8f0, 1.4);
+      proceduralGroup.add(interiorAmbient);
+
+      if (floorLayout.rooms) {
+        floorLayout.rooms.forEach((r: any) => {
+          const cx = r.node?.x ?? (r.x + r.width / 2);
+          const cz = r.node?.z ?? (r.z + r.depth / 2);
+          const downlight = new THREE.PointLight(0xfffaed, 1.2, 14, 1.5);
+          downlight.position.set(cx, wallH - 0.2 + floorOffset, cz);
+          proceduralGroup.add(downlight);
+        });
+      }
+
+      // Position camera appropriately inside the flat
       if (activeRoom === null) {
-        perspCamera.position.set(0, 1.6 + floorOffset, 5.0);
-        orbitControls.target.set(0, 1.6 + floorOffset, 5.05);
+        const startRoom = floorLayout.rooms?.find((r: any) => r.name.includes('Living') || r.name.includes('Foyer') || r.name.includes('Lobby')) || floorLayout.rooms?.[0];
+        const startX = startRoom?.node?.x ?? (startRoom ? startRoom.x + startRoom.width / 2 : 0);
+        const startZ = startRoom?.node?.z ?? (startRoom ? startRoom.z + startRoom.depth / 2 : 2);
+        perspCamera.position.set(startX, 1.65 + floorOffset, startZ + 1.2);
+        orbitControls.target.set(startX, 1.65 + floorOffset, startZ - 0.5);
       } else {
         const currentRoom = floorLayout.rooms?.find((r: any) => r.name === activeRoom);
-        if (currentRoom && currentRoom.node) {
-          perspCamera.position.set(currentRoom.node.x, 1.6 + floorOffset, currentRoom.node.z);
-          orbitControls.target.set(currentRoom.node.x, 1.6 + floorOffset, currentRoom.node.z + 0.05);
+        if (currentRoom) {
+          const cx = currentRoom.node?.x ?? (currentRoom.x + currentRoom.width / 2);
+          const cz = currentRoom.node?.z ?? (currentRoom.z + currentRoom.depth / 2);
+          perspCamera.position.set(cx, 1.65 + floorOffset, cz + 0.8);
+          orbitControls.target.set(cx, 1.65 + floorOffset, cz - 0.5);
         }
       }
       setLoading(false);
     }
 
+      cache.groups.set(cacheKey, { group: proceduralGroup, floors: floorGroupsRef.current, dimensions: dimensionGroupRef.current });
+    }
+    const sceneIndex = new SceneIndex(proceduralGroup);
+    (container as HTMLDivElement & { getViewerSnapshot?: () => unknown }).getViewerSnapshot = () => ({ stats: surface.stats(), mode: viewMode, submode: liveStateRef.current.matterportMode, camera: (cameraRef.current || camera).position.toArray(), rootId: proceduralGroup.uuid, cachedGroups: cache.groups.size, rebuildReason: container.dataset.rebuildReason, tourPlaying: liveStateRef.current.isPlayingTour, tourIndex: liveStateRef.current.tourIndex, tourCount: liveStateRef.current.tours.length, projection: (cameraRef.current || camera).projectionMatrix.toArray(), viewMatrix: (cameraRef.current || camera).matrixWorldInverse.toArray(), doors: Array.from(new Set(sceneIndex.doors.map(m => { let n: THREE.Object3D = m; while(n.parent && !n.name.startsWith('doorGroup_')) n = n.parent; return n; }))).filter(n => n.name.startsWith('doorGroup_')).map(n => ({ name: n.name, position: n.getWorldPosition(new THREE.Vector3()).toArray(), rotation: n.rotation.y, open: !!n.userData.isOpen })) });
+    sceneIndexRef.current = sceneIndex;
+    applyInventoryColoring();
+
     // ---------------------------------------------------------------------------
-    // Ground hover ring (Shapespark-style floor projection cursor)
+    // Google Maps Street View / FPV Reticle & Ripple Target Cursor
     // ---------------------------------------------------------------------------
-    const hoverRingGeo = new THREE.RingGeometry(0.28, 0.42, 48);
-    hoverRingGeo.rotateX(-Math.PI / 2);
-    const hoverRingMat = new THREE.MeshBasicMaterial({
+    const streetViewReticleGroup = new THREE.Group();
+    streetViewReticleGroup.name = 'hoverRing';
+    streetViewReticleGroup.visible = false;
+
+    // 1. Outer target ring
+    const reticleOuterGeo = new THREE.RingGeometry(0.26, 0.38, 48);
+    reticleOuterGeo.rotateX(-Math.PI / 2);
+    const reticleOuterMat = new THREE.MeshBasicMaterial({
       color: 0x00f5d4,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.85,
       side: THREE.DoubleSide,
       depthWrite: false,
     });
-    const hoverRingMesh = new THREE.Mesh(hoverRingGeo, hoverRingMat);
-    hoverRingMesh.name = 'hoverRing';
-    hoverRingMesh.visible = false;
-    scene.add(hoverRingMesh);
+    const reticleOuterMesh = new THREE.Mesh(reticleOuterGeo, reticleOuterMat);
+    reticleOuterMesh.name = 'hoverRing';
+    streetViewReticleGroup.add(reticleOuterMesh);
+
+    // 2. Translucent floor disc fill
+    const reticleInnerGeo = new THREE.CircleGeometry(0.26, 48);
+    reticleInnerGeo.rotateX(-Math.PI / 2);
+    const reticleInnerMat = new THREE.MeshBasicMaterial({
+      color: 0x00f5d4,
+      transparent: true,
+      opacity: 0.22,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const reticleInnerMesh = new THREE.Mesh(reticleInnerGeo, reticleInnerMat);
+    reticleInnerMesh.name = 'hoverRing';
+    streetViewReticleGroup.add(reticleInnerMesh);
+
+    // 3. Dynamic Forward Chevron Arrow (pointing towards camera horizontal forward vector)
+    const chevronShape = new THREE.Shape();
+    chevronShape.moveTo(0, 0.20);
+    chevronShape.lineTo(0.12, 0.04);
+    chevronShape.lineTo(0.07, 0.04);
+    chevronShape.lineTo(0, 0.13);
+    chevronShape.lineTo(-0.07, 0.04);
+    chevronShape.lineTo(-0.12, 0.04);
+    chevronShape.closePath();
+    const chevronGeo = new THREE.ShapeGeometry(chevronShape);
+    chevronGeo.rotateX(-Math.PI / 2);
+    const chevronMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const chevronMesh = new THREE.Mesh(chevronGeo, chevronMat);
+    chevronMesh.name = 'hoverRing';
+    streetViewReticleGroup.add(chevronMesh);
+
+    scene.add(streetViewReticleGroup);
+    const hoverRingMesh = streetViewReticleGroup;
+    const hoverRingMat = reticleOuterMat;
+
+    // 4. Expanding Google Maps floor click shockwave ripple
+    const rippleGeo = new THREE.RingGeometry(0.08, 0.24, 48);
+    rippleGeo.rotateX(-Math.PI / 2);
+    const rippleMat = new THREE.MeshBasicMaterial({
+      color: 0x00f5d4,
+      transparent: true,
+      opacity: 0,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const rippleMesh = new THREE.Mesh(rippleGeo, rippleMat);
+    rippleMesh.name = 'clickRipple';
+    rippleMesh.visible = false;
+    scene.add(rippleMesh);
 
     // Collision raycaster probes (for WASD wall sliding)
     const collisionRaycaster = new THREE.Raycaster();
     collisionRaycaster.near = 0;
     collisionRaycaster.far = 0.55; // probe distance from camera center
 
-    // Collect all wall meshes for collision (excluding open doors)
-    const getWallMeshes = (): THREE.Mesh[] => {
-      const meshes: THREE.Mesh[] = [];
-      scene.traverse((obj) => {
-        if (obj instanceof THREE.Mesh && !obj.userData.isFloor && !obj.name.startsWith('node_') && obj.name !== 'hoverRing') {
-          // Check if mesh belongs to an open door group
-          let isDoorOpen = false;
-          let parentObj = obj.parent;
-          while (parentObj && parentObj !== scene) {
-            if (parentObj.name.startsWith('doorGroup_')) {
-              if (parentObj.userData?.isOpen) {
-                isDoorOpen = true;
-              }
-              break;
-            }
-            parentObj = parentObj.parent;
-          }
-          if (!isDoorOpen) {
-            meshes.push(obj);
-          }
-        }
-      });
-      return meshes;
-    };
+    // Candidate membership is compiled once; animated door state is checked without traversing the scene.
+    const getWallMeshes = (): THREE.Mesh[] => [...sceneIndex.walls, ...sceneIndex.doors].filter(mesh => {
+      if (!visible(mesh)) return false;
+      let p: THREE.Object3D | null = mesh;
+      while (p) { if (p.name.startsWith('doorGroup_') && p.userData.isOpen) return false; p = p.parent; }
+      return true;
+    });
 
     // Raycast click handler for hotspots & nodes
     const raycaster = new THREE.Raycaster();
@@ -2098,6 +2595,7 @@ export default function BuildingViewer({
 
     // Floor hover ring + mousemove
     const handleMouseMove = (event: MouseEvent) => {
+      const { isMeasuring } = liveStateRef.current;
       if (viewMode !== 'walkthrough') {
         hoverRingMesh.visible = false;
         return;
@@ -2107,20 +2605,78 @@ export default function BuildingViewer({
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.setFromCamera(mouse, cameraRef.current || camera);
-      const floorMeshes: THREE.Mesh[] = [];
-      scene.traverse((obj) => {
-        if (obj instanceof THREE.Mesh && obj.userData.isFloor) floorMeshes.push(obj);
-      });
+
+      // Live tape measure line & badge tracking
+      if (isMeasuring && activeMeasureStartRef.current && sceneRef.current) {
+        const hits = raycaster.intersectObjects(scene.children, true);
+        const hit = hits.find(h =>
+          h.object instanceof THREE.Mesh &&
+          !h.object.name.startsWith('dimBadge_') &&
+          !h.object.name.startsWith('node_') &&
+          !h.object.name.startsWith('label_') &&
+          !h.object.name.startsWith('measure_') &&
+          !h.object.name.startsWith('hoverRing') &&
+          !h.object.name.startsWith('clickRipple')
+        );
+        if (hit) {
+          const p1 = activeMeasureStartRef.current;
+          const p2 = hit.point;
+          const dist = p1.distanceTo(p2);
+
+          const mStr = `${dist.toFixed(2)}m`;
+          const ftVal = dist * 3.28084;
+          const ft = Math.floor(ftVal);
+          const inch = Math.round((ftVal - ft) * 12);
+          const distLabel = `${mStr} (${ft}'${inch}")`;
+          setLiveMeasureText(distLabel);
+
+          if (!liveMeasureLineRef.current) {
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+            const lineMat = new THREE.LineDashedMaterial({
+              color: 0x00f5d4,
+              dashSize: 0.2,
+              gapSize: 0.1,
+            });
+            const line = new THREE.Line(lineGeo, lineMat);
+            line.computeLineDistances();
+            line.name = 'measure_live_line';
+            scene.add(line);
+            liveMeasureLineRef.current = line;
+          } else {
+            liveMeasureLineRef.current.geometry.setFromPoints([p1, p2]);
+            liveMeasureLineRef.current.computeLineDistances();
+          }
+
+          if (!liveMeasureBadgeRef.current) {
+            const badge = createMeasureTagSprite(distLabel);
+            badge.position.set((p1.x + p2.x) / 2, Math.max(p1.y, p2.y) + 0.35, (p1.z + p2.z) / 2);
+            badge.name = 'measure_live_badge';
+            scene.add(badge);
+            liveMeasureBadgeRef.current = badge;
+          } else {
+            liveMeasureBadgeRef.current.position.set((p1.x + p2.x) / 2, Math.max(p1.y, p2.y) + 0.35, (p1.z + p2.z) / 2);
+          }
+        }
+      }
+
+      const floorMeshes = sceneIndex.floors.filter(visible);
       const hits = raycaster.intersectObjects(floorMeshes, false);
       if (hits.length > 0) {
         const pt = hits[0].point;
         const floorY = pt.y + 0.015;
-        hoverRingMesh.position.set(pt.x, floorY, pt.z);
-        hoverRingMesh.visible = true;
-        // Pulse opacity
-        hoverRingMat.opacity = 0.55 + Math.sin(Date.now() * 0.006) * 0.2;
+        streetViewReticleGroup.position.set(pt.x, floorY, pt.z);
+        streetViewReticleGroup.visible = !isMeasuring;
+
+        // Align dynamic chevron with camera horizontal forward gaze vector
+        const camDir = new THREE.Vector3();
+        const activeCam = cameraRef.current || camera;
+        activeCam.getWorldDirection(camDir);
+        streetViewReticleGroup.rotation.y = Math.atan2(camDir.x, camDir.z);
+
+        // Subtle Street View pulse
+        reticleOuterMat.opacity = 0.65 + Math.sin(Date.now() * 0.008) * 0.25;
       } else {
-        hoverRingMesh.visible = false;
+        streetViewReticleGroup.visible = false;
       }
     };
 
@@ -2143,6 +2699,7 @@ export default function BuildingViewer({
     };
 
     const handlePointerDown = (event: MouseEvent) => {
+      const { isMeasuring, matterportMode } = liveStateRef.current;
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -2175,7 +2732,7 @@ export default function BuildingViewer({
                 const matchedFlat = getFlatDbInfo(room.flatId, activeF.flats || []);
                 if (matchedFlat) {
                   setSelectedFlat(matchedFlat);
-                  fetch(`http://localhost:3001/inventory/flats/${matchedFlat.id}`, {
+                  fetch(`${API_URL}/inventory/flats/${matchedFlat.id}`, {
                     headers: { 'x-tenant-id': tenantId || '' },
                   })
                     .then((response) => {
@@ -2252,18 +2809,115 @@ export default function BuildingViewer({
 
       if (viewMode !== 'walkthrough') return;
 
+      // Tape measure click handling
+      if (isMeasuring) {
+        const hits = raycaster.intersectObjects(scene.children, true);
+        const hit = hits.find(h =>
+          h.object instanceof THREE.Mesh &&
+          !h.object.name.startsWith('dimBadge_') &&
+          !h.object.name.startsWith('node_') &&
+          !h.object.name.startsWith('label_') &&
+          !h.object.name.startsWith('measure_') &&
+          !h.object.name.startsWith('hoverRing') &&
+          !h.object.name.startsWith('clickRipple')
+        );
+        if (hit) {
+          const pt = hit.point.clone();
+          if (!activeMeasureStartRef.current) {
+            // First point: drop start pin
+            activeMeasureStartRef.current = pt;
+            const pinGeo = new THREE.SphereGeometry(0.08, 16, 16);
+            const pinMat = new THREE.MeshBasicMaterial({ color: 0x00f5d4, depthTest: false });
+            const pinMesh = new THREE.Mesh(pinGeo, pinMat);
+            pinMesh.name = 'measure_pin_start';
+            pinMesh.position.copy(pt);
+            pinMesh.renderOrder = 999;
+            scene.add(pinMesh);
+            startPinRef.current = pinMesh;
+          } else {
+            // Second point: finalize measurement
+            const p1 = activeMeasureStartRef.current;
+            const p2 = pt;
+            const dist = p1.distanceTo(p2);
+
+            const mStr = `${dist.toFixed(2)}m`;
+            const ftVal = dist * 3.28084;
+            const ft = Math.floor(ftVal);
+            const inch = Math.round((ftVal - ft) * 12);
+            const distLabel = unitSystem === 'imperial'
+              ? `${ft}'${inch}" (${dist.toFixed(2)}m)`
+              : `${mStr} (${ft}'${inch}")`;
+
+            // Line
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x00f5d4, linewidth: 3, depthTest: false });
+            const line = new THREE.Line(lineGeo, lineMat);
+            line.renderOrder = 999;
+            measurementsGroupRef.current.add(line);
+
+            // End pin
+            const pinGeo = new THREE.SphereGeometry(0.08, 16, 16);
+            const pinMat = new THREE.MeshBasicMaterial({ color: 0x00f5d4, depthTest: false });
+            const endPin = new THREE.Mesh(pinGeo, pinMat);
+            endPin.position.copy(p2);
+            endPin.renderOrder = 999;
+            measurementsGroupRef.current.add(endPin);
+
+            // Permanent badge
+            const badge = createMeasureTagSprite(distLabel);
+            badge.position.set((p1.x + p2.x) / 2, Math.max(p1.y, p2.y) + 0.35, (p1.z + p2.z) / 2);
+            measurementsGroupRef.current.add(badge);
+
+            // Clean live line & live badge
+            if (liveMeasureLineRef.current) {
+              scene.remove(liveMeasureLineRef.current);
+              liveMeasureLineRef.current = null;
+            }
+            if (liveMeasureBadgeRef.current) {
+              scene.remove(liveMeasureBadgeRef.current);
+              liveMeasureBadgeRef.current = null;
+            }
+            if (startPinRef.current) {
+              scene.remove(startPinRef.current);
+              measurementsGroupRef.current.add(startPinRef.current);
+              startPinRef.current = null;
+            }
+
+            activeMeasureStartRef.current = null;
+            setLiveMeasureText(null);
+            setMeasureCount(prev => prev + 1);
+          }
+        }
+        return;
+      }
+
       const intersects = raycaster.intersectObjects(scene.children, true);
 
       if (intersects.length > 0) {
         // Find if we intersected a wall mesh or floor mesh
         const wallHit = intersects.find(h => h.object.userData?.type === 'wall');
         const floorHit = intersects.find(h => (h.object as THREE.Mesh).userData?.isFloor);
+
+        // If in Dollhouse or Floor Plan mode and clicked on the floor, dive into that room
+        if ((matterportMode === 'dollhouse' || matterportMode === 'floorplan') && floorHit) {
+          const pt = floorHit.point;
+          const fl = getLayoutForFloor(localLayout, activeFloor);
+          const landed = fl?.rooms?.find((r: any) =>
+            pt.x >= r.x && pt.x <= r.x + r.width &&
+            pt.z >= r.z && pt.z <= r.z + r.depth
+          );
+          if (landed) {
+            handleJumpToRoom(landed);
+            return;
+          }
+        }
         
         const wallDist = wallHit ? wallHit.distance : Infinity;
         const floorDist = floorHit ? floorHit.distance : Infinity;
 
-        // If we hit a wall closer than the floor, select wall!
-        if (wallHit && wallDist < floorDist) {
+        const doorHit = intersects.find(hit => { let n: THREE.Object3D | null = hit.object; while(n && n !== scene){if(n.name.startsWith('doorGroup_')) return true;n=n.parent;} return false; });
+        // A wall behind a door must not consume the nearer door interaction.
+        if (wallHit && wallDist < floorDist && wallDist < (doorHit?.distance ?? Infinity)) {
           const wallData = wallHit.object.userData;
           const fl = getLayoutForFloor(localLayout, activeFloor);
           const apCount = (fl?.apertures || []).filter((ap: any) => ap.wallId === wallData.wallId).length;
@@ -2288,7 +2942,7 @@ export default function BuildingViewer({
         const floorLayout = getLayoutForFloor(localLayout, activeFloor);
         
         for (const intersect of intersects) {
-          if (intersect.distance >= floorDist) continue;
+          if (intersect.distance >= Math.min(floorDist, doorHit?.distance ?? Infinity) && intersect !== doorHit) continue;
           
           let tempObj: THREE.Object3D | null = intersect.object;
           while (tempObj && tempObj !== scene) {
@@ -2333,10 +2987,10 @@ export default function BuildingViewer({
               ease: 'power2.inOut',
               onComplete: () => {
                 controls.enabled = true;
-                controls.enableZoom = false;
-                controls.enablePan = false;
-                controls.minDistance = 0.01;
-                controls.maxDistance = 0.1;
+                controls.enableZoom = true;
+                controls.enablePan = true;
+                controls.minDistance = 0.05;
+                controls.maxDistance = 25;
                 setActiveRoom(room.name);
               },
             });
@@ -2441,10 +3095,10 @@ export default function BuildingViewer({
               duration: 1.6, ease: 'power2.inOut',
               onComplete: () => {
                 controls.enabled = true;
-                controls.enableZoom = false;
-                controls.enablePan = false;
-                controls.minDistance = 0.01;
-                controls.maxDistance = 0.1;
+                controls.enableZoom = true;
+                controls.enablePan = true;
+                controls.minDistance = 0.05;
+                controls.maxDistance = 25;
                 if (destRoom) setActiveRoom(destRoom.name);
               },
             });
@@ -2452,11 +3106,33 @@ export default function BuildingViewer({
           return;
         }
 
-        // 3. Otherwise, if floorHit exists, handle floor teleport
+        // 3. Otherwise, if floorHit exists, handle Google Maps Street View FPV move
         if (floorHit) {
           const pt = floorHit.point;
           const floorOffset = activeFloor * 3.2;
-          const destY = 1.6 + floorOffset;
+          const destY = 1.65 + floorOffset;
+
+          // Trigger Google Maps expanding shockwave ripple animation
+          rippleMesh.position.set(pt.x, pt.y + 0.015, pt.z);
+          rippleMesh.scale.set(1, 1, 1);
+          rippleMesh.visible = true;
+          rippleMat.opacity = 0.95;
+          gsap.killTweensOf(rippleMesh.scale);
+          gsap.killTweensOf(rippleMat);
+          gsap.to(rippleMesh.scale, {
+            x: 4.5,
+            z: 4.5,
+            duration: 0.55,
+            ease: 'power2.out',
+          });
+          gsap.to(rippleMat, {
+            opacity: 0,
+            duration: 0.55,
+            ease: 'power2.out',
+            onComplete: () => {
+              rippleMesh.visible = false;
+            }
+          });
 
           // Detect which room we landed in
           const fl = getLayoutForFloor(localLayout, activeFloor);
@@ -2488,7 +3164,7 @@ export default function BuildingViewer({
                 r: highlightColor.r,
                 g: highlightColor.g,
                 b: highlightColor.b,
-                duration: 0.3,
+                duration: 0.25,
                 yoyo: true,
                 repeat: 1,
                 onComplete: () => {
@@ -2496,7 +3172,7 @@ export default function BuildingViewer({
                     r: origColor.r,
                     g: origColor.g,
                     b: origColor.b,
-                    duration: 0.5
+                    duration: 0.4
                   });
                 }
               });
@@ -2512,22 +3188,23 @@ export default function BuildingViewer({
           const destPos = new THREE.Vector3(pt.x, destY, pt.z);
           const destLook = destPos.clone().add(lookDir.multiplyScalar(0.05));
 
+          // Snappy, smooth Google Maps glide (0.6s power2.out)
           controls.enabled = false;
           gsap.to(camera.position, {
             x: destPos.x, y: destPos.y, z: destPos.z,
-            duration: 1.4,
-            ease: 'power2.inOut',
+            duration: 0.6,
+            ease: 'power2.out',
           });
           gsap.to(controls.target, {
             x: destLook.x, y: destLook.y, z: destLook.z,
-            duration: 1.4,
-            ease: 'power2.inOut',
+            duration: 0.6,
+            ease: 'power2.out',
             onComplete: () => {
               controls.enabled = true;
-              controls.enableZoom = false;
-              controls.enablePan = false;
-              controls.minDistance = 0.01;
-              controls.maxDistance = 0.1;
+              controls.enableZoom = true;
+              controls.enablePan = true;
+              controls.minDistance = 0.05;
+              controls.maxDistance = 25;
             },
           });
           trackEvent('floor_teleport', { x: pt.x, z: pt.z });
@@ -2574,9 +3251,10 @@ export default function BuildingViewer({
     // Animation Loop
     const clock = new THREE.Clock();
     let animationFrameId: number;
+    let lastMinimap = 0;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
-      const delta = clock.getDelta();
+      const delta = Math.min(clock.getDelta(), .05);
 
       const activeCamera = cameraRef.current || camera;
       const activeControls = controlsRef.current || controls;
@@ -2584,7 +3262,7 @@ export default function BuildingViewer({
       activeControls.update();
 
       // Gyroscope Look Update
-      if (viewMode === 'walkthrough' && gyroEnabledRef.current && gyroRef.current.hasData) {
+      if (viewMode === 'walkthrough' && liveStateRef.current.matterportMode === 'inside' && gyroEnabledRef.current && gyroRef.current.hasData) {
         const alphaRad = THREE.MathUtils.degToRad(gyroRef.current.alpha);
         const betaRad = THREE.MathUtils.degToRad(gyroRef.current.beta - 90);
         activeCamera.rotation.set(betaRad, alphaRad, 0, 'YXZ');
@@ -2593,7 +3271,7 @@ export default function BuildingViewer({
       }
 
       // Keyboard / Mobile walkthrough movement
-      if (viewMode === 'walkthrough') {
+      if (viewMode === 'walkthrough' && liveStateRef.current.matterportMode === 'inside') {
         const keys = walkRef.current;
         let fwdIntent = 0;
         let sideIntent = 0;
@@ -2668,12 +3346,7 @@ export default function BuildingViewer({
             }
 
             // Downward raycast (Gravity grounding check)
-            const floorObjects: THREE.Object3D[] = [];
-            scene.traverse((child) => {
-              if (child instanceof THREE.Mesh && (child.userData?.isFloor || child.name.includes('floor'))) {
-                floorObjects.push(child);
-              }
-            });
+            const floorObjects = sceneIndex.floors.filter(visible);
 
             const downDir = new THREE.Vector3(0, -1, 0);
             collisionRaycaster.set(activeCamera.position, downDir);
@@ -2689,12 +3362,7 @@ export default function BuildingViewer({
             }
 
             // Upward raycast (Ceiling check)
-            const ceilingObjects: THREE.Object3D[] = [];
-            scene.traverse((child) => {
-              if (child instanceof THREE.Mesh && (child.userData?.type === 'ceiling' || child.name.includes('ceiling'))) {
-                ceilingObjects.push(child);
-              }
-            });
+            const ceilingObjects = sceneIndex.ceilings.filter(visible);
 
             const upDir = new THREE.Vector3(0, 1, 0);
             collisionRaycaster.set(activeCamera.position, upDir);
@@ -2723,11 +3391,11 @@ export default function BuildingViewer({
           }
         }
 
-        drawMinimap();
+
       }
 
       // Always enforce eye-height + bounds (catches WASD, OrbitControls drift, GSAP, everything)
-      if (viewMode === 'walkthrough') {
+      if (viewMode === 'walkthrough' && liveStateRef.current.matterportMode === 'inside') {
         let floorOffset = 0;
         if (towerFloors && towerFloors.length > 0) {
           const sorted = [...towerFloors].sort((a, b) => a.floorNumber - b.floorNumber);
@@ -2740,29 +3408,18 @@ export default function BuildingViewer({
         }
 
         activeCamera.position.y = 1.65 + floorOffset;
-        activeControls.target.y = 1.65 + floorOffset;
-        activeCamera.position.x = Math.max(-19, Math.min(19, activeCamera.position.x));
-        activeCamera.position.z = Math.max(-19, Math.min(19, activeCamera.position.z));
-        activeControls.target.x = Math.max(-19, Math.min(19, activeControls.target.x));
-        activeControls.target.z = Math.max(-19, Math.min(19, activeControls.target.z));
+        activeCamera.position.x = Math.max(-25, Math.min(25, activeCamera.position.x));
+        activeCamera.position.z = Math.max(-25, Math.min(25, activeCamera.position.z));
       }
 
       renderer.render(scene, activeCamera);
 
-      // Animate walkable node rings pulsing
-      scene.traverse((child) => {
-        if (child.name.startsWith('node_') && child instanceof THREE.Mesh) {
-          const time = Date.now() * 0.003;
-          const scaleVal = 1.0 + Math.sin(time) * 0.15;
-          child.scale.set(scaleVal, 1.0, scaleVal);
-          if (child.material && 'opacity' in child.material) {
-            child.material.opacity = 0.6 + Math.sin(time) * 0.25;
-          }
-        }
-      });
-
-      // 1. Draw 2D Minimap
-      drawMinimap();
+      for (const child of sceneIndex.nodes) {
+        const time = Date.now() * .003;
+        child.scale.setScalar(1 + Math.sin(time) * .15);
+      }
+      const now = performance.now(); surface.record(now);
+      if (now - lastMinimap > 100) { lastMinimap = now; uiFrameRef.current(); }
     };
     animate();
 
@@ -2795,12 +3452,16 @@ export default function BuildingViewer({
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
-      renderer.dispose();
-      if (container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
-      }
+      pointerControls.removeEventListener('lock', onLock); pointerControls.removeEventListener('unlock', onUnlock);
+      pointerControls.unlock();
+      gsap.killTweensOf(camera.position); gsap.killTweensOf(controls.target);
+      proceduralGroup.removeFromParent();
+      disposeTree(streetViewReticleGroup); disposeTree(rippleMesh);
+      sceneIndexRef.current = null;
+      delete (container as HTMLDivElement & { getViewerSnapshot?: () => unknown }).getViewerSnapshot;
+
     };
-  }, [activeModel, activeFloor, viewMode, localLayout, showExteriorBuilding, projectData]); // Updated deps array
+  }, [activeModel, activeFloor, viewMode, localLayout, showExteriorBuilding, projectData, towerFloors, amenitiesList]);
 
   // Project 3D Hotspots to HTML screenspace coordinates
   const updateHotspotPlacement = () => {
@@ -2829,19 +3490,6 @@ export default function BuildingViewer({
       }
     });
   };
-
-  // Bind hotspot calculations inside a secondary fast interval or manual window draw to keep 60fps
-  useEffect(() => {
-    let animId = 0;
-    const loop = () => {
-      animId = requestAnimationFrame(loop);
-      updateHotspotPlacement();
-    };
-    if (hotspots.length > 0) {
-      loop();
-    }
-    return () => cancelAnimationFrame(animId);
-  }, [hotspots]);
 
   // Draw 2D Vector Minimap Canvas
   const drawMinimap = () => {
@@ -2907,25 +3555,34 @@ export default function BuildingViewer({
     const cX = mapX(posX);
     const cY = mapZ(posZ);
 
-    // Calculate rotation angle
+    // Calculate forward orientation angle in 2D minimap canvas coordinates
     const dir = new THREE.Vector3();
     cameraRef.current.getWorldDirection(dir);
-    const angle = Math.atan2(dir.x, dir.z);
+    const canvasAngle = Math.atan2(dir.z, dir.x);
 
-    // Draw look frustum cone
-    ctx.fillStyle = 'rgba(0, 245, 212, 0.15)';
+    // Draw Google Maps-style radar vision cone with soft radial gradient
+    const coneGrad = ctx.createRadialGradient(cX, cY, 2, cX, cY, 28);
+    coneGrad.addColorStop(0, 'rgba(0, 245, 212, 0.45)');
+    coneGrad.addColorStop(1, 'rgba(0, 245, 212, 0.0)');
+    ctx.fillStyle = coneGrad;
     ctx.beginPath();
     ctx.moveTo(cX, cY);
-    ctx.arc(cX, cY, 20, angle - 0.4, angle + 0.4);
+    ctx.arc(cX, cY, 28, canvasAngle - 0.45, canvasAngle + 0.45);
     ctx.closePath();
     ctx.fill();
 
-    // Draw player dot
+    // Draw player dot with white outer border & glowing cyan center
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cX, cY, 5, 0, Math.PI * 2);
+    ctx.stroke();
+
     ctx.fillStyle = '#00f5d4';
     ctx.shadowColor = '#00f5d4';
-    ctx.shadowBlur = 6;
+    ctx.shadowBlur = 8;
     ctx.beginPath();
-    ctx.arc(cX, cY, 4, 0, Math.PI * 2);
+    ctx.arc(cX, cY, 3.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0; // reset
   };
@@ -3087,29 +3744,29 @@ export default function BuildingViewer({
       controlsRef.current.enabled = false;
       const floorOffset = activeFloor * 3.2;
 
-      const targetCam = new THREE.Vector3(targetRoom.node.x, 1.6 + floorOffset, targetRoom.node.z);
-      const targetLook = new THREE.Vector3(targetRoom.node.x, 1.6 + floorOffset, targetRoom.node.z + 0.05);
+      const targetCam = new THREE.Vector3(targetRoom.node.x, 1.65 + floorOffset, targetRoom.node.z);
+      const targetLook = new THREE.Vector3(targetRoom.node.x, 1.65 + floorOffset, targetRoom.node.z + 0.05);
 
       gsap.to(cameraRef.current.position, {
         x: targetCam.x,
         y: targetCam.y,
         z: targetCam.z,
-        duration: 1.5,
-        ease: 'power2.inOut',
+        duration: 0.65,
+        ease: 'power2.out',
       });
       gsap.to(controlsRef.current.target, {
         x: targetLook.x,
         y: targetLook.y,
         z: targetLook.z,
-        duration: 1.5,
-        ease: 'power2.inOut',
+        duration: 0.65,
+        ease: 'power2.out',
         onComplete: () => {
           if (controlsRef.current) {
             controlsRef.current.enabled = true;
-            controlsRef.current.enableZoom = false;
-            controlsRef.current.enablePan = false;
-            controlsRef.current.minDistance = 0.01;
-            controlsRef.current.maxDistance = 0.1;
+            controlsRef.current.enableZoom = true;
+            controlsRef.current.enablePan = true;
+            controlsRef.current.minDistance = 0.05;
+            controlsRef.current.maxDistance = 25;
           }
           setActiveRoom(targetRoom.name);
         },
@@ -3154,17 +3811,17 @@ export default function BuildingViewer({
       });
     } else {
       const floorOffset = activeFloor * 3.2;
-      gsap.to(camera.position, { x: 0, y: 1.6 + floorOffset, z: 5.0, duration: 1.6, ease: 'power2.inOut' });
+      gsap.to(camera.position, { x: 0, y: 1.65 + floorOffset, z: 4.0, duration: 1.6, ease: 'power2.inOut' });
       gsap.to(controls.target, {
-        x: 0, y: 1.6 + floorOffset, z: 5.05,
+        x: 0, y: 1.65 + floorOffset, z: 0,
         duration: 1.6,
         ease: 'power2.inOut',
         onComplete: () => {
           controls.enabled = true;
-          controls.enableZoom = false;
-          controls.enablePan = false;
-          controls.minDistance = 0.01;
-          controls.maxDistance = 0.1;
+          controls.enableZoom = true;
+          controls.enablePan = true;
+          controls.minDistance = 0.05;
+          controls.maxDistance = 25;
         }
       });
     }
@@ -3226,10 +3883,12 @@ export default function BuildingViewer({
     return () => document.removeEventListener('fullscreenchange', handleFSChange);
   }, []);
 
+  uiFrameRef.current = () => { drawMinimap(); updateHotspotPlacement(); };
+
   return (
     <div className="relative w-full h-full min-h-[550px] bg-black/20 rounded-3xl overflow-hidden group/viewer border border-white/5">
       {/* 3D Canvas element */}
-      <div ref={containerRef} className="w-full h-full absolute inset-0" />
+      <div ref={containerRef} className="w-full h-full absolute inset-0 cursor-grab active:cursor-grabbing" />
 
       {/* Filter Toggle Button */}
       <button
@@ -3439,7 +4098,7 @@ export default function BuildingViewer({
                 onSubmit={(e) => {
                   e.preventDefault();
                   setLeadSubmitting(true);
-                  fetch('http://localhost:3001/leads', {
+                  fetch(`${API_URL}/leads`, {
                     method: 'POST',
                     headers: { 
                       'Content-Type': 'application/json',
@@ -3519,24 +4178,20 @@ export default function BuildingViewer({
         </div>
       )}
 
-      {/* Instructions Overlay */}
-      {viewMode === 'walkthrough' && !isMobile && !isLocked && (
-        <div 
-          onClick={() => {
-            if (pointerControlsRef.current) {
-              pointerControlsRef.current.lock();
-            }
-          }}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col justify-center items-center gap-4 cursor-pointer z-10 select-none text-center px-4"
-        >
-          <div className="bg-indigo-600/10 border border-indigo-500/20 text-[#00f5d4] px-4 py-2 rounded-full text-xs font-black tracking-widest uppercase animate-pulse">
-            Click to Walk Inside Flat
-          </div>
-          <p className="text-white/60 text-xs max-w-xs leading-relaxed">
-            Click anywhere to lock pointer<br />
-            Use <span className="font-extrabold text-white">WASD</span> to walk • <span className="font-extrabold text-white">Mouse</span> to look around<br />
-            Press <span className="font-extrabold text-[#00f5d4]">ESC</span> to unlock and exit look mode.
-          </p>
+      {/* Walkthrough Navigation Guide HUD */}
+      {viewMode === 'walkthrough' && (
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-black/80 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/10 text-white text-[10px] font-label-caps tracking-wider shadow-2xl pointer-events-none select-none">
+          <span className="flex items-center gap-1.5 text-[#00f5d4] font-bold">
+            <Icon icon="solar:cursor-bold" className="text-sm" /> Drag to Look Around
+          </span>
+          <span className="text-white/30">•</span>
+          <span className="flex items-center gap-1.5 text-white/90">
+            <Icon icon="solar:keyboard-bold" className="text-sm" /> WASD Walk
+          </span>
+          <span className="text-white/30">•</span>
+          <span className="flex items-center gap-1.5 text-white/90">
+            <Icon icon="solar:target-bold" className="text-sm" /> Click Floor to Move
+          </span>
         </div>
       )}
 
@@ -3738,6 +4393,45 @@ export default function BuildingViewer({
         </div>
       )}
 
+      {/* Walkthrough Mode Floor & Flat Switcher */}
+      {viewMode === 'walkthrough' && towerFloors && towerFloors.length > 0 && (
+        <div className="absolute top-6 left-6 z-10 flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/10 rounded-2xl p-1.5 shadow-2xl select-none">
+          <button
+            onClick={() => {
+              if (setViewMode) setViewMode('building');
+              handleShowAll();
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors"
+            title="Exit Walkthrough to Building View"
+          >
+            <Icon icon="solar:buildings-bold-duotone" className="text-sm text-[#00f5d4]" />
+            <span>Exterior</span>
+          </button>
+          <div className="w-px h-5 bg-white/20" />
+          <div className="flex items-center gap-1 overflow-x-auto max-w-[420px] scrollbar-hide py-0.5">
+            {towerFloors.map((tf) => {
+              const isActive = tf.floorNumber === activeFloor;
+              return (
+                <button
+                  key={tf.id}
+                  onClick={() => {
+                    handleFloorSelect(tf);
+                    if (setActiveRoom) setActiveRoom(null);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all ${
+                    isActive
+                      ? 'bg-[#00f5d4] text-[#0c0f16] shadow-md shadow-[#00f5d4]/20 scale-105'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10'
+                  }`}
+                >
+                  L{tf.floorNumber} {tf.flatType ? `• ${tf.flatType}` : ''}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Floating Viewport Controls widget (Top-Right) */}
       <div className="absolute top-6 right-6 z-10 flex flex-col gap-2 pointer-events-auto">
         <button
@@ -3913,31 +4607,210 @@ export default function BuildingViewer({
         </div>
       )}
 
-      {/* Floating Guided Tour Player widget (Bottom-Right) */}
-      {tours.length > 0 && viewMode === 'walkthrough' && activeRoom === null && (
-        <div className="absolute bottom-6 right-6 z-10 bg-black/60 backdrop-blur-md border border-white/15 px-4 py-2 rounded-full flex items-center gap-3">
-          <span className="text-[9px] font-label-caps text-white font-bold tracking-widest uppercase">GUIDED TOUR</span>
-          <div className="h-4 w-[1px] bg-white/20"></div>
-          {isPlayingTour ? (
-            <button
-              onClick={handlePauseTour}
-              className="w-9 h-9 bg-[#00f5d4] hover:bg-[#00f5d4]/85 text-black rounded-full flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-[#00f5d4]/20"
-            >
-              <Icon icon="solar:pause-bold" className="text-sm" />
-            </button>
-          ) : (
-            <button
-              onClick={handlePlayTour}
-              className="w-9 h-9 bg-white hover:bg-neutral-100 text-black rounded-full flex items-center justify-center transition-all active:scale-90 shadow-lg"
-            >
-              <Icon icon="solar:play-bold" className="text-sm ml-0.5" />
-            </button>
-          )}
-          {isPlayingTour && (
-            <span className="text-[9px] text-white/50 font-bold tracking-wide">
-              Step {tourIndex + 1}/{tours[0].routeJson.length}
+      {/* Tape Measure Active Floating Banner (Top-Center) */}
+      {viewMode === 'walkthrough' && isMeasuring && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 bg-[#0c0f16]/95 backdrop-blur-2xl border border-[#00f5d4]/40 px-5 py-2.5 rounded-full shadow-2xl shadow-[#00f5d4]/15 animate-fadeIn text-stone-100">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00f5d4] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00f5d4]"></span>
+            </span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-[#00f5d4]">
+              Tape Measure
+            </span>
+          </div>
+          <div className="h-4 w-px bg-white/20" />
+          <span className="text-xs text-white/90 font-semibold">
+            {!activeMeasureStartRef.current
+              ? 'Click any wall, floor or furniture to set Start Point'
+              : liveMeasureText
+                ? `Distance: ${liveMeasureText} — Click to Lock`
+                : 'Click second surface point to complete measurement'}
+          </span>
+          {measureCount > 0 && (
+            <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded-full text-white/70 font-bold">
+              {measureCount} saved
             </span>
           )}
+          <div className="h-4 w-px bg-white/20" />
+          {measureCount > 0 && (
+            <button
+              onClick={clearMeasurements}
+              className="text-[10px] font-bold text-rose-400 hover:text-rose-300 transition-colors uppercase tracking-wider px-2 py-1 rounded-lg hover:bg-rose-500/10"
+            >
+              Clear All
+            </button>
+          )}
+          <button
+            onClick={() => {
+              setIsMeasuring(false);
+              clearMeasurements();
+            }}
+            className="text-[10px] font-bold bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-lg transition-colors"
+          >
+            Exit Tool
+          </button>
+        </div>
+      )}
+
+      {/* Dollhouse View Hint Banner */}
+      {viewMode === 'walkthrough' && matterportMode === 'dollhouse' && !isMeasuring && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-[#0c0f16]/90 backdrop-blur-xl border border-white/15 px-4 py-2 rounded-full shadow-2xl text-xs text-stone-200">
+          <span className="text-base">🏠</span>
+          <span className="font-semibold text-white">3D Dollhouse Cutaway</span>
+          <span className="text-white/40">•</span>
+          <span className="text-white/70">Ceilings removed. Click any room to dive inside!</span>
+        </div>
+      )}
+
+      {/* Matterport 3-Mode View Bar (Bottom-Left) */}
+      {viewMode === 'walkthrough' && (
+        <div className="absolute bottom-6 left-6 z-20 flex items-center gap-1 bg-black/75 backdrop-blur-xl border border-white/15 p-1.5 rounded-2xl shadow-2xl">
+          <button
+            onClick={() => switchMatterportMode('inside')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+              matterportMode === 'inside'
+                ? 'bg-[#00f5d4] text-[#0c0f16] shadow-lg shadow-[#00f5d4]/25'
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+            }`}
+            title="Explore inside at eye level"
+          >
+            <span>🚶</span>
+            <span>Inside</span>
+          </button>
+          <button
+            onClick={() => switchMatterportMode('dollhouse')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+              matterportMode === 'dollhouse'
+                ? 'bg-[#00f5d4] text-[#0c0f16] shadow-lg shadow-[#00f5d4]/25'
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+            }`}
+            title="3D Dollhouse cutaway view from above"
+          >
+            <span>🏠</span>
+            <span>Dollhouse</span>
+          </button>
+          <button
+            onClick={() => switchMatterportMode('floorplan')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+              matterportMode === 'floorplan'
+                ? 'bg-[#00f5d4] text-[#0c0f16] shadow-lg shadow-[#00f5d4]/25'
+                : 'text-white/70 hover:text-white hover:bg-white/10'
+            }`}
+            title="Top-down 2D floor plan blueprint"
+          >
+            <span>📐</span>
+            <span>Floor Plan</span>
+          </button>
+        </div>
+      )}
+
+      {/* Bottom Room Quick-Jump Filmstrip Carousel (Bottom-Center) */}
+      {viewMode === 'walkthrough' && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-black/75 backdrop-blur-xl border border-white/15 px-2 py-1.5 rounded-2xl shadow-2xl max-w-[calc(100%-3rem)] overflow-x-auto scrollbar-hide">
+          {(() => {
+            const activeF = towerFloors?.find(f => f.floorNumber === activeFloor);
+            const floorLayout = activeF?.structureJson || getLayoutForFloor(localLayout, activeFloor);
+            const rooms = floorLayout?.rooms || [];
+            return rooms.map((r: any) => {
+              const isActive = activeRoom === r.name;
+              const areaVal = unitSystem === 'imperial'
+                ? `${Math.round(r.width * r.depth * 10.7639)} sq ft`
+                : `${(r.width * r.depth).toFixed(1)} m²`;
+              return (
+                <button
+                  key={r.id || r.name}
+                  onClick={() => handleJumpToRoom(r)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap text-left ${
+                    isActive
+                      ? 'bg-[#00f5d4] text-[#0c0f16] shadow-lg shadow-[#00f5d4]/25 font-bold scale-105'
+                      : 'bg-white/5 hover:bg-white/15 text-white/80 border border-white/5'
+                  }`}
+                  title={`Jump into ${r.name}`}
+                >
+                  <Icon icon={getRoomIcon(r.name)} className={`text-base ${isActive ? 'text-[#0c0f16]' : 'text-[#00f5d4]'}`} />
+                  <div className="flex flex-col">
+                    <span className={`text-[11px] leading-tight ${isActive ? 'text-[#0c0f16] font-extrabold' : 'text-white font-semibold'}`}>
+                      {r.name}
+                    </span>
+                    <span className={`text-[9px] leading-none ${isActive ? 'text-[#0c0f16]/75 font-medium' : 'text-white/50'}`}>
+                      {r.width}×{r.depth}m • {areaVal}
+                    </span>
+                  </div>
+                </button>
+              );
+            });
+          })()}
+        </div>
+      )}
+
+      {/* Matterport Spatial Tools Bar (Bottom-Right) */}
+      {viewMode === 'walkthrough' && (
+        <div className="absolute bottom-36 left-6 z-20 flex flex-wrap items-center gap-2">
+          {/* Guided Tour Player if available */}
+          {tours.length > 0 && activeRoom === null && (
+            <div className="bg-black/75 backdrop-blur-xl border border-white/15 px-3 py-1.5 rounded-2xl flex items-center gap-2 shadow-2xl">
+              <span className="text-[9px] font-bold text-white/60 tracking-wider uppercase">TOUR</span>
+              <button
+                onClick={isPlayingTour ? handlePauseTour : handlePlayTour}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                  isPlayingTour ? 'bg-[#00f5d4] text-black' : 'bg-white text-black hover:bg-white/90'
+                }`}
+                title={isPlayingTour ? 'Pause Tour' : 'Play Tour'}
+              >
+                <Icon icon={isPlayingTour ? 'solar:pause-bold' : 'solar:play-bold'} className="text-xs" />
+              </button>
+              {isPlayingTour && (
+                <span className="text-[9px] text-white/60 font-bold">
+                  {tourIndex + 1}/{tours[0]?.routeJson?.length || 1}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Spatial Tools Pill */}
+          <div className="bg-black/75 backdrop-blur-xl border border-white/15 p-1.5 rounded-2xl flex items-center gap-1.5 shadow-2xl">
+            {/* Dimensions Toggle */}
+            <button
+              onClick={() => setShowDimensions(!showDimensions)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                showDimensions
+                  ? 'bg-[#00f5d4]/20 text-[#00f5d4] border border-[#00f5d4]/40 shadow-sm shadow-[#00f5d4]/10'
+                  : 'text-white/60 hover:text-white hover:bg-white/10'
+              }`}
+              title={showDimensions ? 'Hide Room Dimensions' : 'Show Room Dimensions'}
+            >
+              <Icon icon="solar:maximize-square-minimalistic-bold" className="text-base" />
+              <span className="text-[10px]">Dimensions</span>
+            </button>
+
+            {/* Unit System Toggle */}
+            <button
+              onClick={() => setUnitSystem(unitSystem === 'metric' ? 'imperial' : 'metric')}
+              className="px-2.5 py-2 rounded-xl text-[10px] font-extrabold uppercase bg-white/10 hover:bg-white/20 text-white/90 transition-all border border-white/10"
+              title={`Switch units (Current: ${unitSystem.toUpperCase()})`}
+            >
+              {unitSystem === 'metric' ? 'M / M²' : 'FT / SQ FT'}
+            </button>
+
+            {/* Tape Measure Toggle */}
+            <button
+              onClick={() => {
+                const next = !isMeasuring;
+                setIsMeasuring(next);
+                if (!next) clearMeasurements();
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                isMeasuring
+                  ? 'bg-[#00f5d4] text-[#0c0f16] shadow-lg shadow-[#00f5d4]/30 animate-pulse'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              }`}
+              title="Virtual Tape Measure (Click point A then point B in 3D)"
+            >
+              <Icon icon="solar:ruler-bold-duotone" className="text-base" />
+              <span className="text-[10px]">Measure</span>
+            </button>
+          </div>
         </div>
       )}
 

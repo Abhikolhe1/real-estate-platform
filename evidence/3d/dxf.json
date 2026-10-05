@@ -1,0 +1,18 @@
+[
+  {
+    "path": "test_tower_10_floors.dxf",
+    "sha256": "ac46c3b506a2bc2d66fe5180ddd56e6273f14b4f3b112c1c9070d2a1dcc17fef",
+    "rooms": 8,
+    "walls": 27,
+    "apertures": 4,
+    "labels": 7
+  },
+  {
+    "path": "apps\\ai-service\\test_tower_10_floors.dxf",
+    "sha256": "20df78312ebfd364e72ee79846d120b9b7c1a8ebdb2e11af30bb1307423cf415",
+    "rooms": 4,
+    "walls": 41,
+    "apertures": 16,
+    "labels": 21
+  }
+]

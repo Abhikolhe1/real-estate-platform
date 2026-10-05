@@ -1,0 +1,13 @@
+[
+  {
+    "name": "exterior",
+    "contexts": 3,
+    "gpu": "WebKit WebGL",
+    "fps": 0.4760884572367057,
+    "p50Ms": 3666.5,
+    "p95Ms": 4299.899999999994,
+    "drawsPerFrame": 4775,
+    "trianglesPerFrame": 96350,
+    "canvasCount": 1
+  }
+]

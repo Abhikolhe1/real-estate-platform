@@ -1,0 +1,37 @@
+{
+  "results": [
+    {
+      "name": "Furniture reset, delete and persisted deletion",
+      "result": "PASS"
+    },
+    {
+      "name": "Corrupt saved furniture fails safely with notice",
+      "result": "PASS"
+    },
+    {
+      "name": "Existing embed mode controls drive imported runtime",
+      "result": "PASS"
+    },
+    {
+      "name": "Legacy floors preserve renderer and cached building",
+      "result": "FAIL",
+      "reason": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ '61069bf5-9dff-47ee-93df-e6a7f749b0cc'\n- 'e9a55ee2-e8c0-49ff-9cfa-fc27d0d3a6a3'\n"
+    },
+    {
+      "name": "Legacy dollhouse and floorplan preserve renderer and escape eye-height clamp",
+      "result": "FAIL",
+      "reason": "TimeoutError: locator.click: Timeout 90000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: /Dollhouse/ })\u001b[22m\n\u001b[2m    - locator resolved to <button title=\"3D Dollhouse cutaway view from above\" class=\"flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-white/70 hover:text-white hover:bg-white/10\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <button title=\"Jump into High-Speed Lifts (Elevators)\" class=\"flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap text-left bg-white/5 hover:bg-white/15 text-white/80 border border-white/5\">…</button> from <div class=\"absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-black/75 backdrop-blur-xl border border-white/15 px-2 py-1.5 rounded-2xl shadow-2xl max-w-[48vw] overflow-x-auto scrollbar-hide\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <button title=\"Jump into High-Speed Lifts (Elevators)\" class=\"flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap text-left bg-white/5 hover:bg-white/15 text-white/80 border border-white/5\">…</button> from <div class=\"absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-black/75 backdrop-blur-xl border border-white/15 px-2 py-1.5 rounded-2xl shadow-2xl max-w-[48vw] overflow-x-auto scrollbar-hide\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    148 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m        - element is visible, enabled and stable\u001b[22m\n\u001b[2m        - scrolling into view if needed\u001b[22m\n\u001b[2m        - done scrolling\u001b[22m\n\u001b[2m        - <button title=\"Jump into High-Speed Lifts (Elevators)\" class=\"flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap text-left bg-white/5 hover:bg-white/15 text-white/80 border border-white/5\">…</button> from <div class=\"absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-black/75 backdrop-blur-xl border border-white/15 px-2 py-1.5 rounded-2xl shadow-2xl max-w-[48vw] overflow-x-auto scrollbar-hide\">…</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m      - retrying click action\u001b[22m\n\u001b[2m        - waiting 500ms\u001b[22m\n"
+    },
+    {
+      "name": "Legacy hotspot fixture is mounted",
+      "result": "PASS"
+    },
+    {
+      "name": "Legacy guided tour changes camera and can pause",
+      "result": "FAIL",
+      "reason": "TimeoutError: locator.click: Timeout 90000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTitle('Pause Tour', { exact: true })\u001b[22m\n"
+    }
+  ],
+  "errors": [],
+  "details": []
+}

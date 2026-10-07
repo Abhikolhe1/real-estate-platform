@@ -1,0 +1,44 @@
+  ▲ Next.js 14.2.35
+  - Experiments (use with caution):
+    · cpus
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping linting
+   Checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/21) ...
+   Generating static pages (5/21)
+   Generating static pages (10/21)
+   Generating static pages (15/21)
+ ✓ Generating static pages (21/21)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    3.61 kB         130 kB
+├ ○ /_not-found                          871 B          88.2 kB
+├ ○ /ai-generator                        142 B           130 kB
+├ ○ /amenities                           4 kB            201 kB
+├ ○ /analytics                           3.55 kB         121 kB
+├ ○ /demo/floorplans                     15.7 kB         112 kB
+├ ○ /flats                               4.67 kB         122 kB
+├ ○ /floors                              4.31 kB         122 kB
+├ ○ /leads                               3.83 kB         121 kB
+├ ○ /login                               1.84 kB         100 kB
+├ ○ /media                               3.67 kB         121 kB
+├ ○ /projects                            4.06 kB         122 kB
+├ ○ /register                            2.01 kB         101 kB
+├ ○ /sdk                                 5.73 kB         102 kB
+├ ○ /team                                3.12 kB         121 kB
+├ ○ /towers                              3.14 kB         121 kB
+├ ○ /validation-studio                   141 B           130 kB
+├ ○ /walkthroughs                        119 kB          343 kB
+└ ○ /website                             16.1 kB         106 kB
++ First Load JS shared by all            87.4 kB
+  ├ chunks/146-a0bd33f0c7ed4e3e.js       31.7 kB
+  ├ chunks/b6261da7-726616b0fe77a167.js  53.6 kB
+  └ other shared chunks (total)          1.99 kB
+
+
+○  (Static)  prerendered as static content

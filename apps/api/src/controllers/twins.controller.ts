@@ -1,8 +1,11 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../guards/auth.guard';
+import { TwinAccessGuard } from '../guards/twin-access.guard';
 import { TwinsService } from '../services/twins.service';
 import { TenantId } from '../interceptors/tenant.decorator';
 
 @Controller('digital-twin')
+@UseGuards(JwtAuthGuard,TwinAccessGuard)
 export class TwinsController {
   constructor(private readonly twinsService: TwinsService) {}
 

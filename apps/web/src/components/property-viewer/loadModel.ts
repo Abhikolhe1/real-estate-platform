@@ -14,6 +14,12 @@ export async function loadModel(
   signal: AbortSignal,
   progress: (text: string) => void,
 ): Promise<{ root: THREE.Group; manifest: Manifest }> {
+  if (source.canonical) {
+    progress('Compiling approved canonical revision…');
+    const { canonicalScene } = await import('./CanonicalSceneAdapter');
+    if (signal.aborted) throw new DOMException('Cancelled', 'AbortError');
+    return canonicalScene(source.canonical);
+  }
   if (source.proceduralDemo) {
     const { defaultLayoutData } = await import('../default-layout');
     source = { ...source, layout: defaultLayoutData };

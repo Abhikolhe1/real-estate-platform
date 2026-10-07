@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DigitalTwinModel } from '../entities/digital-twin-model.entity';
@@ -8,6 +8,12 @@ import { TourRoute } from '../entities/tour-route.entity';
 import { FloorPlan } from '../entities/floorplan.entity';
 import { GeneratedStructure } from '../entities/generated-structure.entity';
 import { Builder } from '../entities/builder.entity';
+import { Project } from '../entities/project.entity';
+
+function allow(data: Record<string, any>, keys: string[]) {
+  if (!data || Object.keys(data).some(k => !keys.includes(k))) throw new BadRequestException('Unsupported or immutable field');
+  return Object.fromEntries(keys.filter(k => data[k] !== undefined).map(k => [k, data[k]]));
+}
 
 @Injectable()
 export class TwinsService {
@@ -36,6 +42,7 @@ export class TwinsService {
     snapTolerance?: number,
     layerMapping?: Record<string, string>,
   ) {
+    if (process.env.ENABLE_LEGACY_CAD_DEMOS !== 'true') throw new BadRequestException('Production reconstruction requires an immutable canonical source asset');
     const fp = await this.floorplanRepo.findOne({ where: { id: floorplanId, tenantId } });
     if (!fp) {
       throw new NotFoundException(`Floor plan with ID ${floorplanId} not found.`);
@@ -66,7 +73,7 @@ export class TwinsService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      const response = await fetch(`${aiServiceUrl}/parse`, {
+      const response = await fetch(`${aiServiceUrl}/demo/parse`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -142,8 +149,10 @@ export class TwinsService {
   }
 
   async createModel(tenantId: string, data: Partial<DigitalTwinModel>) {
+    const safe = allow(data, ['projectId', 'name', 'modelUrl', 'modelType', 'fileSize', 'status']);
+    if (!data.projectId || !await this.modelRepo.manager.findOneBy(Project, { id: data.projectId, tenantId })) throw new NotFoundException('Project not found');
     const model = this.modelRepo.create({
-      ...data,
+      ...safe,
       tenantId,
     });
     return this.modelRepo.save(model);
@@ -151,7 +160,7 @@ export class TwinsService {
 
   async updateModel(tenantId: string, id: string, data: Partial<DigitalTwinModel>) {
     const model = await this.findModelById(tenantId, id);
-    Object.assign(model, data);
+    Object.assign(model, allow(data, ['name', 'modelUrl', 'modelType', 'fileSize', 'status']));
     return this.modelRepo.save(model);
   }
 
@@ -171,7 +180,7 @@ export class TwinsService {
     await this.findModelById(tenantId, modelId);
     
     const point = this.cameraRepo.create({
-      ...data,
+      ...allow(data, ['name','posX','posY','posZ','targetX','targetY','targetZ']),
       modelId,
       tenantId,
     });
@@ -196,7 +205,7 @@ export class TwinsService {
     await this.findModelById(tenantId, modelId);
     
     const hotspot = this.hotspotRepo.create({
-      ...data,
+      ...allow(data, ['name','type','posX','posY','posZ','contentJson']),
       modelId,
       tenantId,
     });
@@ -208,7 +217,7 @@ export class TwinsService {
     if (!hotspot) {
       throw new NotFoundException(`Hotspot with ID ${id} not found.`);
     }
-    Object.assign(hotspot, data);
+    Object.assign(hotspot, allow(data, ['name', 'type', 'posX', 'posY', 'posZ', 'contentJson']));
     return this.hotspotRepo.save(hotspot);
   }
 
@@ -230,7 +239,7 @@ export class TwinsService {
     await this.findModelById(tenantId, modelId);
 
     const tour = this.tourRepo.create({
-      ...data,
+      ...allow(data, ['routeName','routeJson']),
       modelId,
       tenantId,
     });
@@ -242,7 +251,7 @@ export class TwinsService {
     if (!tour) {
       throw new NotFoundException(`Tour route with ID ${id} not found.`);
     }
-    Object.assign(tour, data);
+    Object.assign(tour, allow(data, ['routeName', 'routeJson']));
     return this.tourRepo.save(tour);
   }
 

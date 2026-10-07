@@ -1,10 +1,13 @@
-import { Controller, Get, Param, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Param, NotFoundException, ForbiddenException, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../guards/auth.guard';
+import { TwinAccessGuard } from '../guards/twin-access.guard';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GeneratedStructure } from '../entities/generated-structure.entity';
 import { TenantId } from '../interceptors/tenant.decorator';
 
 @Controller('structures')
+@UseGuards(JwtAuthGuard,TwinAccessGuard)
 export class StructuresController {
   constructor(
     @InjectRepository(GeneratedStructure)

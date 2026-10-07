@@ -1,0 +1,28 @@
+[
+  {
+    "name": "duplicate-element-id",
+    "rejected": false
+  },
+  {
+    "name": "empty-unit-id",
+    "rejected": false
+  },
+  {
+    "name": "nan-element-bounds",
+    "rejected": false
+  },
+  {
+    "name": "sample-semantic-maps",
+    "byRoom": 0,
+    "byFlat": 0,
+    "byFloor": 4,
+    "walls": 115,
+    "doors": 30
+  },
+  {
+    "name": "generated-window-collision-index",
+    "windowMeshes": 6,
+    "indexedWindowMeshes": 0,
+    "wallColliderMeshes": 4
+  }
+]

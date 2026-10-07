@@ -1,0 +1,7 @@
+{
+  "code": 0,
+  "source": "apps/web",
+  "staging": ".cache/post-mvp-audit-build",
+  "lint": "separate focused ESLint run",
+  "productionConfigChanged": false
+}

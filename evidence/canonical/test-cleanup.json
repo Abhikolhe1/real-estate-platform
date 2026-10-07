@@ -1,0 +1,22 @@
+{
+  "result": "PASS",
+  "removedSchemas": [
+    "canonical_test_1791360737784",
+    "canonical_test_1791361368191",
+    "canonical_test_1791361706843",
+    "canonical_test_1791364329128"
+  ],
+  "verification": "Exact task-generated names, two known fixture tenants and four test-only users verified before drop",
+  "publicSchemaPreserved": true,
+  "temporaryTestSessionRemoved": true,
+  "ownedServersStopped": true,
+  "verifiedClosedPorts": [
+    3180,
+    3191,
+    3192,
+    3193,
+    3195,
+    8105,
+    8106
+  ]
+}

@@ -1,73 +1,41 @@
-# AI-Powered Real Estate Virtual Experience Platform
-## Unified Project Directory: `real-estate-platform`
+# Aether real estate platform
 
-Welcome! This folder serves as the central container for the **AI-Powered Real Estate Virtual Experience Platform**. 
+One codebase for the main platform Admin, each builder's dashboard, their public websites and the common backend. Builder accounts, projects and website content are tenant data; creating a website does not require duplicating these source folders. The Python service supports DXF validation and interactive property viewing.
 
-Instead of a nested monorepo structure, this workspace houses **four standalone, fully decoupled project codebases** aligned with the frameworks, folder layouts, and coding standards of your existing active applications:
-* **`healthcare/ui` & `amplio-merchant`** (for frontend portals using MUI & Minimal UI Kit v5)
-* **`Amplio-Backend`** (for NestJS backend globally structured by technical role)
+| Directory | Responsibility |
+| --- | --- |
+| `apps/api` | NestJS API, tenant authorization, PostgreSQL inventory and immutable canonical revisions |
+| `apps/ai-service` | Private deterministic DXF worker; optional legacy demonstrations |
+| `apps/builder` | Next.js Builder portal and Validation Studio |
+| `apps/admin` | Next.js administration and reconstruction monitoring |
+| `apps/web` | Next.js public website and existing Three.js property viewer |
+| `packages/twin-schema` | Shared canonical JSON Schema, TypeScript types and boundary validation |
+| `packages/ui` | Shared UI components |
+| `tools/canonical` | Reproducible geometry, API, browser and build checks |
+| `evidence/canonical` | Recorded Phase 2 results and screenshots |
 
----
+`packages/ui` contains shared React components. `packages/twin-schema` contains the shared digital-twin contract used by the API, Builder editor and viewer. Both libraries are actively used. See the [application and package guide](packages/README.md) for the folder layout and an explanation of generated dependencies.
 
-## 📂 Project Structure Overview
+Start with [development setup](docs/DEVELOPMENT.md) and [architecture](docs/ARCHITECTURE.md). Large portal views live in `src/sections`; App Router pages select views. API controllers call services. Canonical reconstruction has one Python geometry pipeline and one approved JSON contract across the portals.
 
-```
-real-estate-platform/
-├── Complete_Real_Estate_Platform_PRD.md # Complete Product Requirements Document
-├── README.md                            # This root guide
-├── real-estate-backend/                 # Standalone NestJS multi-tenant API (LoopBack folder structure)
-├── real-estate-admin/                   # Standalone Next.js Super Admin portal (Minimal UI Kit structure)
-├── real-estate-builder/                 # Standalone Next.js Builder dashboard portal (Minimal UI Kit structure)
-└── real-estate-web/                     # Standalone Next.js client website engine (Minimal UI Kit structure)
-```
+The supported workflow is layered single-floor ASCII DXF -> immutable source -> metric canonical draft -> reviewed correction revision -> explicit approval -> existing viewer Runtime/Surface. Generated test drawings demonstrate exact synthetic geometry. Genuine architectural acceptance remains **BLOCKED** until a supported licensed drawing has independent annotations.
 
----
+## Verification
 
-## 🏛️ Codebase Architectures & Mappings
-
-### 1. NestJS Backend: `real-estate-backend`
-Aligned with **`Amplio-Backend`** (LoopBack 4), grouping elements globally by technical role:
-* `/src/controllers` (REST Endpoints)
-* `/src/services` (Business logic)
-* `/src/entities` (TypeORM Postgres models)
-* `/src/dtos` (Validation filters)
-* `/src/interceptors` (Multi-tenant resolvers & `@TenantId()` decorators)
-
-### 2. Next.js Frontends: `real-estate-admin`, `real-estate-builder`, `real-estate-web`
-Aligned with **`healthcare/ui`** (Minimal UI Kit), separating logic cleanly away from Next.js thin pages:
-* `/src/app` (Thin routing paths & globals.css)
-* `/src/sections` (Page layout visualizers with GSAP entry loaders)
-* `/src/components` (Reusable UI buttons and inputs)
-* `/src/layouts` (Dashboard sidebars and navigation headers)
-* `/src/routes` (Center paths map)
-
----
-
-## ⚡ Running Each Project Locally
-
-You can open the main folder `real-estate-platform` or open each standalone project directly in your editor as an active workspace.
-
-### Step 1: Install Dependencies
-For any project you wish to run, enter its directory and run:
-```bash
-npm install
+```sh
+npm ci
+npm run test:canonical
+npm run build:verify
 ```
 
-### Step 2: Configure Environment Variables
-Inside `real-estate-backend`, create your local environment:
-```bash
-cp .env.example .env
-```
+Python setup and database/browser prerequisites are in [DEVELOPMENT.md](docs/DEVELOPMENT.md). `test:canonical:api` requires local PostgreSQL and the private worker. `test:canonical:browser` requires the isolated integration API and the three built portals.
 
-### Step 3: Run the Server
-Runs the development hot-reloading environment:
-```bash
-npm run dev
-```
+## Phase 2 records
 
-* **`real-estate-web` (Consumer Engine)**: `http://localhost:3000`
-* **`real-estate-backend` (NestJS REST API)**: `http://localhost:3001`
-* **`real-estate-admin` (Super Admin)**: `http://localhost:3002`
-* **`real-estate-builder` (Builder Portal)**: `http://localhost:3003`
+- [Implementation](CANONICAL_DXF_IMPLEMENTATION.md)
+- [Executed tests and regressions](CANONICAL_DXF_TEST_REPORT.md)
+- [Automatic and reviewed accuracy](CANONICAL_DXF_ACCURACY_REPORT.md)
+- [Authorization and resource limits](CANONICAL_DXF_SECURITY_REPORT.md)
+- [Cleanup scope](docs/CODE_CLEANUP.md)
 
-Each project includes a standalone **`Dockerfile`** for Docker environments, detailed logs, and setup directions inside its own directory.
+Historical roadmap documents remain in `docs/MD`; their planned features are not evidence of implemented behavior. No deployment was performed.

@@ -1,0 +1,102 @@
+ M .gitignore
+ M apps/admin/src/app/(auth)/login/page.tsx
+ M apps/admin/src/app/(dashboard)/layout.tsx
+ M apps/admin/src/app/(dashboard)/page.tsx
+ M apps/admin/src/app/globals.css
+ M apps/admin/src/layouts/dashboard/layout.tsx
+ M apps/ai-service/__pycache__/geometry.cpython-312.pyc
+ M apps/ai-service/__pycache__/main.cpython-312.pyc
+ M apps/ai-service/__pycache__/ocr.cpython-312.pyc
+ M apps/ai-service/__pycache__/parser.cpython-312.pyc
+ M apps/ai-service/__pycache__/pdf_processor.cpython-312.pyc
+ M apps/ai-service/__pycache__/style.cpython-312.pyc
+ M apps/api/package.json
+ M apps/api/src/app.module.ts
+ M apps/api/src/controllers/floorplan.controller.ts
+ M apps/api/src/controllers/inventory.controller.ts
+ M apps/api/src/interceptors/tenant.interceptor.ts
+ M apps/api/src/main.ts
+ M apps/api/src/seed.ts
+ M apps/api/src/services/navigation.service.ts
+ M apps/api/src/services/pages.service.ts
+ M apps/builder/src/app/(auth)/login/page.tsx
+ M apps/builder/src/app/(auth)/register/page.tsx
+ M apps/builder/src/app/(dashboard)/ai-generator/page.tsx
+ M apps/builder/src/app/(dashboard)/amenities/page.tsx
+ M apps/builder/src/app/(dashboard)/analytics/page.tsx
+ M apps/builder/src/app/(dashboard)/flats/page.tsx
+ M apps/builder/src/app/(dashboard)/floors/page.tsx
+ M apps/builder/src/app/(dashboard)/layout.tsx
+ M apps/builder/src/app/(dashboard)/leads/page.tsx
+ M apps/builder/src/app/(dashboard)/media/page.tsx
+ M apps/builder/src/app/(dashboard)/projects/page.tsx
+ M apps/builder/src/app/(dashboard)/sdk/page.tsx
+ M apps/builder/src/app/(dashboard)/team/page.tsx
+ M apps/builder/src/app/(dashboard)/towers/page.tsx
+ M apps/builder/src/app/(dashboard)/walkthroughs/page.tsx
+ M apps/builder/src/app/(dashboard)/website/page.tsx
+ M apps/builder/src/app/globals.css
+ M apps/builder/src/layouts/dashboard/layout.tsx
+ M apps/builder/src/sections/projects/view/projects-list-view.tsx
+ M apps/builder/tsconfig.tsbuildinfo
+ M apps/web/src/app/embed/project/[id]/page.tsx
+ M apps/web/src/app/explorer/page.tsx
+ M apps/web/src/app/gallery/page.tsx
+ M apps/web/src/app/globals.css
+ M apps/web/src/app/inventory/[id]/page.tsx
+ M apps/web/src/app/inventory/page.tsx
+ M apps/web/src/app/location/page.tsx
+ M apps/web/src/components/building-viewer.tsx
+ M apps/web/src/components/dynamic-page-renderer.tsx
+ M apps/web/src/components/scene-compiler/AutoPlacer.ts
+ M apps/web/src/components/scene-compiler/ExteriorGenerator.ts
+ M apps/web/src/components/scene-compiler/FurnitureFactory.ts
+ M apps/web/src/components/scene-compiler/SceneCompiler.ts
+ M apps/web/src/components/scene-compiler/TowerCompiler.ts
+ M apps/web/src/layouts/main/layout.tsx
+ M apps/web/src/sections/home/view/home-view.tsx
+ M apps/web/tsconfig.tsbuildinfo
+ M generate_test_dxf.py
+ M package.json
+?? 3D_MVP_IMPLEMENTATION.md
+?? 3D_MVP_MANUAL_TEST_GUIDE.md
+?? 3D_MVP_PERFORMANCE_REPORT.md
+?? 3D_MVP_TEST_REPORT.md
+?? PERFORMANCE_UI_UPDATE.md
+?? apps/admin/public/images/
+?? apps/admin/public/videos/
+?? apps/admin/src/app/(dashboard)/loading.tsx
+?? apps/admin/src/app/error.tsx
+?? apps/admin/src/components/dashboard-skeleton.tsx
+?? apps/admin/src/config/
+?? apps/ai-service/test_tower_10_floors.dxf
+?? apps/builder/public/images/
+?? apps/builder/public/videos/
+?? apps/builder/src/app/(dashboard)/loading.tsx
+?? apps/builder/src/app/error.tsx
+?? apps/builder/src/components/dashboard-skeleton.tsx
+?? apps/builder/src/config/
+?? apps/web/public/environments/
+?? apps/web/public/images/
+?? apps/web/public/models/
+?? apps/web/public/videos/
+?? apps/web/src/app/error.tsx
+?? apps/web/src/app/explorer/loading.tsx
+?? apps/web/src/app/loading.tsx
+?? apps/web/src/components/default-layout.ts
+?? apps/web/src/components/explorer-route.tsx
+?? apps/web/src/components/legacy-explorer.tsx
+?? apps/web/src/components/live-inventory.tsx
+?? apps/web/src/components/page-skeleton.tsx
+?? apps/web/src/components/property-viewer/
+?? apps/web/src/components/scene-compiler/TextureGenerator.ts
+?? apps/web/src/config/
+?? apps/web/src/lib/
+?? docs/3d/
+?? evidence/
+?? scratch/
+?? scratch_check_all_pages.js
+?? scratch_inspect_db.js
+?? scratch_test_render.js
+?? scratch_update_db_media.js
+?? tools/

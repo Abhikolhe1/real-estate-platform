@@ -57,6 +57,9 @@ export class AuthService {
   }
 
   async register(tenantId: string, registerDto: RegisterDto) {
+    if (tenantId && tenantId !== '00000000-0000-0000-0000-000000000000') {
+      throw new BadRequestException('Joining an existing tenant requires an authorized invitation');
+    }
     const existing = await this.userRepo.findOne({ where: { email: registerDto.email } });
     if (existing) {
       throw new BadRequestException('Email is already registered');

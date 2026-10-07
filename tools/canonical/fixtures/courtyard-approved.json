@@ -1,0 +1,1073 @@
+{
+  "schemaVersion": "aether-twin/1",
+  "source": {
+    "assetId": "synthetic-courtyard",
+    "sha256": "0dc572f97b19db5b8cb71953e8a639bf506ca00ecf2f7c518b3efb2478b592a5",
+    "format": "dxf",
+    "parserVersion": "ezdxf-1.4.4/aether-1",
+    "algorithmVersion": "single-floor-1.0.0"
+  },
+  "revision": {
+    "id": "draft-835591931a23a020ac9df9ab",
+    "baseId": null,
+    "state": "approved"
+  },
+  "frame": {
+    "canonicalUnits": "meters",
+    "upAxis": "Y",
+    "sourceUnits": "meters",
+    "detectedInsunits": 6,
+    "scaleToMeters": 1.0,
+    "sourceOrigin": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "sourceToLocalMatrix": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      -0.0,
+      -0.0,
+      -0.0,
+      1.0
+    ],
+    "localToSourceMatrix": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "calibrated": true
+  },
+  "building": {
+    "id": "building-572183b990b20a85cc81a150",
+    "name": "Single-floor building",
+    "floorIds": [
+      "floor-572183b990b20a85cc81a150"
+    ]
+  },
+  "floors": [
+    {
+      "id": "floor-572183b990b20a85cc81a150",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "34",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "35",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "36",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "38",
+          "layer": "VOID",
+          "entityType": "LWPOLYLINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "inferred",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "buildingId": "building-572183b990b20a85cc81a150",
+      "name": "Ground floor",
+      "elevationM": 0.0,
+      "heightM": 3.0
+    }
+  ],
+  "rooms": [
+    {
+      "id": "room-0ecfaa23da919d185d1f1fa5",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "34",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "35",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "36",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "38",
+          "layer": "VOID",
+          "entityType": "LWPOLYLINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": []
+      },
+      "predecessorIds": [],
+      "floorId": "floor-572183b990b20a85cc81a150",
+      "name": "Unnamed room",
+      "footprint": {
+        "outer": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            10.0,
+            0.0
+          ],
+          [
+            10.0,
+            10.0
+          ],
+          [
+            0.0,
+            10.0
+          ]
+        ],
+        "holes": [
+          [
+            [
+              3.0,
+              3.0
+            ],
+            [
+              3.0,
+              7.0
+            ],
+            [
+              7.0,
+              7.0
+            ],
+            [
+              7.0,
+              3.0
+            ]
+          ]
+        ]
+      },
+      "boundaryWallIds": [
+        "wall-02d529f13b11f70e3e93958e",
+        "wall-1313bcbc40204292ed7d5042",
+        "wall-3cdde6635736072f73de60a6",
+        "wall-60155c11a22084ae5624de57",
+        "wall-76f3d4237a3ec41d4cc2f39d",
+        "wall-d54d7f55013113bb14fd5de1",
+        "wall-e01aed172bd6f09fb7355376",
+        "wall-e5ab1fd014756c87feb3845e"
+      ],
+      "spawn": [
+        8.5,
+        1.65,
+        5.0
+      ],
+      "areaM2": 84.0,
+      "perimeterM": 56.0
+    }
+  ],
+  "walls": [
+    {
+      "id": "wall-02d529f13b11f70e3e93958e",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-572183b990b20a85cc81a150",
+      "start": [
+        0.0,
+        0.0
+      ],
+      "end": [
+        0.0,
+        10.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": null,
+      "rightRoomId": "room-0ecfaa23da919d185d1f1fa5",
+      "openingIds": []
+    },
+    {
+      "id": "wall-3cdde6635736072f73de60a6",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "34",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-572183b990b20a85cc81a150",
+      "start": [
+        0.0,
+        0.0
+      ],
+      "end": [
+        10.0,
+        0.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": "room-0ecfaa23da919d185d1f1fa5",
+      "rightRoomId": null,
+      "openingIds": []
+    },
+    {
+      "id": "wall-60155c11a22084ae5624de57",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "36",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-572183b990b20a85cc81a150",
+      "start": [
+        0.0,
+        10.0
+      ],
+      "end": [
+        10.0,
+        10.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": null,
+      "rightRoomId": "room-0ecfaa23da919d185d1f1fa5",
+      "openingIds": []
+    },
+    {
+      "id": "wall-e01aed172bd6f09fb7355376",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "38",
+          "layer": "VOID",
+          "entityType": "LWPOLYLINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-572183b990b20a85cc81a150",
+      "start": [
+        3.0,
+        3.0
+      ],
+      "end": [
+        3.0,
+        7.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": "room-0ecfaa23da919d185d1f1fa5",
+      "rightRoomId": null,
+      "openingIds": []
+    },
+    {
+      "id": "wall-e5ab1fd014756c87feb3845e",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "38",
+          "layer": "VOID",
+          "entityType": "LWPOLYLINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-572183b990b20a85cc81a150",
+      "start": [
+        3.0,
+        3.0
+      ],
+      "end": [
+        7.0,
+        3.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": null,
+      "rightRoomId": "room-0ecfaa23da919d185d1f1fa5",
+      "openingIds": []
+    },
+    {
+      "id": "wall-d54d7f55013113bb14fd5de1",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "38",
+          "layer": "VOID",
+          "entityType": "LWPOLYLINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-572183b990b20a85cc81a150",
+      "start": [
+        3.0,
+        7.0
+      ],
+      "end": [
+        7.0,
+        7.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": "room-0ecfaa23da919d185d1f1fa5",
+      "rightRoomId": null,
+      "openingIds": []
+    },
+    {
+      "id": "wall-1313bcbc40204292ed7d5042",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "38",
+          "layer": "VOID",
+          "entityType": "LWPOLYLINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-572183b990b20a85cc81a150",
+      "start": [
+        7.0,
+        3.0
+      ],
+      "end": [
+        7.0,
+        7.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": null,
+      "rightRoomId": "room-0ecfaa23da919d185d1f1fa5",
+      "openingIds": []
+    },
+    {
+      "id": "wall-76f3d4237a3ec41d4cc2f39d",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "35",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-572183b990b20a85cc81a150",
+      "start": [
+        10.0,
+        0.0
+      ],
+      "end": [
+        10.0,
+        10.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": "room-0ecfaa23da919d185d1f1fa5",
+      "rightRoomId": null,
+      "openingIds": []
+    }
+  ],
+  "openings": [],
+  "slabs": [
+    {
+      "id": "floor-3b5451c2d897e85266b46c93",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "34",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "35",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "36",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "38",
+          "layer": "VOID",
+          "entityType": "LWPOLYLINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "inferred",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-572183b990b20a85cc81a150",
+      "roomId": "room-0ecfaa23da919d185d1f1fa5",
+      "footprint": {
+        "outer": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            10.0,
+            0.0
+          ],
+          [
+            10.0,
+            10.0
+          ],
+          [
+            0.0,
+            10.0
+          ]
+        ],
+        "holes": [
+          [
+            [
+              3.0,
+              3.0
+            ],
+            [
+              3.0,
+              7.0
+            ],
+            [
+              7.0,
+              7.0
+            ],
+            [
+              7.0,
+              3.0
+            ]
+          ]
+        ]
+      },
+      "elevationM": 0.0,
+      "thicknessM": 0.15,
+      "role": "floor"
+    },
+    {
+      "id": "ceiling-3b5451c2d897e85266b46c93",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "34",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "35",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "36",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "38",
+          "layer": "VOID",
+          "entityType": "LWPOLYLINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "inferred",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-572183b990b20a85cc81a150",
+      "roomId": "room-0ecfaa23da919d185d1f1fa5",
+      "footprint": {
+        "outer": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            10.0,
+            0.0
+          ],
+          [
+            10.0,
+            10.0
+          ],
+          [
+            0.0,
+            10.0
+          ]
+        ],
+        "holes": [
+          [
+            [
+              3.0,
+              3.0
+            ],
+            [
+              3.0,
+              7.0
+            ],
+            [
+              7.0,
+              7.0
+            ],
+            [
+              7.0,
+              3.0
+            ]
+          ]
+        ]
+      },
+      "elevationM": 3.0,
+      "thicknessM": 0.15,
+      "role": "ceiling"
+    }
+  ],
+  "issues": [
+    {
+      "id": "issue-84413fb5ddbbe4fceed1a4dd",
+      "code": "MISSING_DIMENSION",
+      "severity": "blocking",
+      "objectIds": [],
+      "sourceRefs": [],
+      "details": {
+        "reason": "Review default wall thickness, floor height, slab thickness and opening heights/sills",
+        "decision": "AcceptDefaults or edit dimensions"
+      },
+      "resolved": true,
+      "resolution": "Independent courtyard dimensions checked"
+    },
+    {
+      "id": "issue-dd10337c69cdc1627a97091c",
+      "code": "CALIBRATION_REVIEW",
+      "severity": "blocking",
+      "objectIds": [],
+      "sourceRefs": [],
+      "details": {
+        "reason": "Verify INSUNITS against a known drawing dimension"
+      },
+      "resolved": true,
+      "resolution": "Independent ten metre control checked"
+    }
+  ],
+  "sourceEntities": [
+    {
+      "id": "source-118c463c1909e68cc2ba26f2",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "38",
+          "layer": "VOID",
+          "entityType": "LWPOLYLINE",
+          "instancePath": []
+        }
+      ],
+      "role": "voids",
+      "sourcePoints": [
+        [
+          3.0,
+          3.0,
+          0.0
+        ],
+        [
+          7.0,
+          3.0,
+          0.0
+        ],
+        [
+          7.0,
+          7.0,
+          0.0
+        ],
+        [
+          3.0,
+          7.0,
+          0.0
+        ],
+        [
+          3.0,
+          3.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          3.0,
+          3.0
+        ],
+        [
+          7.0,
+          3.0
+        ],
+        [
+          7.0,
+          7.0
+        ],
+        [
+          3.0,
+          7.0
+        ],
+        [
+          3.0,
+          3.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    },
+    {
+      "id": "source-57bee08fd329a46a626c396f",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "36",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "walls",
+      "sourcePoints": [
+        [
+          10.0,
+          10.0,
+          0.0
+        ],
+        [
+          0.0,
+          10.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          10.0,
+          10.0
+        ],
+        [
+          0.0,
+          10.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    },
+    {
+      "id": "source-b26db0d0bd8944e92107ac14",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "walls",
+      "sourcePoints": [
+        [
+          0.0,
+          10.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          0.0,
+          10.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    },
+    {
+      "id": "source-c6d0e11de1ade93ddc12d78a",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "34",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "walls",
+      "sourcePoints": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          10.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          10.0,
+          0.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    },
+    {
+      "id": "source-e9f735780bb3f3629d63ff5f",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-courtyard",
+          "handle": "35",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "walls",
+      "sourcePoints": [
+        [
+          10.0,
+          0.0,
+          0.0
+        ],
+        [
+          10.0,
+          10.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          10.0,
+          0.0
+        ],
+        [
+          10.0,
+          10.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    }
+  ],
+  "entityInventory": {
+    "LINE": 4,
+    "LWPOLYLINE": 1
+  },
+  "config": {
+    "endpointSnapToleranceM": 0.001,
+    "intersectionToleranceM": 1e-07,
+    "openingHostToleranceM": 0.03,
+    "curveSagittaM": 0.001,
+    "bodyClearanceM": 0.25,
+    "wallThicknessM": 0.15,
+    "floorHeightM": 3,
+    "scaleToMeters": null,
+    "sourceUnits": null,
+    "sourceOrigin": null,
+    "layerMapping": {},
+    "ignoredSourceIds": []
+  },
+  "traversal": []
+}

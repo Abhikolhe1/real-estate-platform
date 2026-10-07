@@ -1,0 +1,17 @@
+{
+  "kind": "independently-authored-synthetic-truth",
+  "methodology": "Defined from the dimensioned test specification before running the parser. Coordinates describe wall centerlines. No automatic output is used as truth.",
+  "license": "Original repository test data; no third-party source",
+  "units": "meters",
+  "controls": [{"from": [0,0], "to": [8,0], "distanceM": 8}],
+  "rooms": [
+    {"name":"Living", "footprint":{"outer":[[0,0],[4,0],[4,4],[0,4]],"holes":[]},"areaM2":16},
+    {"name":"Kitchen", "footprint":{"outer":[[4,0],[8,0],[8,6],[5,6],[5,4],[4,4]],"holes":[]},"areaM2":22}
+  ],
+  "walls": [ [[0,0],[4,0]], [[4,0],[8,0]], [[8,0],[8,6]], [[8,6],[5,6]], [[5,6],[5,4]], [[5,4],[4,4]], [[4,4],[0,4]], [[0,4],[0,0]], [[4,0],[4,4]] ],
+  "openings": [
+    {"kind":"door","span":[[1,0],[2,0]],"host":[[0,0],[4,0]],"rooms":["Living"],"exterior":true},
+    {"kind":"door","span":[[4,1],[4,2]],"host":[[4,0],[4,4]],"rooms":["Kitchen","Living"],"exterior":false},
+    {"kind":"window","span":[[8,2],[8,4]],"host":[[8,0],[8,6]],"rooms":["Kitchen"],"exterior":true}
+  ]
+}

@@ -1,0 +1,1548 @@
+{
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "ezdxf": "1.4.4",
+    "networkx": "3.6.1",
+    "shapely": "2.1.2",
+    "cv2": true,
+    "pypdfium2": true,
+    "paddleocr": false,
+    "paddle": false,
+    "sklearn": false,
+    "google.generativeai": false,
+    "pypdf": true
+  },
+  "fixtures": [
+    {
+      "path": "test_tower_10_floors.dxf",
+      "bytes": 24485,
+      "sha256": "ac46c3b506a2bc2d66fe5180ddd56e6273f14b4f3b112c1c9070d2a1dcc17fef",
+      "insunits": 6,
+      "entities": {
+        "LINE": 31,
+        "TEXT": 7
+      },
+      "layers": {
+        "WALLS": 27,
+        "LABELS": 7,
+        "DOORS": 2,
+        "WINDOWS": 2
+      },
+      "raw": {
+        "walls": 27,
+        "doors": 2,
+        "windows": 2,
+        "labels": 7
+      },
+      "rooms": [
+        {
+          "id": "room-1",
+          "name": "Living Room A",
+          "x": 0.0,
+          "z": 5.0,
+          "width": 5.0,
+          "depth": 5.0,
+          "color": "#f5efe6",
+          "node": {
+            "x": 2.5,
+            "z": 7.5
+          }
+        },
+        {
+          "id": "room-2",
+          "name": "Kitchen A",
+          "x": 0.0,
+          "z": 0.0,
+          "width": 5.0,
+          "depth": 5.0,
+          "color": "#f4ece1",
+          "node": {
+            "x": 2.5,
+            "z": 2.5
+          }
+        },
+        {
+          "id": "room-3",
+          "name": "Bedroom A",
+          "x": 5.0,
+          "z": 0.0,
+          "width": 5.0,
+          "depth": 10.0,
+          "color": "#ece8f2",
+          "node": {
+            "x": 7.5,
+            "z": 5.0
+          }
+        },
+        {
+          "id": "room-4",
+          "name": "Kitchen B",
+          "x": 20.0,
+          "z": 0.0,
+          "width": 5.0,
+          "depth": 10.0,
+          "color": "#f4ece1",
+          "node": {
+            "x": 22.5,
+            "z": 5.0
+          }
+        },
+        {
+          "id": "room-5",
+          "name": "Bedroom B1",
+          "x": 30.0,
+          "z": 5.0,
+          "width": 5.0,
+          "depth": 5.0,
+          "color": "#ece8f2",
+          "node": {
+            "x": 32.5,
+            "z": 7.5
+          }
+        },
+        {
+          "id": "room-6",
+          "name": "Living Room B",
+          "x": 25.0,
+          "z": 5.0,
+          "width": 5.0,
+          "depth": 5.0,
+          "color": "#f5efe6",
+          "node": {
+            "x": 27.5,
+            "z": 7.5
+          }
+        },
+        {
+          "id": "room-7",
+          "name": "Room 7",
+          "x": 25.0,
+          "z": 0.0,
+          "width": 5.0,
+          "depth": 5.0,
+          "color": "#fbfbfa",
+          "node": {
+            "x": 27.5,
+            "z": 2.5
+          }
+        },
+        {
+          "id": "room-8",
+          "name": "Bedroom B2",
+          "x": 30.0,
+          "z": 0.0,
+          "width": 5.0,
+          "depth": 5.0,
+          "color": "#ece8f2",
+          "node": {
+            "x": 32.5,
+            "z": 2.5
+          }
+        }
+      ],
+      "wallCount": 27,
+      "apertures": [
+        {
+          "id": "ap-door-1",
+          "wallId": "w-7",
+          "type": "door",
+          "startOffset": 2.5,
+          "width": 1.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-2",
+          "wallId": "w-10",
+          "type": "door",
+          "startOffset": 1.5,
+          "width": 1.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-window-3",
+          "wallId": "w-6",
+          "type": "window",
+          "startOffset": 2.0,
+          "width": 2.0,
+          "height": 1.2,
+          "elevation": 0.9
+        },
+        {
+          "id": "ap-window-4",
+          "wallId": "w-3",
+          "type": "window",
+          "startOffset": 5.0,
+          "width": 2.0,
+          "height": 1.2,
+          "elevation": 0.9
+        }
+      ],
+      "elapsedMs": 339.54
+    },
+    {
+      "path": "apps\\ai-service\\test_tower_10_floors.dxf",
+      "bytes": 32629,
+      "sha256": "20df78312ebfd364e72ee79846d120b9b7c1a8ebdb2e11af30bb1307423cf415",
+      "insunits": 6,
+      "entities": {
+        "LINE": 70,
+        "TEXT": 21
+      },
+      "layers": {
+        "WALLS": 41,
+        "LABELS": 21,
+        "DOORS": 18,
+        "WINDOWS": 11
+      },
+      "raw": {
+        "walls": 41,
+        "doors": 18,
+        "windows": 11,
+        "labels": 21
+      },
+      "rooms": [
+        {
+          "id": "room-1",
+          "name": "Flat 103 - Presidential Suite",
+          "x": 4.0,
+          "z": -14.0,
+          "width": 12.0,
+          "depth": 14.0,
+          "color": "#fbfbfa",
+          "node": {
+            "x": 10.0,
+            "z": -7.0
+          }
+        },
+        {
+          "id": "room-2",
+          "name": "Elevator Lobby & Corridor",
+          "x": -16.0,
+          "z": 0.0,
+          "width": 32.0,
+          "depth": 4.0,
+          "color": "#374151",
+          "node": {
+            "x": -0.0,
+            "z": 2.0
+          }
+        },
+        {
+          "id": "room-3",
+          "name": "Flat 102 (3BHK) - Grand Living Hall",
+          "x": -16.0,
+          "z": 4.0,
+          "width": 32.0,
+          "depth": 14.0,
+          "color": "#f5efe6",
+          "node": {
+            "x": -0.0,
+            "z": 11.0
+          }
+        },
+        {
+          "id": "room-4",
+          "name": "Flat 101 - Modular Kitchen",
+          "x": -16.0,
+          "z": -14.0,
+          "width": 12.0,
+          "depth": 14.0,
+          "color": "#f4ece1",
+          "node": {
+            "x": -10.0,
+            "z": -7.0
+          }
+        }
+      ],
+      "wallCount": 41,
+      "apertures": [
+        {
+          "id": "ap-door-1",
+          "wallId": "w-1",
+          "type": "door",
+          "startOffset": 6.5,
+          "width": 1.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-2",
+          "wallId": "w-11",
+          "type": "door",
+          "startOffset": 5.25,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-3",
+          "wallId": "w-20",
+          "type": "door",
+          "startOffset": 16.0,
+          "width": 2.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-4",
+          "wallId": "w-1",
+          "type": "door",
+          "startOffset": 25.5,
+          "width": 1.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-5",
+          "wallId": "w-33",
+          "type": "door",
+          "startOffset": 6.75,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-window-6",
+          "wallId": "w-12",
+          "type": "window",
+          "startOffset": 11.0,
+          "width": 2.0,
+          "height": 1.2,
+          "elevation": 0.9
+        },
+        {
+          "id": "ap-window-7",
+          "wallId": "w-12",
+          "type": "window",
+          "startOffset": 5.0,
+          "width": 2.0,
+          "height": 1.2,
+          "elevation": 0.9
+        },
+        {
+          "id": "ap-window-8",
+          "wallId": "w-10",
+          "type": "window",
+          "startOffset": 8.0,
+          "width": 2.0,
+          "height": 1.2,
+          "elevation": 0.9
+        },
+        {
+          "id": "ap-window-9",
+          "wallId": "w-21",
+          "type": "window",
+          "startOffset": 3.0,
+          "width": 2.0,
+          "height": 1.2,
+          "elevation": 0.9
+        },
+        {
+          "id": "ap-window-10",
+          "wallId": "w-23",
+          "type": "window",
+          "startOffset": 10.5,
+          "width": 3.0,
+          "height": 1.2,
+          "elevation": 0.9
+        },
+        {
+          "id": "ap-window-11",
+          "wallId": "w-22",
+          "type": "window",
+          "startOffset": 25.0,
+          "width": 2.0,
+          "height": 1.2,
+          "elevation": 0.9
+        },
+        {
+          "id": "ap-window-12",
+          "wallId": "w-22",
+          "type": "window",
+          "startOffset": 7.0,
+          "width": 2.0,
+          "height": 1.2,
+          "elevation": 0.9
+        },
+        {
+          "id": "ap-window-13",
+          "wallId": "w-22",
+          "type": "window",
+          "startOffset": 16.0,
+          "width": 6.0,
+          "height": 1.2,
+          "elevation": 0.9
+        },
+        {
+          "id": "ap-window-14",
+          "wallId": "w-32",
+          "type": "window",
+          "startOffset": 3.0,
+          "width": 2.0,
+          "height": 1.2,
+          "elevation": 0.9
+        },
+        {
+          "id": "ap-window-15",
+          "wallId": "w-32",
+          "type": "window",
+          "startOffset": 8.75,
+          "width": 1.5,
+          "height": 1.2,
+          "elevation": 0.9
+        },
+        {
+          "id": "ap-window-16",
+          "wallId": "w-32",
+          "type": "window",
+          "startOffset": 12.75,
+          "width": 1.5,
+          "height": 1.2,
+          "elevation": 0.9
+        }
+      ],
+      "elapsedMs": 433.85
+    },
+    {
+      "path": "docs\\cad\\building_layout.dxf",
+      "bytes": 43214,
+      "sha256": "a9749537694afd3b0f17fce457d94a81bbb7cff4b83f281f8c9532f4184fb2cd",
+      "insunits": null,
+      "entities": {
+        "LINE": 309,
+        "TEXT": 87
+      },
+      "layers": {
+        "Border_and_Title": 8,
+        "Title_Block": 4,
+        "Common_Area_Walls": 8,
+        "Common_Labels": 4,
+        "Lifts_Stairs": 35,
+        "Fire_Stairs": 18,
+        "Doors_Windows": 71,
+        "Shafts_Ducts": 42,
+        "Walls_Exterior": 16,
+        "Room_Labels": 48,
+        "Walls_Interior": 50,
+        "Dimensions": 22,
+        "Balconies": 70
+      },
+      "raw": {
+        "walls": 74,
+        "doors": 71,
+        "windows": 0,
+        "labels": 56
+      },
+      "rooms": [
+        {
+          "id": "room-1",
+          "name": "CENTRAL LOBBY",
+          "x": -4.0,
+          "z": -5.0,
+          "width": 8.0,
+          "depth": 10.0,
+          "color": "#374151",
+          "node": {
+            "x": -0.0,
+            "z": -0.0
+          }
+        },
+        {
+          "id": "room-2",
+          "name": "COMMON CORRIDOR (2m WIDE)",
+          "x": -1.0,
+          "z": -15.0,
+          "width": 2.0,
+          "depth": 33.0,
+          "color": "#fbfbfa",
+          "node": {
+            "x": -0.0,
+            "z": 1.5
+          }
+        },
+        {
+          "id": "room-3",
+          "name": "LIVING ROOM",
+          "x": -14.8,
+          "z": 2.0,
+          "width": 10.0,
+          "depth": 12.0,
+          "color": "#f5efe6",
+          "node": {
+            "x": -9.8,
+            "z": 8.0
+          }
+        },
+        {
+          "id": "room-4",
+          "name": "LIVING ROOM",
+          "x": -14.8,
+          "z": -14.0,
+          "width": 10.0,
+          "depth": 12.0,
+          "color": "#f5efe6",
+          "node": {
+            "x": -9.8,
+            "z": -8.0
+          }
+        },
+        {
+          "id": "room-5",
+          "name": "DINING AREA",
+          "x": 4.8,
+          "z": 2.0,
+          "width": 12.0,
+          "depth": 14.0,
+          "color": "#fbfbfa",
+          "node": {
+            "x": 10.8,
+            "z": 9.0
+          }
+        },
+        {
+          "id": "room-6",
+          "name": "DINING AREA",
+          "x": 4.8,
+          "z": -16.0,
+          "width": 12.0,
+          "depth": 14.0,
+          "color": "#fbfbfa",
+          "node": {
+            "x": 10.8,
+            "z": -9.0
+          }
+        }
+      ],
+      "wallCount": 74,
+      "apertures": [
+        {
+          "id": "ap-door-1",
+          "wallId": "w-5",
+          "type": "door",
+          "startOffset": 0.32,
+          "width": 0.9,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-2",
+          "wallId": "w-10",
+          "type": "door",
+          "startOffset": 4.15,
+          "width": 1.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-3",
+          "wallId": "w-11",
+          "type": "door",
+          "startOffset": 7.45,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-4",
+          "wallId": "w-11",
+          "type": "door",
+          "startOffset": 7.45,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-5",
+          "wallId": "w-12",
+          "type": "door",
+          "startOffset": 1.7,
+          "width": 0.85,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-6",
+          "wallId": "w-9",
+          "type": "door",
+          "startOffset": 2.05,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-7",
+          "wallId": "w-9",
+          "type": "door",
+          "startOffset": 2.05,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-8",
+          "wallId": "w-9",
+          "type": "door",
+          "startOffset": 8.8,
+          "width": 1.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-9",
+          "wallId": "w-9",
+          "type": "door",
+          "startOffset": 8.8,
+          "width": 1.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-10",
+          "wallId": "w-25",
+          "type": "door",
+          "startOffset": 7.85,
+          "width": 1.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-11",
+          "wallId": "w-24",
+          "type": "door",
+          "startOffset": 2.55,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-12",
+          "wallId": "w-24",
+          "type": "door",
+          "startOffset": 2.55,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-13",
+          "wallId": "w-27",
+          "type": "door",
+          "startOffset": 10.3,
+          "width": 0.85,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-14",
+          "wallId": "w-26",
+          "type": "door",
+          "startOffset": 7.95,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-15",
+          "wallId": "w-26",
+          "type": "door",
+          "startOffset": 7.95,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-16",
+          "wallId": "w-26",
+          "type": "door",
+          "startOffset": 1.2,
+          "width": 1.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-17",
+          "wallId": "w-26",
+          "type": "door",
+          "startOffset": 1.2,
+          "width": 1.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-18",
+          "wallId": "w-42",
+          "type": "door",
+          "startOffset": 9.85,
+          "width": 1.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-19",
+          "wallId": "w-39",
+          "type": "door",
+          "startOffset": 10.95,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-20",
+          "wallId": "w-39",
+          "type": "door",
+          "startOffset": 10.95,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-21",
+          "wallId": "w-39",
+          "type": "door",
+          "startOffset": 10.4,
+          "width": 2.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-22",
+          "wallId": "w-39",
+          "type": "door",
+          "startOffset": 10.4,
+          "width": 2.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-23",
+          "wallId": "w-39",
+          "type": "door",
+          "startOffset": 1.45,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-24",
+          "wallId": "w-39",
+          "type": "door",
+          "startOffset": 1.45,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-25",
+          "wallId": "w-60",
+          "type": "door",
+          "startOffset": 4.15,
+          "width": 1.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-26",
+          "wallId": "w-59",
+          "type": "door",
+          "startOffset": 1.05,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-27",
+          "wallId": "w-59",
+          "type": "door",
+          "startOffset": 1.05,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-28",
+          "wallId": "w-59",
+          "type": "door",
+          "startOffset": 1.6,
+          "width": 2.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-29",
+          "wallId": "w-59",
+          "type": "door",
+          "startOffset": 1.6,
+          "width": 2.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-30",
+          "wallId": "w-59",
+          "type": "door",
+          "startOffset": 10.55,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        },
+        {
+          "id": "ap-door-31",
+          "wallId": "w-59",
+          "type": "door",
+          "startOffset": 10.55,
+          "width": 1.5,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        }
+      ],
+      "elapsedMs": 363.93
+    },
+    {
+      "path": "docs\\cad\\test_building_blueprint.dxf",
+      "bytes": 593,
+      "sha256": "6763b9a84eb4b670498f6fd89d4bdff7223bc806b19104f6f034aaa560a396c1",
+      "insunits": null,
+      "entities": {
+        "LINE": 4,
+        "TEXT": 1
+      },
+      "layers": {
+        "Walls_Exterior": 4,
+        "Room_Labels": 1
+      },
+      "raw": {
+        "walls": 4,
+        "doors": 0,
+        "windows": 0,
+        "labels": 1
+      },
+      "rooms": [
+        {
+          "id": "room-1",
+          "name": "TEST APARTMENT LAYOUT",
+          "x": -6.0,
+          "z": -5.0,
+          "width": 12.0,
+          "depth": 10.0,
+          "color": "#fbfbfa",
+          "node": {
+            "x": -0.0,
+            "z": -0.0
+          }
+        }
+      ],
+      "wallCount": 4,
+      "apertures": [],
+      "elapsedMs": 53.39
+    },
+    {
+      "path": "apps\\builder\\public\\test_building_blueprint.dxf",
+      "bytes": 593,
+      "sha256": "6763b9a84eb4b670498f6fd89d4bdff7223bc806b19104f6f034aaa560a396c1",
+      "insunits": null,
+      "entities": {
+        "LINE": 4,
+        "TEXT": 1
+      },
+      "layers": {
+        "Walls_Exterior": 4,
+        "Room_Labels": 1
+      },
+      "raw": {
+        "walls": 4,
+        "doors": 0,
+        "windows": 0,
+        "labels": 1
+      },
+      "rooms": [
+        {
+          "id": "room-1",
+          "name": "TEST APARTMENT LAYOUT",
+          "x": -6.0,
+          "z": -5.0,
+          "width": 12.0,
+          "depth": 10.0,
+          "color": "#fbfbfa",
+          "node": {
+            "x": -0.0,
+            "z": -0.0
+          }
+        }
+      ],
+      "wallCount": 4,
+      "apertures": [],
+      "elapsedMs": 48.05
+    }
+  ],
+  "probes": [
+    {
+      "name": "meters-square",
+      "raw": {
+        "walls": [
+          {
+            "startX": 0.0,
+            "startZ": 0.0,
+            "endX": 4.0,
+            "endZ": 0.0
+          },
+          {
+            "startX": 4.0,
+            "startZ": 0.0,
+            "endX": 4.0,
+            "endZ": 3.0
+          },
+          {
+            "startX": 4.0,
+            "startZ": 3.0,
+            "endX": 0.0,
+            "endZ": 3.0
+          },
+          {
+            "startX": 0.0,
+            "startZ": 3.0,
+            "endX": 0.0,
+            "endZ": 0.0
+          }
+        ],
+        "doors": [],
+        "windows": [],
+        "labels": []
+      },
+      "rooms": [
+        {
+          "id": "room-1",
+          "name": "Room 1",
+          "x": 0.0,
+          "z": 0.0,
+          "width": 4.0,
+          "depth": 3.0,
+          "color": "#fbfbfa",
+          "node": {
+            "x": 2.0,
+            "z": 1.5
+          }
+        }
+      ],
+      "walls": [
+        {
+          "id": "w-1",
+          "startX": 0.0,
+          "startZ": 0.0,
+          "endX": 4.0,
+          "endZ": 0.0,
+          "thickness": 0.15,
+          "height": 3.0
+        },
+        {
+          "id": "w-2",
+          "startX": 4.0,
+          "startZ": 0.0,
+          "endX": 4.0,
+          "endZ": 3.0,
+          "thickness": 0.15,
+          "height": 3.0
+        },
+        {
+          "id": "w-3",
+          "startX": 4.0,
+          "startZ": 3.0,
+          "endX": 0.0,
+          "endZ": 3.0,
+          "thickness": 0.15,
+          "height": 3.0
+        },
+        {
+          "id": "w-4",
+          "startX": 0.0,
+          "startZ": 3.0,
+          "endX": 0.0,
+          "endZ": 0.0,
+          "thickness": 0.15,
+          "height": 3.0
+        }
+      ],
+      "apertures": []
+    },
+    {
+      "name": "millimeters-square",
+      "raw": {
+        "walls": [
+          {
+            "startX": 0.0,
+            "startZ": 0.0,
+            "endX": 4.0,
+            "endZ": 0.0
+          },
+          {
+            "startX": 4.0,
+            "startZ": 0.0,
+            "endX": 4.0,
+            "endZ": 3.0
+          },
+          {
+            "startX": 4.0,
+            "startZ": 3.0,
+            "endX": 0.0,
+            "endZ": 3.0
+          },
+          {
+            "startX": 0.0,
+            "startZ": 3.0,
+            "endX": 0.0,
+            "endZ": 0.0
+          }
+        ],
+        "doors": [],
+        "windows": [],
+        "labels": []
+      },
+      "rooms": [
+        {
+          "id": "room-1",
+          "name": "Room 1",
+          "x": 0.0,
+          "z": 0.0,
+          "width": 4.0,
+          "depth": 3.0,
+          "color": "#fbfbfa",
+          "node": {
+            "x": 2.0,
+            "z": 1.5
+          }
+        }
+      ],
+      "walls": [
+        {
+          "id": "w-1",
+          "startX": 0.0,
+          "startZ": 0.0,
+          "endX": 4.0,
+          "endZ": 0.0,
+          "thickness": 0.15,
+          "height": 3.0
+        },
+        {
+          "id": "w-2",
+          "startX": 4.0,
+          "startZ": 0.0,
+          "endX": 4.0,
+          "endZ": 3.0,
+          "thickness": 0.15,
+          "height": 3.0
+        },
+        {
+          "id": "w-3",
+          "startX": 4.0,
+          "startZ": 3.0,
+          "endX": 0.0,
+          "endZ": 3.0,
+          "thickness": 0.15,
+          "height": 3.0
+        },
+        {
+          "id": "w-4",
+          "startX": 0.0,
+          "startZ": 3.0,
+          "endX": 0.0,
+          "endZ": 0.0,
+          "thickness": 0.15,
+          "height": 3.0
+        }
+      ],
+      "apertures": []
+    },
+    {
+      "name": "lwpolyline-square",
+      "raw": {
+        "walls": [],
+        "doors": [],
+        "windows": [],
+        "labels": []
+      },
+      "rooms": [],
+      "walls": [],
+      "apertures": []
+    },
+    {
+      "name": "polyline-square",
+      "raw": {
+        "walls": [],
+        "doors": [],
+        "windows": [],
+        "labels": []
+      },
+      "rooms": [],
+      "walls": [],
+      "apertures": []
+    },
+    {
+      "name": "t-junction",
+      "raw": {
+        "walls": [
+          {
+            "startX": 0.0,
+            "startZ": 0.0,
+            "endX": 4.0,
+            "endZ": 0.0
+          },
+          {
+            "startX": 4.0,
+            "startZ": 0.0,
+            "endX": 4.0,
+            "endZ": 3.0
+          },
+          {
+            "startX": 4.0,
+            "startZ": 3.0,
+            "endX": 0.0,
+            "endZ": 3.0
+          },
+          {
+            "startX": 0.0,
+            "startZ": 3.0,
+            "endX": 0.0,
+            "endZ": 0.0
+          },
+          {
+            "startX": 2.0,
+            "startZ": 0.0,
+            "endX": 2.0,
+            "endZ": 3.0
+          }
+        ],
+        "doors": [],
+        "windows": [],
+        "labels": []
+      },
+      "rooms": [
+        {
+          "id": "room-1",
+          "name": "Room 1",
+          "x": 0.0,
+          "z": 0.0,
+          "width": 4.0,
+          "depth": 3.0,
+          "color": "#fbfbfa",
+          "node": {
+            "x": 2.0,
+            "z": 1.5
+          }
+        }
+      ],
+      "walls": [
+        {
+          "id": "w-1",
+          "startX": 0.0,
+          "startZ": 0.0,
+          "endX": 4.0,
+          "endZ": 0.0,
+          "thickness": 0.15,
+          "height": 3.0
+        },
+        {
+          "id": "w-2",
+          "startX": 4.0,
+          "startZ": 0.0,
+          "endX": 4.0,
+          "endZ": 3.0,
+          "thickness": 0.15,
+          "height": 3.0
+        },
+        {
+          "id": "w-3",
+          "startX": 4.0,
+          "startZ": 3.0,
+          "endX": 0.0,
+          "endZ": 3.0,
+          "thickness": 0.15,
+          "height": 3.0
+        },
+        {
+          "id": "w-4",
+          "startX": 0.0,
+          "startZ": 3.0,
+          "endX": 0.0,
+          "endZ": 0.0,
+          "thickness": 0.15,
+          "height": 3.0
+        },
+        {
+          "id": "w-5",
+          "startX": 2.0,
+          "startZ": 0.0,
+          "endX": 2.0,
+          "endZ": 3.0,
+          "thickness": 0.15,
+          "height": 3.0
+        }
+      ],
+      "apertures": []
+    },
+    {
+      "name": "door-midpoint-offset",
+      "raw": {
+        "walls": [
+          {
+            "startX": 0.0,
+            "startZ": 0.0,
+            "endX": 4.0,
+            "endZ": 0.0
+          },
+          {
+            "startX": 4.0,
+            "startZ": 0.0,
+            "endX": 4.0,
+            "endZ": 3.0
+          },
+          {
+            "startX": 4.0,
+            "startZ": 3.0,
+            "endX": 0.0,
+            "endZ": 3.0
+          },
+          {
+            "startX": 0.0,
+            "startZ": 3.0,
+            "endX": 0.0,
+            "endZ": 0.0
+          }
+        ],
+        "doors": [
+          {
+            "type": "door",
+            "x": 1.5,
+            "z": 0.0,
+            "width": 1.0
+          }
+        ],
+        "windows": [],
+        "labels": []
+      },
+      "rooms": [
+        {
+          "id": "room-1",
+          "name": "Room 1",
+          "x": 0.0,
+          "z": 0.0,
+          "width": 4.0,
+          "depth": 3.0,
+          "color": "#fbfbfa",
+          "node": {
+            "x": 2.0,
+            "z": 1.5
+          }
+        }
+      ],
+      "walls": [
+        {
+          "id": "w-1",
+          "startX": 0.0,
+          "startZ": 0.0,
+          "endX": 4.0,
+          "endZ": 0.0,
+          "thickness": 0.15,
+          "height": 3.0
+        },
+        {
+          "id": "w-2",
+          "startX": 4.0,
+          "startZ": 0.0,
+          "endX": 4.0,
+          "endZ": 3.0,
+          "thickness": 0.15,
+          "height": 3.0
+        },
+        {
+          "id": "w-3",
+          "startX": 4.0,
+          "startZ": 3.0,
+          "endX": 0.0,
+          "endZ": 3.0,
+          "thickness": 0.15,
+          "height": 3.0
+        },
+        {
+          "id": "w-4",
+          "startX": 0.0,
+          "startZ": 3.0,
+          "endX": 0.0,
+          "endZ": 0.0,
+          "thickness": 0.15,
+          "height": 3.0
+        }
+      ],
+      "apertures": [
+        {
+          "id": "ap-door-1",
+          "wallId": "w-1",
+          "type": "door",
+          "startOffset": 1.5,
+          "width": 1.0,
+          "height": 2.1,
+          "elevation": 0.0,
+          "swing": -1
+        }
+      ]
+    },
+    {
+      "name": "circle-ignored",
+      "raw": {
+        "walls": [
+          {
+            "startX": 0.0,
+            "startZ": 0.0,
+            "endX": 4.0,
+            "endZ": 0.0
+          }
+        ],
+        "doors": [],
+        "windows": [],
+        "labels": []
+      },
+      "rooms": [],
+      "walls": [
+        {
+          "id": "w-1",
+          "startX": 0.0,
+          "startZ": 0.0,
+          "endX": 4.0,
+          "endZ": 0.0,
+          "thickness": 0.15,
+          "height": 3.0
+        }
+      ],
+      "apertures": []
+    }
+  ],
+  "glbs": [
+    {
+      "path": "apps\\admin\\public\\building.glb",
+      "bytes": 257516,
+      "sha256": "a83d9181dd503db7b2724366fcc2f512c29eb68713da32c6d63d806098c8d9f7",
+      "magic": "glTF",
+      "version": 2,
+      "declaredBytes": 257516,
+      "meshes": 135,
+      "nodes": 161,
+      "materials": 135,
+      "images": 0,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "nodeExtrasExample": null,
+      "meshExtrasExample": null,
+      "triangles": 1620
+    },
+    {
+      "path": "apps\\admin\\public\\floor_walkthrough.glb",
+      "bytes": 267956,
+      "sha256": "4c393c0b28445a2997517d1ef0826ac70018b17dce3ed633af4de01125168ae4",
+      "magic": "glTF",
+      "version": 2,
+      "declaredBytes": 267956,
+      "meshes": 138,
+      "nodes": 205,
+      "materials": 111,
+      "images": 0,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "nodeExtrasExample": null,
+      "meshExtrasExample": null,
+      "triangles": 1656
+    },
+    {
+      "path": "apps\\builder\\public\\building.glb",
+      "bytes": 257516,
+      "sha256": "a83d9181dd503db7b2724366fcc2f512c29eb68713da32c6d63d806098c8d9f7",
+      "magic": "glTF",
+      "version": 2,
+      "declaredBytes": 257516,
+      "meshes": 135,
+      "nodes": 161,
+      "materials": 135,
+      "images": 0,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "nodeExtrasExample": null,
+      "meshExtrasExample": null,
+      "triangles": 1620
+    },
+    {
+      "path": "apps\\builder\\public\\floor_walkthrough.glb",
+      "bytes": 267956,
+      "sha256": "4c393c0b28445a2997517d1ef0826ac70018b17dce3ed633af4de01125168ae4",
+      "magic": "glTF",
+      "version": 2,
+      "declaredBytes": 267956,
+      "meshes": 138,
+      "nodes": 205,
+      "materials": 111,
+      "images": 0,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "nodeExtrasExample": null,
+      "meshExtrasExample": null,
+      "triangles": 1656
+    },
+    {
+      "path": "apps\\web\\public\\building.glb",
+      "bytes": 257516,
+      "sha256": "a83d9181dd503db7b2724366fcc2f512c29eb68713da32c6d63d806098c8d9f7",
+      "magic": "glTF",
+      "version": 2,
+      "declaredBytes": 257516,
+      "meshes": 135,
+      "nodes": 161,
+      "materials": 135,
+      "images": 0,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "nodeExtrasExample": null,
+      "meshExtrasExample": null,
+      "triangles": 1620
+    },
+    {
+      "path": "apps\\web\\public\\floor_walkthrough.glb",
+      "bytes": 267956,
+      "sha256": "4c393c0b28445a2997517d1ef0826ac70018b17dce3ed633af4de01125168ae4",
+      "magic": "glTF",
+      "version": 2,
+      "declaredBytes": 267956,
+      "meshes": 138,
+      "nodes": 205,
+      "materials": 111,
+      "images": 0,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "nodeExtrasExample": null,
+      "meshExtrasExample": null,
+      "triangles": 1656
+    },
+    {
+      "path": "apps\\web\\public\\models\\duplex\\duplex.glb",
+      "bytes": 2051496,
+      "sha256": "53a8e89b6ebd12fb6b471a84e56df8f47514be7b43d49242c055ec22c1d708ed",
+      "magic": "glTF",
+      "version": 2,
+      "declaredBytes": 2051496,
+      "meshes": 277,
+      "nodes": 278,
+      "materials": 21,
+      "images": 0,
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "nodeExtrasExample": null,
+      "meshExtrasExample": {
+        "ifcGuid": "2OrWItJ6zAwBNp0OUxK_l8",
+        "ifcType": "IfcBeam",
+        "ifcName": "M_W-Wide Flange:W310X60:W310X60:207325",
+        "floorId": "1xS3BCk291UvhgP2dvNMKI"
+      },
+      "triangles": 26348
+    }
+  ],
+  "manifest": {
+    "floors": [
+      {
+        "id": "1xS3BCk291UvhgP2dvNsgp",
+        "name": "T/FDN",
+        "elevation": -1.25,
+        "nodes": 14,
+        "units": 0,
+        "rooms": 0
+      },
+      {
+        "id": "1xS3BCk291UvhgP2dvNMKI",
+        "name": "Ground floor",
+        "elevation": 0.0,
+        "nodes": 72,
+        "units": 2,
+        "rooms": 8
+      },
+      {
+        "id": "1xS3BCk291UvhgP2dvNMQJ",
+        "name": "First floor",
+        "elevation": 3.100000000000378,
+        "nodes": 103,
+        "units": 2,
+        "rooms": 10
+      },
+      {
+        "id": "1xS3BCk291UvhgP2dvNtSE",
+        "name": "Roof",
+        "elevation": 6.00000000000039,
+        "nodes": 7,
+        "units": 0,
+        "rooms": 0
+      }
+    ],
+    "elements": 215,
+    "elementTypes": {
+      "IfcBeam": 8,
+      "IfcCovering": 13,
+      "IfcDoor": 14,
+      "IfcFooting": 7,
+      "IfcMember": 4,
+      "IfcRailing": 4,
+      "IfcSlab": 21,
+      "IfcStairFlight": 2,
+      "IfcWall": 1,
+      "IfcWallStandardCase": 56,
+      "IfcWindow": 24,
+      "IfcFurnishingElement": 61
+    },
+    "elementKeys": [
+      "bounds",
+      "floorId",
+      "id",
+      "name",
+      "nodeNames",
+      "type"
+    ]
+  },
+  "ifcSource": {
+    "bytes": 2380763,
+    "sha256": "b347a2c8aa8fff6db896a4417a9c50c22ac0ccd7c5cfc22b99b8d29336c606ed",
+    "headerValid": true
+  }
+}

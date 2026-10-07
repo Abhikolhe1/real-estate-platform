@@ -1,0 +1,30 @@
+[
+  {
+    "name": "Worker requires authenticated service identity",
+    "result": "PASS"
+  },
+  {
+    "name": "Worker rejects path injection fields",
+    "result": "PASS"
+  },
+  {
+    "name": "Worker rejects unsupported operation",
+    "result": "PASS"
+  },
+  {
+    "name": "Worker rejects malformed DXF without geometry",
+    "result": "PASS"
+  },
+  {
+    "name": "Bounded worker reconstructs source in a separate process",
+    "result": "PASS"
+  },
+  {
+    "name": "Worker applies immutable corrections",
+    "result": "PASS"
+  },
+  {
+    "name": "Worker validates canonical geometry",
+    "result": "PASS"
+  }
+]

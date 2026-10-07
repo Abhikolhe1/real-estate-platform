@@ -3,6 +3,15 @@ import { Project } from './project.entity';
 
 @Entity('floorplans')
 export class FloorPlan {
+  @Column({ type: 'uuid', nullable: true })
+  canonicalSourceAssetId?: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  canonicalDraftRevisionId?: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  approvedCanonicalRevisionId?: string;
+
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 

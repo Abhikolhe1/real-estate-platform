@@ -1,0 +1,14 @@
+[
+  "tools\\canonical\\wire_features.py",
+  "tools\\canonical\\organize_code.py",
+  "tools\\canonical\\organize_database.py",
+  "tools\\canonical\\secure_inventory.py",
+  "tools\\canonical\\finish_ui_wiring.py",
+  "tools\\canonical\\configure_regressions.py",
+  "tools\\canonical\\organize_views.py",
+  "tools\\canonical\\extract-inventory.cjs",
+  "tools\\canonical\\viewer-diagnose.cjs",
+  "tools\\canonical\\baseline-core.mjs",
+  "tools\\canonical\\baseline-browser.cjs",
+  "tools\\canonical\\baseline-legacy.cjs"
+]

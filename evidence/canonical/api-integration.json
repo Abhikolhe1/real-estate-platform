@@ -1,0 +1,101 @@
+{
+  "schema": "canonical_test_1791364329128",
+  "results": [
+    {
+      "name": "Canonical migration applies to an isolated legacy schema",
+      "result": "PASS"
+    },
+    {
+      "name": "Anonymous source/status access denied",
+      "result": "PASS"
+    },
+    {
+      "name": "Spoofed tenant header denied",
+      "result": "PASS"
+    },
+    {
+      "name": "Foreign authenticated tenant denied before upload",
+      "result": "PASS"
+    },
+    {
+      "name": "Sales role cannot approve or change geometry",
+      "result": "PASS"
+    },
+    {
+      "name": "Inactive membership cannot use a valid JWT",
+      "result": "PASS"
+    },
+    {
+      "name": "Administrative status is restricted to server-side super admins",
+      "result": "PASS"
+    },
+    {
+      "name": "Unknown DTO fields and path traversal rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "Production floorplan creation cannot assign source, approval or fabricated geometry",
+      "result": "PASS"
+    },
+    {
+      "name": "DXF source persists privately and reconstruction queues",
+      "result": "PASS"
+    },
+    {
+      "name": "Concurrent duplicate jobs are rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "Claimed job stores canonical immutable draft and measured stages",
+      "result": "PASS"
+    },
+    {
+      "name": "Source and revision SQL updates/deletes are blocked",
+      "result": "PASS"
+    },
+    {
+      "name": "Unreviewed inferred dimensions cannot be approved",
+      "result": "PASS"
+    },
+    {
+      "name": "Database rejects draft approval pointers and cross-scope sources",
+      "result": "PASS"
+    },
+    {
+      "name": "Corrections save history and survive a fresh DB connection",
+      "result": "PASS"
+    },
+    {
+      "name": "Approval atomically moves explicit immutable pointer",
+      "result": "PASS"
+    },
+    {
+      "name": "Inventory returns the exact approved revision and canonical floor height",
+      "result": "PASS"
+    },
+    {
+      "name": "Inventory blocks cross-project source links and unbounded unit seeding",
+      "result": "PASS"
+    },
+    {
+      "name": "Stale corrections and stale approval cannot overwrite pointer",
+      "result": "PASS"
+    },
+    {
+      "name": "Reprocess transfers exact intent and keeps previous approval",
+      "result": "PASS"
+    },
+    {
+      "name": "Changed calibration/configuration emits explicit rebase conflicts",
+      "result": "PASS"
+    },
+    {
+      "name": "Failed worker job cannot change approval",
+      "result": "PASS"
+    },
+    {
+      "name": "Cancellation is durable and does not publish a queued job",
+      "result": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Only approved canonical revisions compile",
+    "result": "PASS"
+  },
+  {
+    "name": "Every rendered element retains canonical revision and source lineage",
+    "result": "PASS"
+  },
+  {
+    "name": "Actual triangle floor area equals independently specified 38 square metres",
+    "result": "PASS"
+  },
+  {
+    "name": "Concave missing floor receives no invented support",
+    "result": "PASS"
+  },
+  {
+    "name": "Canonical room spawns stand on floor at 1.65 metre eye height",
+    "result": "PASS"
+  },
+  {
+    "name": "Window geometry remains a collision obstacle",
+    "result": "PASS"
+  },
+  {
+    "name": "Closed door blocks and open door permits traversal through actual wall cut",
+    "result": "PASS"
+  },
+  {
+    "name": "Hosted window and door cuts use start offsets and real dimensions",
+    "result": "PASS"
+  },
+  {
+    "name": "Courtyard holes triangulate 84 square metres and provide no invented support",
+    "result": "PASS"
+  },
+  {
+    "name": "Non-passable doors remain obstacles even when passable leaves open",
+    "result": "PASS"
+  }
+]

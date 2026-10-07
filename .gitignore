@@ -34,6 +34,7 @@ yarn-debug.log*
 yarn-error.log*
 
 **/package-lock.json
+!/package-lock.json
 **/yarn.lock
 **/pnpm-lock.yaml
 
@@ -47,3 +48,17 @@ yarn-error.log*
 
 # Local BIM tooling and baseline snapshots
 .cache/
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/tsconfig.tsbuildinfo
+# Local experiments are kept out of the maintained source tree.
+/scratch/
+/scratch_*.js
+
+# Local process identifiers
+*.pid
+!/evidence/canonical/api-build.log
+!/evidence/canonical/web-build.log
+!/evidence/canonical/builder-build.log
+!/evidence/canonical/admin-build.log

@@ -1,0 +1,125 @@
+{
+  "browser": "153.0.8010.12",
+  "gpu": "SwiftShader",
+  "results": [
+    {
+      "name": "Actual architectural GLB loads",
+      "result": "PASS"
+    },
+    {
+      "name": "Floor isolation changes geometry without replacing renderer or GLB",
+      "result": "PASS"
+    },
+    {
+      "name": "Real unit and room mappings selectable",
+      "result": "PASS"
+    },
+    {
+      "name": "Room entry, human eye height and keyboard movement",
+      "result": "FAIL",
+      "reason": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert(Math.abs(before.camera[1]-1.669)<.03)\n"
+    },
+    {
+      "name": "Pointer lock and Escape",
+      "result": "PASS"
+    },
+    {
+      "name": "Sofa added on actual floor",
+      "result": "PASS"
+    },
+    {
+      "name": "Mouse placement and rotation change actual object transform",
+      "result": "PASS"
+    },
+    {
+      "name": "Saved furniture survives browser refresh",
+      "result": "PASS"
+    },
+    {
+      "name": "Exterior orbit and reset",
+      "result": "PASS"
+    },
+    {
+      "name": "Repeated unload/reload releases model resources",
+      "result": "PASS"
+    },
+    {
+      "name": "404, invalid extension and corrupt model give recoverable errors",
+      "result": "PASS"
+    },
+    {
+      "name": "Procedural ten-floor source uses same renderer",
+      "result": "PASS"
+    },
+    {
+      "name": "Rapid source switching cannot attach stale GLB",
+      "result": "PASS"
+    }
+  ],
+  "metrics": [
+    {
+      "name": "imported-balanced",
+      "rendererId": 1,
+      "samples": 18,
+      "fps": 3.1678592725104355,
+      "p50Ms": 149.90000000000055,
+      "p95Ms": 2866.5,
+      "slowFrames": 13,
+      "drawCalls": 313,
+      "triangles": 27036,
+      "geometries": 276,
+      "textures": 3,
+      "programs": 4,
+      "loadMs": 277.89999997615814
+    },
+    {
+      "name": "imported-low",
+      "rendererId": 1,
+      "samples": 65,
+      "fps": 1.4458441018597168,
+      "p50Ms": 166.69999999999982,
+      "p95Ms": 2999.800000000001,
+      "slowFrames": 49,
+      "drawCalls": 313,
+      "triangles": 27036,
+      "geometries": 276,
+      "textures": 4,
+      "programs": 10
+    },
+    {
+      "name": "reload-resources",
+      "counts": [
+        {
+          "geometries": 283,
+          "textures": 4,
+          "programs": 7
+        },
+        {
+          "geometries": 283,
+          "textures": 4,
+          "programs": 7
+        },
+        {
+          "geometries": 283,
+          "textures": 4,
+          "programs": 7
+        }
+      ]
+    },
+    {
+      "name": "procedural-floor",
+      "rendererId": 1,
+      "samples": 164,
+      "fps": 1.5058348792006326,
+      "p50Ms": 333.3000000000029,
+      "p95Ms": 2216.5,
+      "slowFrames": 118,
+      "drawCalls": 279,
+      "triangles": 5794,
+      "geometries": 2595,
+      "textures": 8,
+      "programs": 10
+    }
+  ],
+  "errors": []
+}

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { pointInPolygon } from '@aether/twin-schema';
 import { FurnitureFactory } from "../scene-compiler/FurnitureFactory";
 import { disposeTree, Manifest, Room, Vec3 } from "./model";
 import { Navigation } from "./Navigation";
@@ -62,6 +63,21 @@ export class Furniture {
     )
       return false;
     if (!this.nav.placementClear(box)) return false;
+    if (room.footprint) {
+      for (const x of [box.min.x,box.max.x]) for (const z of [box.min.z,box.max.z]) {
+        if (!pointInPolygon([x,z],room.footprint)) return false;
+      }
+      const crossesBox = ([a,b]: [number[],number[]]) => {
+        let low=0,high=1;
+        for (let axis=0;axis<2;axis++) {
+          const min=axis===0?box.min.x:box.min.z,max=axis===0?box.max.x:box.max.z,d=b[axis]-a[axis];
+          if (Math.abs(d)<1e-10) { if (a[axis]<=min||a[axis]>=max) return false; }
+          else { const t0=(min-a[axis])/d,t1=(max-a[axis])/d;low=Math.max(low,Math.min(t0,t1));high=Math.min(high,Math.max(t0,t1)); }
+        }
+        return low<high && high>0 && low<1;
+      };
+      if ([room.footprint.outer,...room.footprint.holes].some(ring=>ring.some((a,i)=>crossesBox([a,ring[(i+1)%ring.length]])))) return false;
+    }
     for (const x of [box.min.x, box.max.x])
       for (const z of [box.min.z, box.max.z])
         if (this.nav.ground(x, z, floor.elevation) === undefined) return false;

@@ -1,0 +1,5 @@
+{
+  "result": "PASS",
+  "pythonFiles": 28,
+  "method": "Exact AST equality before and after formatting; Black safe mode also enabled"
+}

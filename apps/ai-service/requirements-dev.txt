@@ -1,0 +1,3 @@
+-r requirements.txt
+# Development formatter only; not required by the production worker.
+black==25.1.0

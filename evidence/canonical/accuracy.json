@@ -1,0 +1,63 @@
+{
+  "status": "PASS",
+  "fixtureKind": "independently-authored-synthetic-truth",
+  "sourceSha256": "dafa5c6b5d81c72acc496705ef297ccc0965db30ab1afd4c1e799b455fa65d6e",
+  "groundTruth": "tools/canonical/fixtures/annotations.json",
+  "parserVersion": "ezdxf-1.4.4/aether-1",
+  "algorithmVersion": "single-floor-1.0.0",
+  "rooms": [
+    {
+      "name": "Living",
+      "truthAreaM2": 16,
+      "predictedAreaM2": 16.0,
+      "areaRelativeError": 0.0,
+      "intersectionOverUnion": 1.0,
+      "boundaryHausdorffM": 0.0,
+      "spawnValid": true
+    },
+    {
+      "name": "Kitchen",
+      "truthAreaM2": 22,
+      "predictedAreaM2": 22.0,
+      "areaRelativeError": 0.0,
+      "intersectionOverUnion": 1.0,
+      "boundaryHausdorffM": 0.0,
+      "spawnValid": true
+    }
+  ],
+  "wallPrecision": 1,
+  "wallRecall": 1,
+  "maxWallBoundaryErrorM": 0.0,
+  "openingMetrics": [
+    {
+      "kind": "door",
+      "spanHausdorffM": 0.0,
+      "widthErrorM": 0.0,
+      "hostCorrect": true,
+      "adjacencyCorrect": true
+    },
+    {
+      "kind": "door",
+      "spanHausdorffM": 0.0,
+      "widthErrorM": 0.0,
+      "hostCorrect": true,
+      "adjacencyCorrect": true
+    },
+    {
+      "kind": "window",
+      "spanHausdorffM": 0.0,
+      "widthErrorM": 0.0,
+      "hostCorrect": true,
+      "adjacencyCorrect": true
+    }
+  ],
+  "timing": {
+    "runs": 25,
+    "meanMs": 145.92105200048536,
+    "p95Ms": 209.6338999690488,
+    "maxMs": 219.45560001768172,
+    "environment": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel"
+  },
+  "genuineArchitecturalAcceptance": "BLOCKED: authored tests are synthetic; no verified supported architectural drawing with independent annotations"
+}

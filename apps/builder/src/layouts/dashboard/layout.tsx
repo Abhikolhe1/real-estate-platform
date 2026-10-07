@@ -79,7 +79,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       items: [
         { label: 'Media Library', path: paths.dashboard.media, icon: '📁', exact: false },
         { label: 'Website CMS', path: paths.dashboard.website, icon: '🖥️', exact: false },
-        { label: 'AI Floor Plans', path: paths.dashboard.aiGenerator, icon: '📐', exact: false },
+        { label: 'DXF Validation Studio', path: '/validation-studio', icon: '📐', exact: false },
         { label: 'SDK & Integrations', path: paths.dashboard.sdk, icon: '🔌', exact: false },
       ],
     },

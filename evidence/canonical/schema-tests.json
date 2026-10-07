@@ -1,0 +1,46 @@
+[
+  {
+    "name": "Python fixture passes shared JSON Schema and approved gate",
+    "status": "PASS"
+  },
+  {
+    "name": "Reject unknown fields",
+    "status": "PASS"
+  },
+  {
+    "name": "Reject nonfinite coordinates",
+    "status": "PASS"
+  },
+  {
+    "name": "Reject unknown schema version",
+    "status": "PASS"
+  },
+  {
+    "name": "Reject opening outside host",
+    "status": "PASS"
+  },
+  {
+    "name": "Reject window traversal",
+    "status": "PASS"
+  },
+  {
+    "name": "Reject draft cannot render approved",
+    "status": "PASS"
+  },
+  {
+    "name": "Reject unknown units",
+    "status": "PASS"
+  },
+  {
+    "name": "Reject blocking issues",
+    "status": "PASS"
+  },
+  {
+    "name": "Reject duplicate ids",
+    "status": "PASS"
+  },
+  {
+    "name": "Reject outside spawn",
+    "status": "PASS"
+  }
+]

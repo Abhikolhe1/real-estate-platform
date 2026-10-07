@@ -1,0 +1,30 @@
+[
+  {
+    "app": "api",
+    "result": "PASS",
+    "exitCode": 0,
+    "durationMs": 91955,
+    "log": "C:\\Projects\\real-estate-platform\\evidence\\canonical\\api-build.log"
+  },
+  {
+    "app": "web",
+    "result": "PASS",
+    "exitCode": 0,
+    "durationMs": 132046,
+    "log": "C:\\Projects\\real-estate-platform\\evidence\\canonical\\web-build.log"
+  },
+  {
+    "app": "builder",
+    "result": "PASS",
+    "exitCode": 0,
+    "durationMs": 81294,
+    "log": "C:\\Projects\\real-estate-platform\\evidence\\canonical\\builder-build.log"
+  },
+  {
+    "app": "admin",
+    "result": "PASS",
+    "exitCode": 0,
+    "durationMs": 45855,
+    "log": "C:\\Projects\\real-estate-platform\\evidence\\canonical\\admin-build.log"
+  }
+]

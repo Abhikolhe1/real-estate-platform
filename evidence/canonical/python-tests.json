@@ -1,0 +1,129 @@
+{
+  "testsRan": 31,
+  "results": [
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_ambiguous_host_blocks",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_bulge_preserved_as_reviewed_approximation",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_concave_room",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_corrupt_and_oversized_rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_courtyard_hole",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_cyclic_insert_bounded",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_determinism_and_reprocess",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_door_gap_not_hallucinated",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_duplicates_and_overlap",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_large_origin_roundtrip",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_line_rectangle",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_lwpolyline_rectangle",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_metric_equivalence",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_native_label",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_nested_block_transform_lineage",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_opening_start_span_and_adjacency",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_polyline_rectangle",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_snap_only_within_metric_tolerance",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_t_junction",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_unknown_units_block",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_unsupported_reported",
+      "result": "PASS"
+    },
+    {
+      "name": "test_canonical.CanonicalGeometryTests.test_x_junction",
+      "result": "PASS"
+    },
+    {
+      "name": "test_corrections.CorrectionTests.test_calibration_and_defaults_gate",
+      "result": "PASS"
+    },
+    {
+      "name": "test_corrections.CorrectionTests.test_empty_unknown_and_mass_assignment_commands_rejected",
+      "result": "PASS"
+    },
+    {
+      "name": "test_corrections.CorrectionTests.test_geometry_issue_cannot_be_dismissed",
+      "result": "PASS"
+    },
+    {
+      "name": "test_corrections.CorrectionTests.test_immutable_rename_history",
+      "result": "PASS"
+    },
+    {
+      "name": "test_corrections.CorrectionTests.test_invalid_matrix_provenance_and_graph_block",
+      "result": "PASS"
+    },
+    {
+      "name": "test_corrections.CorrectionTests.test_opening_host_edits_and_rejection",
+      "result": "PASS"
+    },
+    {
+      "name": "test_corrections.CorrectionTests.test_rebase_exact_and_conflicting_configuration",
+      "result": "PASS"
+    },
+    {
+      "name": "test_corrections.CorrectionTests.test_split_then_merge_roundtrip",
+      "result": "PASS"
+    },
+    {
+      "name": "test_corrections.CorrectionTests.test_vertex_move_updates_walls_support_area",
+      "result": "PASS"
+    }
+  ]
+}

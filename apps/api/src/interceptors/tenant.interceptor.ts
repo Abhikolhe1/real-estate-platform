@@ -15,7 +15,7 @@ export class TenantInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest();
     
     // Resolve Tenant ID from headers or subdomains
-    let tenantId = request.headers['x-tenant-id'] || request.headers['x-builder-id'];
+    let tenantId = request.authorizedTenantId || request.headers['x-tenant-id'] || request.headers['x-builder-id'];
 
     if (!tenantId) {
       const host = request.headers.host || '';

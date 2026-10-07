@@ -1,0 +1,24 @@
+{
+  "name": "@aether/twin-schema",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "dependencies": {
+    "ajv": "6.12.6"
+  },
+  "description": "Shared digital-twin schema, types and boundary validation for the API, Builder and website.",
+  "files": [
+    "src",
+    "schema",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "require": "./src/index.js",
+      "default": "./src/index.js"
+    },
+    "./schema": "./schema/canonical.schema.json"
+  }
+}

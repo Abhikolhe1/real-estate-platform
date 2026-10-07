@@ -3,8 +3,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Runtime, ViewerState } from "./Runtime";
 import { ModelSource, sampleSource } from "./model";
-import { getBuilder, publicJson } from '@/lib/public-data';
-import { useSearchParams } from 'next/navigation';
+import { getBuilder, publicJson } from "@/lib/public-data";
+import { useSearchParams } from "next/navigation";
 
 export interface ExternalNavigation {
   viewMode: "building" | "walkthrough";
@@ -29,7 +29,7 @@ export default function PropertyExperience({
   proceduralDemo?: boolean;
 }) {
   const params = useSearchParams();
-  const builderSlug = params.get('builder') || 'aethelgard';
+  const builderSlug = params.get("builder") || "aethelgard";
   const container = useRef<HTMLDivElement>(null),
     runtime = useRef<Runtime>();
   const [state, setState] = useState<ViewerState | null>(null),
@@ -630,9 +630,13 @@ export default function PropertyExperience({
           {state?.manifest?.attribution ||
             "Aether real-time property exploration"}
         </span>
-        <a href="/models/duplex/ATTRIBUTION.md" className="underline">
-          Model source & attribution
-        </a>
+        {source.canonical ? (
+          <span>Source SHA-256: {source.canonical.source.sha256}</span>
+        ) : (
+          <a href="/models/duplex/ATTRIBUTION.md" className="underline">
+            Model source & attribution
+          </a>
+        )}
       </footer>
     </section>
   );

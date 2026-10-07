@@ -1,0 +1,40 @@
+{
+  "npmLsExitCode": 0,
+  "problems": [],
+  "sharedValidatorVersion": "6.12.6",
+  "sharedValidatorAtRoot": true,
+  "emptyNestedFolderRemoved": true,
+  "applicationDependencyManifestsUnchanged": true,
+  "lockPlacementChanges": [
+    {
+      "package": "",
+      "beforeVersion": "1.0.0",
+      "afterVersion": "1.0.0"
+    },
+    {
+      "package": "node_modules/ajv",
+      "beforeVersion": "8.12.0",
+      "afterVersion": "6.12.6"
+    },
+    {
+      "package": "packages/twin-schema/node_modules/ajv",
+      "beforeVersion": "6.12.6"
+    },
+    {
+      "package": "packages/twin-schema/node_modules/json-schema-traverse",
+      "beforeVersion": "0.4.1"
+    },
+    {
+      "package": "node_modules/@angular-devkit/core/node_modules/ajv",
+      "afterVersion": "8.12.0"
+    },
+    {
+      "package": "node_modules/ajv-formats/node_modules/ajv",
+      "afterVersion": "8.20.0"
+    },
+    {
+      "package": "node_modules/ajv/node_modules/json-schema-traverse",
+      "afterVersion": "0.4.1"
+    }
+  ]
+}

@@ -1,4 +1,6 @@
 import fs from 'node:fs';import path from 'node:path';import assert from 'node:assert/strict';import ts from 'typescript';import * as THREE from 'three';import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
+
+const evidenceDir=process.env.EVIDENCE_DIR||'evidence/3d';fs.mkdirSync(evidenceDir,{recursive:true});
 const output='.cache/3d-tests';fs.mkdirSync(output,{recursive:true});fs.writeFileSync(path.join(output,'package.json'),'{"type":"module"}');
 for(const file of ['model','Navigation']){const src=fs.readFileSync(`apps/web/src/components/property-viewer/${file}.ts`,'utf8');let js=ts.transpileModule(src,{compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.ES2020}}).outputText;js=js.replace(/from ["']\.\/(\w+)["']/g,"from './$1.js'");fs.writeFileSync(path.join(output,`${file}.js`),js);}
 const {validateManifest,SceneIndex}=await import('../../.cache/3d-tests/model.js');const {Navigation}=await import('../../.cache/3d-tests/Navigation.js');
@@ -25,4 +27,4 @@ test('Connected IFC rooms accessible through real openings',()=>{
  while(queue.length){const key=queue.shift(),[x,z]=key.split(',').map(Number);for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){const next=`${x+dx},${z+dz}`;if(nodes.has(next)&&!seen.has(next)){const p=nodes.get(key).clone();nav.move(p,nodes.get(next).clone().sub(p),0);if(Math.hypot(p.x-nodes.get(next).x,p.z-nodes.get(next).z)<.02){seen.add(next);queue.push(next);}}}}
  assert(targets.every(t=>seen.has(t)),`Reachable ${seen.size}/${nodes.size}; targets ${targets.map(t=>seen.has(t))}`);
 });
-fs.writeFileSync('evidence/3d/core-tests.json',JSON.stringify(results,null,2));console.log(results);if(results.some(r=>r.result==='FAIL'))process.exitCode=1;
+fs.writeFileSync(`${evidenceDir}/core-tests.json`,JSON.stringify(results,null,2));console.log(results);if(results.some(r=>r.result==='FAIL'))process.exitCode=1;

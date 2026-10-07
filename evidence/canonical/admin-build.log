@@ -1,0 +1,29 @@
+  ▲ Next.js 14.2.35
+  - Experiments (use with caution):
+    · cpus
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping linting
+   Checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/6) ...
+   Generating static pages (1/6)
+   Generating static pages (2/6)
+   Generating static pages (4/6)
+ ✓ Generating static pages (6/6)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    39.9 kB         130 kB
+├ ○ /_not-found                          871 B          88.1 kB
+├ ○ /cad-processing                      1.12 kB        90.8 kB
+└ ○ /login                               1.71 kB        91.4 kB
++ First Load JS shared by all            87.3 kB
+  ├ chunks/146-1917c5e5a11d6a0e.js       31.7 kB
+  ├ chunks/b6261da7-5e956071f9e14590.js  53.6 kB
+  └ other shared chunks (total)          1.89 kB
+
+
+○  (Static)  prerendered as static content

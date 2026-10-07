@@ -1,24 +1,27 @@
 const {chromium}=require('playwright');const fs=require('fs');const assert=require('assert/strict');const THREE=require('three');
+
+const evidenceDir=process.env.EVIDENCE_DIR||'evidence/3d';fs.mkdirSync(evidenceDir,{recursive:true});
+let activeBrowser;const errors=[],results=[],metrics=[];
 (async()=>{
- const browser=await chromium.launch({headless:true,args:process.env.GPU==='d3d11'?['--use-angle=d3d11']:process.env.GPU==='1'?[]:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
- const page=await browser.newPage({viewport:{width:1280,height:1000}});const errors=[],results=[],metrics=[];
+ const browser=activeBrowser=await chromium.launch({headless:true,args:process.env.GPU==='d3d11'?['--use-angle=d3d11']:process.env.GPU==='1'?[]:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ const page=await browser.newPage({viewport:{width:1280,height:1000}});
  page.on('pageerror',e=>errors.push(e.message));
- await page.route(/(?:localhost:3001|dreams-liverpool-messaging-purchases\.trycloudflare\.com)\//,r=>r.fulfill({json:[]}));
+ await page.route(/(?:localhost:3001|localhost:3195|dreams-liverpool-messaging-purchases\.trycloudflare\.com)\//,r=>r.fulfill({json:[]}));
  const snapshot=()=>page.locator('[data-testid=property-canvas]').evaluate(el=>el.getViewerSnapshot());
  const test=async(name,fn)=>{try{await fn();results.push({name,result:'PASS'});}catch(e){results.push({name,result:'FAIL',reason:String(e)});}console.log(results.at(-1));};
- const ready=()=>page.waitForFunction(()=>{const s=document.querySelector('[data-testid=property-canvas]')?.getViewerSnapshot?.();return s?.state.manifest&&!s.state.loading},{timeout:90000});
+ const ready=()=>page.waitForFunction(()=>{const s=document.querySelector('[data-testid=property-canvas]')?.getViewerSnapshot?.();return s?.state.manifest&&!s.state.loading},undefined,{timeout:90000});
  await page.goto(`${process.env.BASE_URL||'http://localhost:3000'}/explorer`,{waitUntil:'domcontentloaded',timeout:120000});await ready();await page.waitForTimeout(2000);
  let initial=await snapshot();const renderer=initial.stats.rendererId,root=initial.rootId;
  await test('Actual architectural GLB loads',async()=>{assert.equal(initial.state.manifest.modelId,'bsi-duplex-v1');assert(initial.meshCount>250);assert.equal(await page.locator('[data-testid=property-canvas] canvas').count(),1);});
  metrics.push({name:'imported-balanced',...initial.stats,loadMs:initial.state.loadMs});
- await page.screenshot({path:'evidence/3d/final-exterior.png',fullPage:true});
+ await page.screenshot({path:`${evidenceDir}/final-exterior.png`,fullPage:true,timeout:90000});
  await page.getByRole('button',{name:'Performance off'}).click();await page.waitForTimeout(5000);metrics.push({name:'imported-low',...(await snapshot()).stats});
  const ground=initial.state.manifest.floors.find(f=>f.name==='Ground floor'),upper=initial.state.manifest.floors.find(f=>f.name==='First floor');
  await test('Floor isolation changes geometry without replacing renderer or GLB',async()=>{for(const f of [ground,upper,ground,upper,ground]){await page.getByLabel('Floor',{exact:true}).selectOption(f.id);const s=await snapshot();assert.equal(s.stats.rendererId,renderer);assert.equal(s.rootId,root);assert(s.visibleMeshes<initial.meshCount&&s.visibleMeshes>30);}});
  await test('Real unit and room mappings selectable',async()=>{await page.getByLabel('Unit / room group').selectOption('unit-b');assert((await snapshot()).state.roomId===ground.flats[1].rooms[0].id);await page.getByLabel('Unit / room group').selectOption('unit-a');});
  const living=ground.flats[0].rooms.find(r=>r.name.includes('Living'));await page.getByLabel('Room',{exact:true}).selectOption(living.id);
- await test('Room entry, human eye height and keyboard movement',async()=>{await page.getByRole('button',{name:'Enter room',exact:true}).click();await page.waitForTimeout(1000);const before=await snapshot();assert.equal(before.state.mode,'walkthrough');assert(Math.abs(before.camera[1]-1.669)<.03);await page.keyboard.down('w');await page.waitForTimeout(1500);await page.keyboard.up('w');const after=await snapshot();assert(new THREE.Vector3().fromArray(before.camera).distanceTo(new THREE.Vector3().fromArray(after.camera))>.1);assert.equal(after.stats.rendererId,renderer);});
- await page.screenshot({path:'evidence/3d/final-interior.png',fullPage:true});
+ await test('Room entry, human eye height and keyboard movement',async()=>{await page.getByRole('button',{name:'Enter room',exact:true}).click();await page.waitForFunction(()=>{const s=document.querySelector('[data-testid=property-canvas]')?.getViewerSnapshot?.();return s?.state.mode==='walkthrough'&&Math.abs(s.camera[1]-1.669)<.03;},undefined,{timeout:20000});const before=await snapshot();assert.equal(before.state.mode,'walkthrough');assert(Math.abs(before.camera[1]-1.669)<.03);await page.keyboard.down('w');await page.waitForTimeout(1500);await page.keyboard.up('w');const after=await snapshot();assert(new THREE.Vector3().fromArray(before.camera).distanceTo(new THREE.Vector3().fromArray(after.camera))>.1);assert.equal(after.stats.rendererId,renderer);});
+ await page.screenshot({path:`${evidenceDir}/final-interior.png`,fullPage:true,timeout:90000});
  await test('Pointer lock and Escape',async()=>{const box=await page.locator('[data-testid=property-canvas]').boundingBox();await page.mouse.click(box.x+box.width*.65,box.y+box.height*.5);await page.waitForTimeout(150);assert(await page.evaluate(()=>!!document.pointerLockElement));await page.keyboard.press('Escape');await page.waitForTimeout(150);assert.equal(await page.evaluate(()=>!!document.pointerLockElement),false);});
  await page.getByRole('button',{name:'Furnish room',exact:true}).click();
  await test('Sofa added on actual floor',async()=>{await page.getByRole('button',{name:'Add sofa',exact:true}).click();const s=await snapshot();assert.equal(s.state.furniture.length,1);assert(Math.abs(s.state.furniture[0].position[1]-.019)<.001);});
@@ -32,7 +35,7 @@ const {chromium}=require('playwright');const fs=require('fs');const assert=requi
    await page.getByRole('button',{name:'Rotate',exact:true}).click();s=await snapshot();assert.notEqual(s.state.furniture[0].rotation,0);
    await page.getByRole('button',{name:'Save configuration',exact:true}).click();saved=(await snapshot()).state.furniture;
  });
- await page.screenshot({path:'evidence/3d/final-furniture.png',fullPage:true});
+ await page.screenshot({path:`${evidenceDir}/final-furniture.png`,fullPage:true,timeout:90000});
  await test('Saved furniture survives browser refresh',async()=>{await page.reload({waitUntil:'domcontentloaded'});await ready();assert.deepEqual((await snapshot()).state.furniture,saved);});
  await page.getByRole('button',{name:'Performance off'}).click();
  await test('Exterior orbit and reset',async()=>{const before=(await snapshot()).camera;const rect=await page.locator('[data-testid=property-canvas]').boundingBox();await page.mouse.move(rect.x+rect.width*.7,rect.y+rect.height*.4);await page.mouse.down();await page.mouse.move(rect.x+rect.width*.85,rect.y+rect.height*.5,{steps:8});await page.mouse.up();await page.waitForTimeout(300);assert.notDeepEqual((await snapshot()).camera,before);await page.getByRole('button',{name:'Reset camera'}).click();});
@@ -44,5 +47,5 @@ const {chromium}=require('playwright');const fs=require('fs');const assert=requi
  await test('Procedural ten-floor source uses same renderer',async()=>{const id=(await snapshot()).stats.rendererId;await page.getByLabel('Building / source').selectOption('procedural-demo');await ready();let s=await snapshot();assert.equal(s.stats.rendererId,id);assert.equal(s.state.manifest.floors.length,10);await page.getByLabel('Floor',{exact:true}).selectOption('floor-3');s=await snapshot();assert(s.visibleMeshes<s.meshCount);metrics.push({name:'procedural-floor',...s.stats});});
  await test('Rapid source switching cannot attach stale GLB',async()=>{await page.route('**/models/duplex/duplex.glb',async r=>{await new Promise(resolve=>setTimeout(resolve,500));await r.continue();});await page.getByLabel('Building / source').selectOption('bsi-duplex-v1');await page.getByLabel('Building / source').selectOption('procedural-demo');await ready();await page.waitForTimeout(800);assert.equal((await snapshot()).state.manifest.modelId,'procedural-demo');});
  assert.equal(errors.length,0,errors.join('\n'));
- fs.writeFileSync('evidence/3d/browser-tests.json',JSON.stringify({browser:browser.version(),gpu:process.env.GPU==='d3d11'?'Direct3D11':process.env.GPU==='1'?'default ANGLE':'SwiftShader',results,metrics,errors},null,2));await browser.close();if(results.some(r=>r.result==='FAIL'))process.exitCode=1;
-})().catch(e=>{console.error(e);process.exit(1)});
+ fs.writeFileSync(`${evidenceDir}/browser-tests.json`,JSON.stringify({browser:browser.version(),gpu:process.env.GPU==='d3d11'?'Direct3D11':process.env.GPU==='1'?'default ANGLE':'SwiftShader',results,metrics,errors},null,2));await browser.close();if(results.some(r=>r.result==='FAIL'))process.exitCode=1;
+})().catch(async e=>{console.error(e);fs.writeFileSync(`${evidenceDir}/browser-tests.json`,JSON.stringify({results,metrics,errors,fatal:String(e)},null,2));await activeBrowser?.close();process.exitCode=1;});

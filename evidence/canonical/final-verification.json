@@ -1,0 +1,28 @@
+{
+  "result": "PASS",
+  "localDocumentationLinksVerified": 10,
+  "canonicalChecks": {
+    "python-tests": 31,
+    "schema-tests": 11,
+    "scene-tests": 10,
+    "worker-tests": 7,
+    "api-integration": 24,
+    "app-smoke": 4,
+    "browser-tests": 13,
+    "local-launcher": 3
+  },
+  "canonicalPassingTotal": 103,
+  "importedGlbCore": 8,
+  "importedBrowser": 13,
+  "legacyPassed": 3,
+  "legacyFailed": 2,
+  "builds": [
+    "api",
+    "web",
+    "builder",
+    "admin"
+  ],
+  "finalApiTypecheck": "PASS",
+  "gitDiffWhitespaceCheck": "PASS",
+  "repositoryWideLint": "UNVERIFIED"
+}

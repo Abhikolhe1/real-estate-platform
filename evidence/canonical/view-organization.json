@@ -1,0 +1,74 @@
+[
+  {
+    "route": "apps\\builder\\src\\app\\(auth)\\login\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\login\\LoginView.tsx"
+  },
+  {
+    "route": "apps\\builder\\src\\app\\(auth)\\register\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\register\\RegisterView.tsx"
+  },
+  {
+    "route": "apps\\builder\\src\\app\\(dashboard)\\amenities\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\amenities\\AmenitiesView.tsx"
+  },
+  {
+    "route": "apps\\builder\\src\\app\\(dashboard)\\analytics\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\analytics\\AnalyticsView.tsx"
+  },
+  {
+    "route": "apps\\builder\\src\\app\\(dashboard)\\flats\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\flats\\FlatsView.tsx"
+  },
+  {
+    "route": "apps\\builder\\src\\app\\(dashboard)\\floors\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\floors\\FloorsView.tsx"
+  },
+  {
+    "route": "apps\\builder\\src\\app\\(dashboard)\\leads\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\leads\\LeadsView.tsx"
+  },
+  {
+    "route": "apps\\builder\\src\\app\\(dashboard)\\media\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\media\\MediaView.tsx"
+  },
+  {
+    "route": "apps\\builder\\src\\app\\(dashboard)\\projects\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\projects\\ProjectsView.tsx"
+  },
+  {
+    "route": "apps\\builder\\src\\app\\(dashboard)\\sdk\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\sdk\\SdkView.tsx"
+  },
+  {
+    "route": "apps\\builder\\src\\app\\(dashboard)\\team\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\team\\TeamView.tsx"
+  },
+  {
+    "route": "apps\\builder\\src\\app\\(dashboard)\\towers\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\towers\\TowersView.tsx"
+  },
+  {
+    "route": "apps\\builder\\src\\app\\(dashboard)\\walkthroughs\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\walkthroughs\\WalkthroughsView.tsx"
+  },
+  {
+    "route": "apps\\builder\\src\\app\\(dashboard)\\website\\page.tsx",
+    "view": "apps\\builder\\src\\sections\\website\\WebsiteView.tsx"
+  },
+  {
+    "route": "apps\\admin\\src\\app\\(auth)\\login\\page.tsx",
+    "view": "apps\\admin\\src\\sections\\login\\LoginView.tsx"
+  },
+  {
+    "route": "apps\\admin\\src\\app\\(dashboard)\\page.tsx",
+    "view": "apps\\admin\\src\\sections\\platform\\PlatformView.tsx"
+  },
+  {
+    "route": "apps\\web\\src\\app\\embed\\project\\[id]\\page.tsx",
+    "view": "apps\\web\\src\\sections\\embed-project-id\\EmbedProjectIdView.tsx"
+  },
+  {
+    "route": "apps\\web\\src\\app\\gallery\\page.tsx",
+    "view": "apps\\web\\src\\sections\\gallery\\GalleryView.tsx"
+  }
+]

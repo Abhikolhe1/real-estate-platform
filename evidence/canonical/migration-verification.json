@@ -1,0 +1,15 @@
+{
+  "schema": "public",
+  "migrationApplied": true,
+  "migration": {
+    "name": "CanonicalTwins1791324000000",
+    "timestamp": "1791324000000"
+  },
+  "tables": [
+    "twin_reconstruction_jobs",
+    "twin_revisions",
+    "twin_source_assets"
+  ],
+  "localPrivateServiceTokenConfigured": true,
+  "generatedLocalServiceToken": true
+}

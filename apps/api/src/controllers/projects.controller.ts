@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import {JwtAuthGuard} from '../guards/auth.guard';
+import {TwinAccessGuard} from '../guards/twin-access.guard';
 import { ProjectsService } from '../services/projects.service';
 import { BillingService } from '../services/billing.service';
 import { CreateProjectDto, UpdateProjectDto } from '../dtos/project.dto';
@@ -23,6 +25,7 @@ export class ProjectsController {
   }
 
   @Post(':id/amenities')
+  @UseGuards(JwtAuthGuard,TwinAccessGuard)
   async saveAmenities(
     @TenantId() tenantId: string,
     @Param('id') id: string,
@@ -48,6 +51,7 @@ export class ProjectsController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard,TwinAccessGuard)
   async create(
     @TenantId() tenantId: string,
     @Body() createProjectDto: CreateProjectDto,
@@ -58,6 +62,7 @@ export class ProjectsController {
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard,TwinAccessGuard)
   async update(
     @TenantId() tenantId: string,
     @Param('id') id: string,
@@ -67,6 +72,7 @@ export class ProjectsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard,TwinAccessGuard)
   async remove(@TenantId() tenantId: string, @Param('id') id: string) {
     return this.projectsService.remove(tenantId, id);
   }

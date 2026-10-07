@@ -1,0 +1,52 @@
+{
+  "rooms": [
+    {
+      "id": "room-1",
+      "name": "Grand Hall",
+      "x": -5.0,
+      "z": -5.0,
+      "width": 10.0,
+      "depth": 10.0,
+      "color": "#f5efe6",
+      "node": {
+        "x": 0.0,
+        "z": 0.0
+      }
+    }
+  ],
+  "walls": [
+    {
+      "id": "w-fallback-1",
+      "startX": -5.0,
+      "startZ": -5.0,
+      "endX": 5.0,
+      "thickness": 0.15,
+      "height": 3.0
+    },
+    {
+      "id": "w-fallback-2",
+      "startX": 5.0,
+      "startZ": 5.0,
+      "endX": 5.0,
+      "thickness": 0.15,
+      "height": 3.0
+    },
+    {
+      "id": "w-fallback-3",
+      "startX": 5.0,
+      "startZ": 5.0,
+      "endX": -5.0,
+      "thickness": 0.15,
+      "height": 3.0
+    },
+    {
+      "id": "w-fallback-4",
+      "startX": -5.0,
+      "startZ": -5.0,
+      "endX": -5.0,
+      "thickness": 0.15,
+      "height": 3.0
+    }
+  ],
+  "missingEndZ": 4
+}

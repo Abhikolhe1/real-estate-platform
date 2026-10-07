@@ -1,0 +1,827 @@
+{
+  "results": [
+    {
+      "name": "Legacy floors preserve renderer and cached building",
+      "result": "PASS"
+    },
+    {
+      "name": "Legacy dollhouse and floorplan preserve renderer and escape eye-height clamp",
+      "result": "PASS"
+    },
+    {
+      "name": "Legacy hotspot fixture is mounted",
+      "result": "PASS"
+    },
+    {
+      "name": "Legacy guided tour changes camera and can pause",
+      "result": "FAIL",
+      "reason": "TimeoutError: locator.click: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTitle('Pause Tour', { exact: true })\u001b[22m\n"
+    },
+    {
+      "name": "Procedural door click animates its actual hinge",
+      "result": "FAIL",
+      "reason": "AssertionError [ERR_ASSERTION]: No visible door opened from the tested camera"
+    }
+  ],
+  "errors": [],
+  "details": [
+    {
+      "name": "legacy-building",
+      "snapshot": {
+        "stats": {
+          "rendererId": 1,
+          "samples": 63,
+          "fps": 3.569516330522513,
+          "p50Ms": 88,
+          "p95Ms": 306.1999999284744,
+          "slowFrames": 62,
+          "drawCalls": 2860,
+          "triangles": 57680,
+          "geometries": 2540,
+          "textures": 8,
+          "programs": 9
+        },
+        "mode": "building",
+        "submode": "inside",
+        "camera": [
+          39.99999999999999,
+          25,
+          44.99999999999999
+        ],
+        "rootId": "ab6b0292-ad84-4785-b26b-912adbe0911e",
+        "cachedGroups": 1,
+        "rebuildReason": "project,amenities",
+        "tourPlaying": false,
+        "tourIndex": 0,
+        "tourCount": 1,
+        "projection": [
+          3.5726466830279273,
+          0,
+          0,
+          0,
+          0,
+          2.4142135623730954,
+          0,
+          0,
+          0,
+          0,
+          -1.0004000800160033,
+          -1,
+          0,
+          0,
+          -0.20004000800160032,
+          0
+        ],
+        "viewMatrix": [
+          0.7474093186836598,
+          -0.09821906325618002,
+          0.6570634109109303,
+          0,
+          0,
+          0.9890114008434792,
+          0.14783926745495934,
+          0,
+          -0.6643638388299198,
+          -0.1104964461632025,
+          0.7391963372747966,
+          0,
+          3.3306690738754696e-15,
+          -15.824182413495667,
+          -63.24235330017703,
+          1
+        ],
+        "doors": [
+          {
+            "name": "doorGroup_ap-entrance-a-2bhk",
+            "position": [
+              -4.43,
+              1.05,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-b-2bhk",
+            "position": [
+              3.57,
+              1.05,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-a-2bhk",
+            "position": [
+              -2.4299999999999997,
+              1.05,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-b-2bhk",
+            "position": [
+              5.57,
+              1.05,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-a-2bhk",
+            "position": [
+              -2.43,
+              1.05,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-b-2bhk",
+            "position": [
+              5.57,
+              1.05,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-a-2bhk",
+            "position": [
+              -4.43,
+              4.25,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-b-2bhk",
+            "position": [
+              3.57,
+              4.25,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-a-2bhk",
+            "position": [
+              -2.4299999999999997,
+              4.25,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-b-2bhk",
+            "position": [
+              5.57,
+              4.25,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-a-2bhk",
+            "position": [
+              -2.43,
+              4.25,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-b-2bhk",
+            "position": [
+              5.57,
+              4.25,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-a-2bhk",
+            "position": [
+              -4.43,
+              7.45,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-b-2bhk",
+            "position": [
+              3.57,
+              7.45,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-a-2bhk",
+            "position": [
+              -2.4299999999999997,
+              7.45,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-b-2bhk",
+            "position": [
+              5.57,
+              7.45,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-a-2bhk",
+            "position": [
+              -2.43,
+              7.45,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-b-2bhk",
+            "position": [
+              5.57,
+              7.45,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-a-2bhk",
+            "position": [
+              -4.43,
+              10.650000000000002,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-b-2bhk",
+            "position": [
+              3.57,
+              10.650000000000002,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-a-2bhk",
+            "position": [
+              -2.4299999999999997,
+              10.650000000000002,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-b-2bhk",
+            "position": [
+              5.57,
+              10.650000000000002,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-a-2bhk",
+            "position": [
+              -2.43,
+              10.650000000000002,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-b-2bhk",
+            "position": [
+              5.57,
+              10.650000000000002,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-a-2bhk",
+            "position": [
+              -4.43,
+              13.850000000000001,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-b-2bhk",
+            "position": [
+              3.57,
+              13.850000000000001,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-a-2bhk",
+            "position": [
+              -2.4299999999999997,
+              13.850000000000001,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-b-2bhk",
+            "position": [
+              5.57,
+              13.850000000000001,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-a-2bhk",
+            "position": [
+              -2.43,
+              13.850000000000001,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-b-2bhk",
+            "position": [
+              5.57,
+              13.850000000000001,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-a-2bhk",
+            "position": [
+              -4.43,
+              17.05,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-b-2bhk",
+            "position": [
+              3.57,
+              17.05,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-a-2bhk",
+            "position": [
+              -2.4299999999999997,
+              17.05,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-b-2bhk",
+            "position": [
+              5.57,
+              17.05,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-a-2bhk",
+            "position": [
+              -2.43,
+              17.05,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-b-2bhk",
+            "position": [
+              5.57,
+              17.05,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-a-2bhk",
+            "position": [
+              -4.43,
+              20.250000000000004,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-b-2bhk",
+            "position": [
+              3.57,
+              20.250000000000004,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-a-2bhk",
+            "position": [
+              -2.4299999999999997,
+              20.250000000000004,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-b-2bhk",
+            "position": [
+              5.57,
+              20.250000000000004,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-a-2bhk",
+            "position": [
+              -2.43,
+              20.250000000000004,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-b-2bhk",
+            "position": [
+              5.57,
+              20.250000000000004,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-a-2bhk",
+            "position": [
+              -4.43,
+              23.450000000000003,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-b-2bhk",
+            "position": [
+              3.57,
+              23.450000000000003,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-a-2bhk",
+            "position": [
+              -2.4299999999999997,
+              23.450000000000003,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-b-2bhk",
+            "position": [
+              5.57,
+              23.450000000000003,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-a-2bhk",
+            "position": [
+              -2.43,
+              23.450000000000003,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-b-2bhk",
+            "position": [
+              5.57,
+              23.450000000000003,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-a-2bhk",
+            "position": [
+              -4.43,
+              26.650000000000002,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-b-2bhk",
+            "position": [
+              3.57,
+              26.650000000000002,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-a-2bhk",
+            "position": [
+              -2.4299999999999997,
+              26.650000000000002,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-b-2bhk",
+            "position": [
+              5.57,
+              26.650000000000002,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-a-2bhk",
+            "position": [
+              -2.43,
+              26.650000000000002,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-b-2bhk",
+            "position": [
+              5.57,
+              26.650000000000002,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-a-2bhk",
+            "position": [
+              -4.43,
+              29.85,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-b-2bhk",
+            "position": [
+              3.57,
+              29.85,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-a-2bhk",
+            "position": [
+              -2.4299999999999997,
+              29.85,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-b-2bhk",
+            "position": [
+              5.57,
+              29.85,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-a-2bhk",
+            "position": [
+              -2.43,
+              29.85,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-b-2bhk",
+            "position": [
+              5.57,
+              29.85,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "legacy-walkthrough",
+      "snapshot": {
+        "stats": {
+          "rendererId": 1,
+          "samples": 359,
+          "fps": 10.822347240134704,
+          "p50Ms": 22.600000023841858,
+          "p95Ms": 121.60000002384186,
+          "slowFrames": 93,
+          "drawCalls": 145,
+          "triangles": 3292,
+          "geometries": 2806,
+          "textures": 30,
+          "programs": 17
+        },
+        "mode": "walkthrough",
+        "submode": "inside",
+        "camera": [
+          -3.499999999999999,
+          8.05,
+          6.2
+        ],
+        "rootId": "389b3716-401c-46de-b1fb-a9a354afea65",
+        "cachedGroups": 2,
+        "rebuildReason": "project,amenities",
+        "tourPlaying": false,
+        "tourIndex": 0,
+        "tourCount": 1,
+        "projection": [
+          2.155093665922753,
+          0,
+          0,
+          0,
+          0,
+          1.4825609685127399,
+          0,
+          0,
+          0,
+          0,
+          -1.00010000500025,
+          -1,
+          0,
+          0,
+          -0.1000050002500125,
+          0
+        ],
+        "viewMatrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          3.499999999999999,
+          -8.05,
+          -6.2,
+          1
+        ],
+        "doors": [
+          {
+            "name": "doorGroup_ap-entrance-a-2bhk",
+            "position": [
+              -4.43,
+              7.45,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-entrance-b-2bhk",
+            "position": [
+              3.57,
+              7.45,
+              4
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-a-2bhk",
+            "position": [
+              -2.4299999999999997,
+              7.45,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-door-bedroom-b-2bhk",
+            "position": [
+              5.57,
+              7.45,
+              -1
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-a-2bhk",
+            "position": [
+              -2.43,
+              7.45,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          },
+          {
+            "name": "doorGroup_ap-balcony-door-b-2bhk",
+            "position": [
+              5.57,
+              7.45,
+              -5
+            ],
+            "rotation": 0,
+            "open": false
+          }
+        ]
+      }
+    }
+  ]
+}

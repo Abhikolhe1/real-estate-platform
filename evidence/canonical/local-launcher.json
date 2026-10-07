@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Workspace launcher starts configured private worker",
+    "result": "PASS"
+  },
+  {
+    "name": "Workspace launcher still rejects anonymous worker requests",
+    "result": "PASS"
+  },
+  {
+    "name": "Configured private credential reconstructs original bytes in bounded child",
+    "result": "PASS"
+  }
+]

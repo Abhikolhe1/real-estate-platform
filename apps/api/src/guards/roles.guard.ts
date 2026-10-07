@@ -48,6 +48,11 @@ export class RolesGuard implements CanActivate {
     if (userRoleNames.includes('SUPER_ADMIN') || user.role === 'SUPER_ADMIN') {
       return true;
     }
+    const routedTenant=request.headers['x-tenant-id']||request.headers['x-builder-id'];
+    if(!user.tenantId||user.tenantId!==userPayload.tenantId||(routedTenant&&routedTenant!==user.tenantId)){
+      throw new ForbiddenException('Tenant context does not match active membership');
+    }
+    request.authorizedTenantId=user.tenantId;
 
     // Check Roles
     if (requiredRoles) {

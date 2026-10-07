@@ -1,0 +1,96 @@
+{
+  "browser": "153.0.8010.12",
+  "gpu": "SwiftShader",
+  "results": [
+    {
+      "name": "Production studio loads authenticated project/floor identity",
+      "result": "PASS"
+    },
+    {
+      "name": "Upload persists source and real job reaches source-overlay review",
+      "result": "PASS"
+    },
+    {
+      "name": "Source overlay has independent toggles, zoom and original handles",
+      "result": "PASS"
+    },
+    {
+      "name": "Rename queue, undo and save persist a new immutable revision",
+      "result": "PASS"
+    },
+    {
+      "name": "Boundary vertex drag queues geometry intent and undo leaves source intact",
+      "result": "PASS"
+    },
+    {
+      "name": "Explicit dimension/calibration review enables server validation and approval",
+      "result": "PASS"
+    },
+    {
+      "name": "Immutable source download matches independently known file checksum",
+      "result": "PASS"
+    },
+    {
+      "name": "Historical revisions remain visible while polling continues",
+      "result": "PASS"
+    },
+    {
+      "name": "Approved viewer fetches the explicit canonical revision and uses one canvas",
+      "result": "PASS"
+    },
+    {
+      "name": "Canonical room selection and entry preserve renderer and eye height",
+      "result": "PASS"
+    },
+    {
+      "name": "Furniture stands on canonical floor and persists by immutable revision",
+      "result": "PASS"
+    },
+    {
+      "name": "Canonical unload/reload releases resources and retains one renderer",
+      "result": "PASS"
+    },
+    {
+      "name": "Super-admin sees measured reconstruction stages and approval status",
+      "result": "PASS"
+    }
+  ],
+  "metrics": [
+    {
+      "name": "canonical-exterior",
+      "rendererId": 1,
+      "samples": 11,
+      "fps": 3.508895048949086,
+      "p50Ms": 33.299999999999955,
+      "p95Ms": 1966.6000000000001,
+      "slowFrames": 4,
+      "drawCalls": 23,
+      "triangles": 240,
+      "geometries": 23,
+      "textures": 3,
+      "programs": 4,
+      "loadMs": 162.29999995231628
+    },
+    {
+      "name": "canonical-reload",
+      "counts": [
+        [
+          30,
+          4,
+          5
+        ],
+        [
+          30,
+          4,
+          5
+        ],
+        [
+          30,
+          4,
+          5
+        ]
+      ]
+    }
+  ],
+  "errors": []
+}

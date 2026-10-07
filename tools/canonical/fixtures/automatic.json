@@ -1,0 +1,1834 @@
+{
+  "schemaVersion": "aether-twin/1",
+  "source": {
+    "assetId": "synthetic-fixture",
+    "sha256": "dafa5c6b5d81c72acc496705ef297ccc0965db30ab1afd4c1e799b455fa65d6e",
+    "format": "dxf",
+    "parserVersion": "ezdxf-1.4.4/aether-1",
+    "algorithmVersion": "single-floor-1.0.0"
+  },
+  "revision": {
+    "id": "draft-161f2f1d2ada37419d7ee479",
+    "baseId": null,
+    "state": "review_required"
+  },
+  "frame": {
+    "canonicalUnits": "meters",
+    "upAxis": "Y",
+    "sourceUnits": "meters",
+    "detectedInsunits": 6,
+    "scaleToMeters": 1.0,
+    "sourceOrigin": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "sourceToLocalMatrix": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      -0.0,
+      -0.0,
+      -0.0,
+      1.0
+    ],
+    "localToSourceMatrix": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "calibrated": false
+  },
+  "building": {
+    "id": "building-b0413749d36ae2269f951c4c",
+    "name": "Single-floor building",
+    "floorIds": [
+      "floor-b0413749d36ae2269f951c4c"
+    ]
+  },
+  "floors": [
+    {
+      "id": "floor-b0413749d36ae2269f951c4c",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "33",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "34",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "35",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "36",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "38",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "39",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3A",
+          "layer": "DOOR",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3B",
+          "layer": "DOOR",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3C",
+          "layer": "WINDOW",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3D",
+          "layer": "ROOM",
+          "entityType": "TEXT",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3E",
+          "layer": "ROOM",
+          "entityType": "TEXT",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "inferred",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "buildingId": "building-b0413749d36ae2269f951c4c",
+      "name": "Ground floor",
+      "elevationM": 0.0,
+      "heightM": 3.0
+    }
+  ],
+  "rooms": [
+    {
+      "id": "room-211403a8ccf1d5658a684128",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "33",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "38",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "39",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3D",
+          "layer": "ROOM",
+          "entityType": "TEXT",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": []
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "name": "Living",
+      "footprint": {
+        "outer": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            4.0,
+            0.0
+          ],
+          [
+            4.0,
+            4.0
+          ],
+          [
+            0.0,
+            4.0
+          ]
+        ],
+        "holes": []
+      },
+      "boundaryWallIds": [
+        "wall-b78acca42195c0e558cc5ce6",
+        "wall-c8685da295655dbe46d01438",
+        "wall-efbbfd519f95aa2fb7743fdb",
+        "wall-fe0d2521e1b8f0fef2a8dab9"
+      ],
+      "spawn": [
+        2.0,
+        1.65,
+        2.0
+      ],
+      "areaM2": 16.0,
+      "perimeterM": 16.0
+    },
+    {
+      "id": "room-8a3eb5bc090cb16ee10be66c",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "33",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "34",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "35",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "36",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "39",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3E",
+          "layer": "ROOM",
+          "entityType": "TEXT",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": []
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "name": "Kitchen",
+      "footprint": {
+        "outer": [
+          [
+            4.0,
+            0.0
+          ],
+          [
+            8.0,
+            0.0
+          ],
+          [
+            8.0,
+            6.0
+          ],
+          [
+            5.0,
+            6.0
+          ],
+          [
+            5.0,
+            4.0
+          ],
+          [
+            4.0,
+            4.0
+          ]
+        ],
+        "holes": []
+      },
+      "boundaryWallIds": [
+        "wall-1161208ce4bedf557dda0820",
+        "wall-60384084109bf543b28320da",
+        "wall-9d2682e2a3a0ac6bdda12a6c",
+        "wall-c791e1ace811f94762489974",
+        "wall-e4a6a28a4adcaac2e9976583",
+        "wall-fe0d2521e1b8f0fef2a8dab9"
+      ],
+      "spawn": [
+        6.0,
+        1.65,
+        2.0
+      ],
+      "areaM2": 22.0,
+      "perimeterM": 20.0
+    }
+  ],
+  "walls": [
+    {
+      "id": "wall-efbbfd519f95aa2fb7743fdb",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "38",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "start": [
+        0.0,
+        0.0
+      ],
+      "end": [
+        0.0,
+        4.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": null,
+      "rightRoomId": "room-211403a8ccf1d5658a684128",
+      "openingIds": []
+    },
+    {
+      "id": "wall-c8685da295655dbe46d01438",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "33",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "start": [
+        0.0,
+        0.0
+      ],
+      "end": [
+        4.0,
+        0.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": "room-211403a8ccf1d5658a684128",
+      "rightRoomId": null,
+      "openingIds": [
+        "opening-b04d756e7299936da5a0193f"
+      ]
+    },
+    {
+      "id": "wall-b78acca42195c0e558cc5ce6",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "start": [
+        0.0,
+        4.0
+      ],
+      "end": [
+        4.0,
+        4.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": null,
+      "rightRoomId": "room-211403a8ccf1d5658a684128",
+      "openingIds": []
+    },
+    {
+      "id": "wall-fe0d2521e1b8f0fef2a8dab9",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "39",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "start": [
+        4.0,
+        0.0
+      ],
+      "end": [
+        4.0,
+        4.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": "room-211403a8ccf1d5658a684128",
+      "rightRoomId": "room-8a3eb5bc090cb16ee10be66c",
+      "openingIds": [
+        "opening-f7bf13c55ee3ae9de26c4562"
+      ]
+    },
+    {
+      "id": "wall-e4a6a28a4adcaac2e9976583",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "33",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "start": [
+        4.0,
+        0.0
+      ],
+      "end": [
+        8.0,
+        0.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": "room-8a3eb5bc090cb16ee10be66c",
+      "rightRoomId": null,
+      "openingIds": []
+    },
+    {
+      "id": "wall-9d2682e2a3a0ac6bdda12a6c",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "start": [
+        4.0,
+        4.0
+      ],
+      "end": [
+        5.0,
+        4.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": null,
+      "rightRoomId": "room-8a3eb5bc090cb16ee10be66c",
+      "openingIds": []
+    },
+    {
+      "id": "wall-c791e1ace811f94762489974",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "36",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "start": [
+        5.0,
+        4.0
+      ],
+      "end": [
+        5.0,
+        6.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": null,
+      "rightRoomId": "room-8a3eb5bc090cb16ee10be66c",
+      "openingIds": []
+    },
+    {
+      "id": "wall-60384084109bf543b28320da",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "35",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "start": [
+        5.0,
+        6.0
+      ],
+      "end": [
+        8.0,
+        6.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": null,
+      "rightRoomId": "room-8a3eb5bc090cb16ee10be66c",
+      "openingIds": []
+    },
+    {
+      "id": "wall-1161208ce4bedf557dda0820",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "34",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM",
+          "heightM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "start": [
+        8.0,
+        0.0
+      ],
+      "end": [
+        8.0,
+        6.0
+      ],
+      "thicknessM": 0.15,
+      "heightM": 3.0,
+      "baseElevationM": 0.0,
+      "leftRoomId": "room-8a3eb5bc090cb16ee10be66c",
+      "rightRoomId": null,
+      "openingIds": [
+        "opening-bc9aa24b72b116d029eb2158"
+      ]
+    }
+  ],
+  "openings": [
+    {
+      "id": "opening-bc9aa24b72b116d029eb2158",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3C",
+          "layer": "WINDOW",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "heightM",
+          "sillM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "hostWallId": "wall-1161208ce4bedf557dda0820",
+      "kind": "window",
+      "startOffsetM": 2.0,
+      "widthM": 2.0,
+      "heightM": 1.2,
+      "sillM": 0.9,
+      "adjacentRoomIds": [
+        "room-8a3eb5bc090cb16ee10be66c"
+      ],
+      "passable": false
+    },
+    {
+      "id": "opening-f7bf13c55ee3ae9de26c4562",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3B",
+          "layer": "DOOR",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "heightM",
+          "sillM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "hostWallId": "wall-fe0d2521e1b8f0fef2a8dab9",
+      "kind": "door",
+      "startOffsetM": 1.0,
+      "widthM": 1.0,
+      "heightM": 2.1,
+      "sillM": 0.0,
+      "adjacentRoomIds": [
+        "room-211403a8ccf1d5658a684128",
+        "room-8a3eb5bc090cb16ee10be66c"
+      ],
+      "passable": true
+    },
+    {
+      "id": "opening-b04d756e7299936da5a0193f",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3A",
+          "layer": "DOOR",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "rule",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "heightM",
+          "sillM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "hostWallId": "wall-c8685da295655dbe46d01438",
+      "kind": "door",
+      "startOffsetM": 1.0,
+      "widthM": 1.0,
+      "heightM": 2.1,
+      "sillM": 0.0,
+      "adjacentRoomIds": [
+        "room-211403a8ccf1d5658a684128"
+      ],
+      "passable": true
+    }
+  ],
+  "slabs": [
+    {
+      "id": "floor-814747cca3d27bb4501c4a35",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "33",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "38",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "39",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "inferred",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "roomId": "room-211403a8ccf1d5658a684128",
+      "footprint": {
+        "outer": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            4.0,
+            0.0
+          ],
+          [
+            4.0,
+            4.0
+          ],
+          [
+            0.0,
+            4.0
+          ]
+        ],
+        "holes": []
+      },
+      "elevationM": 0.0,
+      "thicknessM": 0.15,
+      "role": "floor"
+    },
+    {
+      "id": "ceiling-814747cca3d27bb4501c4a35",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "33",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "38",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "39",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "inferred",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "roomId": "room-211403a8ccf1d5658a684128",
+      "footprint": {
+        "outer": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            4.0,
+            0.0
+          ],
+          [
+            4.0,
+            4.0
+          ],
+          [
+            0.0,
+            4.0
+          ]
+        ],
+        "holes": []
+      },
+      "elevationM": 3.0,
+      "thicknessM": 0.15,
+      "role": "ceiling"
+    },
+    {
+      "id": "floor-bbc28209b146d2451801c126",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "33",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "34",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "35",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "36",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "39",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "inferred",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "roomId": "room-8a3eb5bc090cb16ee10be66c",
+      "footprint": {
+        "outer": [
+          [
+            4.0,
+            0.0
+          ],
+          [
+            8.0,
+            0.0
+          ],
+          [
+            8.0,
+            6.0
+          ],
+          [
+            5.0,
+            6.0
+          ],
+          [
+            5.0,
+            4.0
+          ],
+          [
+            4.0,
+            4.0
+          ]
+        ],
+        "holes": []
+      },
+      "elevationM": 0.0,
+      "thicknessM": 0.15,
+      "role": "floor"
+    },
+    {
+      "id": "ceiling-bbc28209b146d2451801c126",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "33",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "34",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "35",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "36",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        },
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "39",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "evidence": {
+        "method": "inferred",
+        "reviewState": "unreviewed",
+        "confidence": null,
+        "defaults": [
+          "thicknessM"
+        ]
+      },
+      "predecessorIds": [],
+      "floorId": "floor-b0413749d36ae2269f951c4c",
+      "roomId": "room-8a3eb5bc090cb16ee10be66c",
+      "footprint": {
+        "outer": [
+          [
+            4.0,
+            0.0
+          ],
+          [
+            8.0,
+            0.0
+          ],
+          [
+            8.0,
+            6.0
+          ],
+          [
+            5.0,
+            6.0
+          ],
+          [
+            5.0,
+            4.0
+          ],
+          [
+            4.0,
+            4.0
+          ]
+        ],
+        "holes": []
+      },
+      "elevationM": 3.0,
+      "thicknessM": 0.15,
+      "role": "ceiling"
+    }
+  ],
+  "issues": [
+    {
+      "id": "issue-84413fb5ddbbe4fceed1a4dd",
+      "code": "MISSING_DIMENSION",
+      "severity": "blocking",
+      "objectIds": [],
+      "sourceRefs": [],
+      "details": {
+        "reason": "Review default wall thickness, floor height, slab thickness and opening heights/sills",
+        "decision": "AcceptDefaults or edit dimensions"
+      },
+      "resolved": false,
+      "resolution": null
+    },
+    {
+      "id": "issue-dd10337c69cdc1627a97091c",
+      "code": "CALIBRATION_REVIEW",
+      "severity": "blocking",
+      "objectIds": [],
+      "sourceRefs": [],
+      "details": {
+        "reason": "Verify INSUNITS against a known drawing dimension"
+      },
+      "resolved": false,
+      "resolution": null
+    }
+  ],
+  "sourceEntities": [
+    {
+      "id": "source-09dad9f54a7dbbebb7f1afff",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "37",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "walls",
+      "sourcePoints": [
+        [
+          5.0,
+          4.0,
+          0.0
+        ],
+        [
+          0.0,
+          4.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          5.0,
+          4.0
+        ],
+        [
+          0.0,
+          4.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    },
+    {
+      "id": "source-10e109644c0dc2ad55c8aece",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3D",
+          "layer": "ROOM",
+          "entityType": "TEXT",
+          "instancePath": []
+        }
+      ],
+      "role": "annotations",
+      "sourcePoints": [
+        [
+          2.0,
+          2.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          2.0,
+          2.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": "Living",
+      "curved": false
+    },
+    {
+      "id": "source-1c73764dd91b355d8f275f8c",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3C",
+          "layer": "WINDOW",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "windows",
+      "sourcePoints": [
+        [
+          8.0,
+          2.0,
+          0.0
+        ],
+        [
+          8.0,
+          4.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          8.0,
+          2.0
+        ],
+        [
+          8.0,
+          4.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    },
+    {
+      "id": "source-218b9edbba22a6be3b5f0737",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "38",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "walls",
+      "sourcePoints": [
+        [
+          0.0,
+          4.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          0.0,
+          4.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    },
+    {
+      "id": "source-4032834bccd3c239c784a1c5",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3B",
+          "layer": "DOOR",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "doors",
+      "sourcePoints": [
+        [
+          4.0,
+          1.0,
+          0.0
+        ],
+        [
+          4.0,
+          2.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          4.0,
+          1.0
+        ],
+        [
+          4.0,
+          2.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    },
+    {
+      "id": "source-531ab66b5aac7295d8aea1c5",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "34",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "walls",
+      "sourcePoints": [
+        [
+          8.0,
+          0.0,
+          0.0
+        ],
+        [
+          8.0,
+          6.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          8.0,
+          0.0
+        ],
+        [
+          8.0,
+          6.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    },
+    {
+      "id": "source-72fa140ed29e50be2c5e8b64",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "36",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "walls",
+      "sourcePoints": [
+        [
+          5.0,
+          6.0,
+          0.0
+        ],
+        [
+          5.0,
+          4.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          5.0,
+          6.0
+        ],
+        [
+          5.0,
+          4.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    },
+    {
+      "id": "source-8ba3a3ae3bfcc4b0fba5cd32",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3E",
+          "layer": "ROOM",
+          "entityType": "TEXT",
+          "instancePath": []
+        }
+      ],
+      "role": "annotations",
+      "sourcePoints": [
+        [
+          6.0,
+          2.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          6.0,
+          2.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": "Kitchen",
+      "curved": false
+    },
+    {
+      "id": "source-a03b756a2c698865061131d3",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "35",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "walls",
+      "sourcePoints": [
+        [
+          8.0,
+          6.0,
+          0.0
+        ],
+        [
+          5.0,
+          6.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          8.0,
+          6.0
+        ],
+        [
+          5.0,
+          6.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    },
+    {
+      "id": "source-a573691a54a2c241a22f283a",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "33",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "walls",
+      "sourcePoints": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          8.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          8.0,
+          0.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    },
+    {
+      "id": "source-bbeaf2d42729af7368152237",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "3A",
+          "layer": "DOOR",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "doors",
+      "sourcePoints": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          2.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          1.0,
+          0.0
+        ],
+        [
+          2.0,
+          0.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    },
+    {
+      "id": "source-ddda0d974c890968e9bdefd0",
+      "sourceRefs": [
+        {
+          "assetId": "synthetic-fixture",
+          "handle": "39",
+          "layer": "WALL",
+          "entityType": "LINE",
+          "instancePath": []
+        }
+      ],
+      "role": "walls",
+      "sourcePoints": [
+        [
+          4.0,
+          0.0,
+          0.0
+        ],
+        [
+          4.0,
+          4.0,
+          0.0
+        ]
+      ],
+      "localPoints": [
+        [
+          4.0,
+          0.0
+        ],
+        [
+          4.0,
+          4.0
+        ]
+      ],
+      "transform": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "text": null,
+      "curved": false
+    }
+  ],
+  "entityInventory": {
+    "LINE": 10,
+    "TEXT": 2
+  },
+  "config": {
+    "endpointSnapToleranceM": 0.001,
+    "intersectionToleranceM": 1e-07,
+    "openingHostToleranceM": 0.03,
+    "curveSagittaM": 0.001,
+    "bodyClearanceM": 0.25,
+    "wallThicknessM": 0.15,
+    "floorHeightM": 3,
+    "scaleToMeters": null,
+    "sourceUnits": null,
+    "sourceOrigin": null,
+    "layerMapping": {},
+    "ignoredSourceIds": []
+  },
+  "traversal": [
+    {
+      "doorId": "opening-f7bf13c55ee3ae9de26c4562",
+      "roomIds": [
+        "room-211403a8ccf1d5658a684128",
+        "room-8a3eb5bc090cb16ee10be66c"
+      ],
+      "exterior": false
+    },
+    {
+      "doorId": "opening-b04d756e7299936da5a0193f",
+      "roomIds": [
+        "room-211403a8ccf1d5658a684128"
+      ],
+      "exterior": true
+    }
+  ]
+}

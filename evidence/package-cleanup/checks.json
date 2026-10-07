@@ -1,0 +1,85 @@
+{
+  "checkedAtUtc": "2026-10-07T10:21:18.039213+00:00",
+  "scope": "Shared-library source paths, package metadata, dependency resolution, editor view and historical diagnostics",
+  "checks": [
+    {
+      "name": "Existing canonical schema boundary tests",
+      "result": "PASS",
+      "cases": 11
+    },
+    {
+      "name": "Existing canonical scene/render/collision tests",
+      "result": "PASS",
+      "cases": 10
+    },
+    {
+      "name": "All package public entry points resolve",
+      "result": "PASS"
+    },
+    {
+      "name": "Full npm ls --all --json dependency tree",
+      "result": "PASS",
+      "problems": []
+    },
+    {
+      "name": "Application dependency manifests unchanged during repair",
+      "result": "PASS"
+    },
+    {
+      "name": "Python schema exporter produces identical contract",
+      "result": "PASS",
+      "sha256": "dfdb953a20514127336a1e1aa742aceb1be533d03ac91a0e0057f1a4823fcc0d"
+    },
+    {
+      "name": "Five archived files preserve original content",
+      "result": "PASS"
+    },
+    {
+      "name": "PremiumButton.tsx unchanged",
+      "result": "PASS"
+    },
+    {
+      "name": "Documentation links resolve",
+      "result": "PASS"
+    },
+    {
+      "name": "git diff --check",
+      "result": "PASS"
+    }
+  ],
+  "applicationBuilds": [
+    {
+      "app": "api",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 91955,
+      "log": "evidence/canonical/api-build.log"
+    },
+    {
+      "app": "web",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 132046,
+      "log": "evidence/canonical/web-build.log"
+    },
+    {
+      "app": "builder",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 81294,
+      "log": "evidence/canonical/builder-build.log"
+    },
+    {
+      "app": "admin",
+      "result": "PASS",
+      "exitCode": 0,
+      "durationMs": 45855,
+      "log": "evidence/canonical/admin-build.log"
+    }
+  ],
+  "limits": [
+    "Existing isolated application build configuration skips repository-wide lint.",
+    "Preceding API/browser integration suites were not rerun for this source-path/metadata cleanup.",
+    "Third-party files were not subjected to a full malware scan."
+  ]
+}

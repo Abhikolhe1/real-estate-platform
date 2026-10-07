@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Actual production module starts and reports health",
+    "result": "PASS"
+  },
+  {
+    "name": "Actual production module rejects anonymous canonical access",
+    "result": "PASS"
+  },
+  {
+    "name": "Actual production module verifies membership from the database",
+    "result": "PASS"
+  },
+  {
+    "name": "Actual production admin monitor rejects anonymous users",
+    "result": "PASS"
+  }
+]

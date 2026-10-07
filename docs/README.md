@@ -1,17 +1,14 @@
-# Real Estate Platform - Asset & Document Storage (`/docs`)
+# Documentation
 
-This directory serves as the storage location for design assets, documents, and 3D files related to the platform's floor plans and virtual experiences.
+Start with the [application and package guide](../packages/README.md), [architecture](ARCHITECTURE.md), [development and verification](DEVELOPMENT.md), and the [cleanup record](CODE_CLEANUP.md).
 
-## 📂 Suggested Directory Structure
+Current canonical DXF records:
 
-You can organize your files as follows:
+- [Implementation](../CANONICAL_DXF_IMPLEMENTATION.md)
+- [Executed tests](../CANONICAL_DXF_TEST_REPORT.md)
+- [Automatic and reviewed accuracy](../CANONICAL_DXF_ACCURACY_REPORT.md)
+- [Security and resource limits](../CANONICAL_DXF_SECURITY_REPORT.md)
 
-*   `/docs/cad/` - For 2D CAD designs (DWG, DXF, PDF).
-*   `/docs/glb/` - For 3D binary glTF assets (GLB) used in Three.js/WebGL virtual tours.
-*   `/docs/textures/` - For floor and wall texture images (wood, tile, concrete).
-*   `/docs/manuals/` - For project user manuals and API documentation.
+`MD/` contains historical requirements and phased plans; planned features are not evidence of completed behavior. `3d/` contains earlier viewer audits. Root `evidence/canonical/` holds current executable-test results and screenshots.
 
-## 🔗 Serving assets
-In production:
-* For local development, assets placed inside the frontend portals' `/public` folders can be served statically.
-* For scalable multi-tenant production, upload these assets to a Cloud Object Storage bucket (like AWS S3 or Google Cloud Storage) and save their URL in the database.
+CAD source bytes for the canonical workflow are private immutable database assets. Do not place tenant DXF sources in a frontend `public` directory. Public sample GLB/textures retain their own attribution; a canonical source is traced by its asset identity and SHA-256 rather than the sample model's license.

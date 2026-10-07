@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Real GLB manifest references actual nodes",
+    "result": "PASS"
+  },
+  {
+    "name": "Missing manifest node rejected",
+    "result": "PASS"
+  },
+  {
+    "name": "Invalid manifest spawn rejected",
+    "result": "PASS"
+  },
+  {
+    "name": "Semantic collision index excludes decorative furniture",
+    "result": "PASS"
+  },
+  {
+    "name": "Living room supports human eye height",
+    "result": "PASS"
+  },
+  {
+    "name": "Solid IFC wall blocks repeated movement",
+    "result": "PASS"
+  },
+  {
+    "name": "No unsupported ground outside building",
+    "result": "PASS"
+  },
+  {
+    "name": "Connected IFC rooms accessible through real openings",
+    "result": "PASS"
+  }
+]

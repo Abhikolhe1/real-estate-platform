@@ -1,0 +1,24 @@
+{
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    ".cache": true,
+    "**/.venv": true,
+    "**/__pycache__": true,
+    "**/*.tsbuildinfo": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    ".cache": true,
+    "**/.venv": true,
+    "**/__pycache__": true,
+    "**/*.tsbuildinfo": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/.cache/**": true,
+    "**/.venv/**": true
+  }
+}

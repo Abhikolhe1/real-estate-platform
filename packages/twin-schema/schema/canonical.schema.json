@@ -1,0 +1,1058 @@
+{
+  "definitions": {
+    "Building": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "floorIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Floorids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "floorIds"
+      ],
+      "title": "Building",
+      "type": "object"
+    },
+    "CoordinateFrame": {
+      "additionalProperties": false,
+      "properties": {
+        "canonicalUnits": {
+          "const": "meters",
+          "default": "meters",
+          "title": "Canonicalunits",
+          "type": "string"
+        },
+        "upAxis": {
+          "const": "Y",
+          "default": "Y",
+          "title": "Upaxis",
+          "type": "string"
+        },
+        "sourceUnits": {
+          "enum": [
+            "millimeters",
+            "centimeters",
+            "meters",
+            "inches",
+            "feet",
+            "unknown"
+          ],
+          "title": "Sourceunits",
+          "type": "string"
+        },
+        "detectedInsunits": {
+          "title": "Detectedinsunits",
+          "type": "integer"
+        },
+        "scaleToMeters": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scaletometers"
+        },
+        "sourceOrigin": {
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Sourceorigin",
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "additionalItems": false
+        },
+        "sourceToLocalMatrix": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 16,
+          "minItems": 16,
+          "title": "Sourcetolocalmatrix",
+          "type": "array"
+        },
+        "localToSourceMatrix": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 16,
+          "minItems": 16,
+          "title": "Localtosourcematrix",
+          "type": "array"
+        },
+        "calibrated": {
+          "default": false,
+          "title": "Calibrated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "sourceUnits",
+        "detectedInsunits",
+        "sourceOrigin",
+        "sourceToLocalMatrix",
+        "localToSourceMatrix"
+      ],
+      "title": "CoordinateFrame",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "enum": [
+            "source",
+            "rule",
+            "inferred",
+            "manual"
+          ],
+          "title": "Method",
+          "type": "string"
+        },
+        "reviewState": {
+          "default": "unreviewed",
+          "enum": [
+            "unreviewed",
+            "accepted",
+            "corrected",
+            "rejected"
+          ],
+          "title": "Reviewstate",
+          "type": "string"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
+        "defaults": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Defaults",
+          "type": "array"
+        }
+      },
+      "required": [
+        "method"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "Floor": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "sourceRefs": {
+          "items": {
+            "$ref": "#/definitions/SourceRef"
+          },
+          "title": "Sourcerefs",
+          "type": "array"
+        },
+        "evidence": {
+          "$ref": "#/definitions/Evidence"
+        },
+        "predecessorIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Predecessorids",
+          "type": "array"
+        },
+        "buildingId": {
+          "title": "Buildingid",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "elevationM": {
+          "title": "Elevationm",
+          "type": "number"
+        },
+        "heightM": {
+          "exclusiveMinimum": 1.8,
+          "maximum": 20,
+          "title": "Heightm",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "evidence",
+        "buildingId",
+        "name",
+        "elevationM",
+        "heightM"
+      ],
+      "title": "Floor",
+      "type": "object"
+    },
+    "Opening": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "sourceRefs": {
+          "items": {
+            "$ref": "#/definitions/SourceRef"
+          },
+          "title": "Sourcerefs",
+          "type": "array"
+        },
+        "evidence": {
+          "$ref": "#/definitions/Evidence"
+        },
+        "predecessorIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Predecessorids",
+          "type": "array"
+        },
+        "floorId": {
+          "title": "Floorid",
+          "type": "string"
+        },
+        "hostWallId": {
+          "title": "Hostwallid",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "door",
+            "window"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "startOffsetM": {
+          "minimum": 0,
+          "title": "Startoffsetm",
+          "type": "number"
+        },
+        "widthM": {
+          "exclusiveMinimum": 0,
+          "title": "Widthm",
+          "type": "number"
+        },
+        "heightM": {
+          "exclusiveMinimum": 0,
+          "title": "Heightm",
+          "type": "number"
+        },
+        "sillM": {
+          "minimum": 0,
+          "title": "Sillm",
+          "type": "number"
+        },
+        "adjacentRoomIds": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 2,
+          "title": "Adjacentroomids",
+          "type": "array"
+        },
+        "passable": {
+          "default": false,
+          "title": "Passable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "evidence",
+        "floorId",
+        "hostWallId",
+        "kind",
+        "startOffsetM",
+        "widthM",
+        "heightM",
+        "sillM"
+      ],
+      "title": "Opening",
+      "type": "object"
+    },
+    "Polygon2D": {
+      "additionalProperties": false,
+      "properties": {
+        "outer": {
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array",
+            "items": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "additionalItems": false
+          },
+          "maxItems": 10000,
+          "minItems": 3,
+          "title": "Outer",
+          "type": "array"
+        },
+        "holes": {
+          "items": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array",
+              "items": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "additionalItems": false
+            },
+            "type": "array"
+          },
+          "maxItems": 1000,
+          "title": "Holes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "outer"
+      ],
+      "title": "Polygon2D",
+      "type": "object"
+    },
+    "RevisionInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "baseId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Baseid"
+        },
+        "state": {
+          "default": "review_required",
+          "enum": [
+            "draft",
+            "review_required",
+            "approved"
+          ],
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "RevisionInfo",
+      "type": "object"
+    },
+    "Room": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "sourceRefs": {
+          "items": {
+            "$ref": "#/definitions/SourceRef"
+          },
+          "title": "Sourcerefs",
+          "type": "array"
+        },
+        "evidence": {
+          "$ref": "#/definitions/Evidence"
+        },
+        "predecessorIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Predecessorids",
+          "type": "array"
+        },
+        "floorId": {
+          "title": "Floorid",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "footprint": {
+          "$ref": "#/definitions/Polygon2D"
+        },
+        "boundaryWallIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Boundarywallids",
+          "type": "array"
+        },
+        "spawn": {
+          "anyOf": [
+            {
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array",
+              "items": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "additionalItems": false
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Spawn"
+        },
+        "areaM2": {
+          "exclusiveMinimum": 0,
+          "title": "Aream2",
+          "type": "number"
+        },
+        "perimeterM": {
+          "exclusiveMinimum": 0,
+          "title": "Perimeterm",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "evidence",
+        "floorId",
+        "name",
+        "footprint",
+        "boundaryWallIds",
+        "areaM2",
+        "perimeterM"
+      ],
+      "title": "Room",
+      "type": "object"
+    },
+    "Slab": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "sourceRefs": {
+          "items": {
+            "$ref": "#/definitions/SourceRef"
+          },
+          "title": "Sourcerefs",
+          "type": "array"
+        },
+        "evidence": {
+          "$ref": "#/definitions/Evidence"
+        },
+        "predecessorIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Predecessorids",
+          "type": "array"
+        },
+        "floorId": {
+          "title": "Floorid",
+          "type": "string"
+        },
+        "roomId": {
+          "title": "Roomid",
+          "type": "string"
+        },
+        "footprint": {
+          "$ref": "#/definitions/Polygon2D"
+        },
+        "elevationM": {
+          "title": "Elevationm",
+          "type": "number"
+        },
+        "thicknessM": {
+          "exclusiveMinimum": 0,
+          "title": "Thicknessm",
+          "type": "number"
+        },
+        "role": {
+          "enum": [
+            "floor",
+            "ceiling"
+          ],
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "evidence",
+        "floorId",
+        "roomId",
+        "footprint",
+        "elevationM",
+        "thicknessM",
+        "role"
+      ],
+      "title": "Slab",
+      "type": "object"
+    },
+    "SourceEntity": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "sourceRefs": {
+          "items": {
+            "$ref": "#/definitions/SourceRef"
+          },
+          "title": "Sourcerefs",
+          "type": "array"
+        },
+        "role": {
+          "enum": [
+            "walls",
+            "doors",
+            "windows",
+            "annotations",
+            "voids",
+            "ignore",
+            "unknown"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "sourcePoints": {
+          "items": {
+            "maxItems": 3,
+            "minItems": 3,
+            "type": "array",
+            "items": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "additionalItems": false
+          },
+          "title": "Sourcepoints",
+          "type": "array"
+        },
+        "localPoints": {
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array",
+            "items": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "additionalItems": false
+          },
+          "title": "Localpoints",
+          "type": "array"
+        },
+        "transform": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 16,
+          "minItems": 16,
+          "title": "Transform",
+          "type": "array"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        },
+        "curved": {
+          "default": false,
+          "title": "Curved",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "sourceRefs",
+        "role",
+        "sourcePoints",
+        "transform"
+      ],
+      "title": "SourceEntity",
+      "type": "object"
+    },
+    "SourceInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "assetId": {
+          "title": "Assetid",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "format": {
+          "const": "dxf",
+          "default": "dxf",
+          "title": "Format",
+          "type": "string"
+        },
+        "parserVersion": {
+          "title": "Parserversion",
+          "type": "string"
+        },
+        "algorithmVersion": {
+          "title": "Algorithmversion",
+          "type": "string"
+        }
+      },
+      "required": [
+        "assetId",
+        "sha256",
+        "parserVersion",
+        "algorithmVersion"
+      ],
+      "title": "SourceInfo",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "assetId": {
+          "title": "Assetid",
+          "type": "string"
+        },
+        "handle": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Handle"
+        },
+        "layer": {
+          "title": "Layer",
+          "type": "string"
+        },
+        "entityType": {
+          "title": "Entitytype",
+          "type": "string"
+        },
+        "instancePath": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Instancepath",
+          "type": "array"
+        }
+      },
+      "required": [
+        "assetId",
+        "layer",
+        "entityType"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    },
+    "TwinIssue": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "info",
+            "warning",
+            "blocking"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "objectIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Objectids",
+          "type": "array"
+        },
+        "sourceRefs": {
+          "items": {
+            "$ref": "#/definitions/SourceRef"
+          },
+          "title": "Sourcerefs",
+          "type": "array"
+        },
+        "details": {
+          "additionalProperties": true,
+          "title": "Details",
+          "type": "object"
+        },
+        "resolved": {
+          "default": false,
+          "title": "Resolved",
+          "type": "boolean"
+        },
+        "resolution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolution"
+        }
+      },
+      "required": [
+        "id",
+        "code",
+        "severity"
+      ],
+      "title": "TwinIssue",
+      "type": "object"
+    },
+    "Wall": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "sourceRefs": {
+          "items": {
+            "$ref": "#/definitions/SourceRef"
+          },
+          "title": "Sourcerefs",
+          "type": "array"
+        },
+        "evidence": {
+          "$ref": "#/definitions/Evidence"
+        },
+        "predecessorIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Predecessorids",
+          "type": "array"
+        },
+        "floorId": {
+          "title": "Floorid",
+          "type": "string"
+        },
+        "start": {
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Start",
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "additionalItems": false
+        },
+        "end": {
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "End",
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "additionalItems": false
+        },
+        "thicknessM": {
+          "exclusiveMinimum": 0,
+          "maximum": 2,
+          "title": "Thicknessm",
+          "type": "number"
+        },
+        "heightM": {
+          "exclusiveMinimum": 0,
+          "maximum": 20,
+          "title": "Heightm",
+          "type": "number"
+        },
+        "baseElevationM": {
+          "title": "Baseelevationm",
+          "type": "number"
+        },
+        "leftRoomId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Leftroomid"
+        },
+        "rightRoomId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rightroomid"
+        },
+        "openingIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Openingids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "evidence",
+        "floorId",
+        "start",
+        "end",
+        "thicknessM",
+        "heightM",
+        "baseElevationM"
+      ],
+      "title": "Wall",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "aether-twin/1",
+      "default": "aether-twin/1",
+      "title": "Schemaversion",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/definitions/SourceInfo"
+    },
+    "revision": {
+      "$ref": "#/definitions/RevisionInfo"
+    },
+    "frame": {
+      "$ref": "#/definitions/CoordinateFrame"
+    },
+    "building": {
+      "$ref": "#/definitions/Building"
+    },
+    "floors": {
+      "items": {
+        "$ref": "#/definitions/Floor"
+      },
+      "maxItems": 1,
+      "minItems": 1,
+      "title": "Floors",
+      "type": "array"
+    },
+    "rooms": {
+      "items": {
+        "$ref": "#/definitions/Room"
+      },
+      "maxItems": 2000,
+      "title": "Rooms",
+      "type": "array"
+    },
+    "walls": {
+      "items": {
+        "$ref": "#/definitions/Wall"
+      },
+      "maxItems": 20000,
+      "title": "Walls",
+      "type": "array"
+    },
+    "openings": {
+      "items": {
+        "$ref": "#/definitions/Opening"
+      },
+      "maxItems": 5000,
+      "title": "Openings",
+      "type": "array"
+    },
+    "slabs": {
+      "items": {
+        "$ref": "#/definitions/Slab"
+      },
+      "maxItems": 4000,
+      "title": "Slabs",
+      "type": "array"
+    },
+    "issues": {
+      "items": {
+        "$ref": "#/definitions/TwinIssue"
+      },
+      "title": "Issues",
+      "type": "array"
+    },
+    "sourceEntities": {
+      "items": {
+        "$ref": "#/definitions/SourceEntity"
+      },
+      "maxItems": 20000,
+      "title": "Sourceentities",
+      "type": "array"
+    },
+    "entityInventory": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Entityinventory",
+      "type": "object"
+    },
+    "config": {
+      "additionalProperties": true,
+      "title": "Config",
+      "type": "object"
+    },
+    "traversal": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Traversal",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source",
+    "revision",
+    "frame",
+    "building",
+    "floors",
+    "rooms",
+    "walls",
+    "openings",
+    "slabs",
+    "issues",
+    "sourceEntities",
+    "entityInventory",
+    "config"
+  ],
+  "title": "CanonicalTwinV1",
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

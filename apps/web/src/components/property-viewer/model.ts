@@ -1,7 +1,10 @@
 import * as THREE from "three";
+import type { CanonicalTwinV1, Polygon2D } from '@aether/twin-schema';
 
 export type Vec3 = [number, number, number];
 export interface Room {
+  footprint?: Polygon2D;
+  revisionId?: string;
   id: string;
   name: string;
   nodeNames: string[];
@@ -22,6 +25,8 @@ export interface Floor {
   flats: Flat[];
 }
 export interface Element {
+  canonicalObjectId?: string;
+  revisionId?: string;
   id: string;
   type: string;
   floorId: string | null;
@@ -29,6 +34,8 @@ export interface Element {
   bounds?: [Vec3, Vec3];
 }
 export interface Manifest {
+  revisionId?: string;
+  sourceAssetId?: string;
   version: 1;
   modelId: string;
   modelUrl: string;
@@ -40,6 +47,7 @@ export interface Manifest {
   attribution?: string;
 }
 export interface ModelSource {
+  canonical?: CanonicalTwinV1;
   id: string;
   projectId: string;
   name: string;
@@ -226,22 +234,25 @@ export class SceneIndex {
         roomId: string | undefined,
         flatId: string | undefined,
         door = false;
+      let inheritedType: string | undefined;
       while (p && p !== root.parent) {
         element ||= metadata.get(p.name);
+        inheritedType ||= p.userData.type;
         floorId ||= floorNames.get(p.name) || p.userData.floorId;
         roomId ||= roomNames.get(p.name) || p.userData.roomId;
         flatId ||= flatNames.get(p.name) || p.userData.flatId;
         door ||= p.userData.type === "door" || p.name.startsWith("doorGroup_");
         p = p.parent;
       }
-      const type = element?.type || n.userData.type;
+      const type = element?.type || inheritedType;
       floorId ||= element?.floorId || undefined;
       n.userData.semanticType = type;
       n.userData.floorId = floorId;
       if (
         type?.startsWith("IfcWall") ||
-        ["IfcColumn", "IfcMember", "IfcRailing", "IfcWindow"].includes(type) ||
+        ["IfcColumn", "IfcMember", "IfcRailing", "IfcWindow"].includes(type || '') ||
         type === "wall" ||
+        type === "window" ||
         type === "collision"
       )
         this.walls.push(n);

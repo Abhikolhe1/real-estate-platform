@@ -28,8 +28,14 @@ export class Surface {
   private frames: number[] = [];
   private last = 0;
   private samples = 0;
-  constructor(readonly container: HTMLElement, deferEnvironment = false) {
-    this.scene.background = new THREE.Color("#d9e1e4");
+  private width = 0;
+  private height = 0;
+  renderVersion = 0;
+  constructor(
+    readonly container: HTMLElement,
+    deferEnvironment = false,
+  ) {
+    this.scene.background = new THREE.Color("#EBE3DA");
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1;
@@ -45,7 +51,7 @@ export class Surface {
       this.camera,
       this.renderer.domElement,
     );
-    this.scene.add(new THREE.HemisphereLight(0xddeeff, 0xbbb09e, 1.3));
+    this.scene.add(new THREE.HemisphereLight(0xf1ede7, 0xcaad8e, 1.3));
     this.sun.position.set(15, 30, 12);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(1024, 1024);
@@ -59,7 +65,11 @@ export class Surface {
     this.scene.add(this.sun);
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(container);
-    this.visibilityObserver = new IntersectionObserver(([entry]) => { this.inViewport = entry.isIntersecting; });
+    this.visibilityObserver = new IntersectionObserver(([entry]) => {
+      this.inViewport = entry.isIntersecting;
+      this.pause();
+      this.invalidate();
+    });
     this.visibilityObserver.observe(container);
     this.resize();
     if (!deferEnvironment) this.loadEnvironment();
@@ -70,45 +80,58 @@ export class Surface {
     this.environmentRequested = true;
     this.environmentTimer = setTimeout(async () => {
       try {
-      const { RGBELoader } = await import('three/examples/jsm/loaders/RGBELoader.js');
-      if (this.disposed) return;
-      new RGBELoader().load(
-      "/environments/venice_sunset_1k.hdr",
-      (texture) => {
-        if (this.disposed) {
-          texture.dispose();
-          return;
-        }
-        const pmrem = new THREE.PMREMGenerator(this.renderer);
-        this.environment = pmrem.fromEquirectangular(texture);
-        this.scene.environment = this.environment.texture;
-        this.scene.environmentIntensity = 0.6;
-        texture.dispose();
-        pmrem.dispose();
-      },
-      undefined,
-      () => {
+        const { RGBELoader } =
+          await import("three/examples/jsm/loaders/RGBELoader.js");
+        if (this.disposed) return;
+        new RGBELoader().load(
+          "/environments/venice_sunset_1k.hdr",
+          (texture) => {
+            if (this.disposed) {
+              texture.dispose();
+              return;
+            }
+            const pmrem = new THREE.PMREMGenerator(this.renderer);
+            this.environment = pmrem.fromEquirectangular(texture);
+            this.scene.environment = this.environment.texture;
+            this.scene.environmentIntensity = 0.6;
+            this.invalidate();
+            texture.dispose();
+            pmrem.dispose();
+          },
+          undefined,
+          () => {
+            this.container.dataset.environmentWarning =
+              "HDR unavailable; daylight fallback active";
+          },
+        );
+      } catch {
         this.container.dataset.environmentWarning =
           "HDR unavailable; daylight fallback active";
-      },
-    );
-      } catch { this.container.dataset.environmentWarning = 'HDR unavailable; daylight fallback active'; }
+      }
     }, 500);
   }
   resize() {
     const w = Math.max(1, this.container.clientWidth),
       h = Math.max(1, this.container.clientHeight);
+    if (w === this.width && h === this.height) return;
+    this.width = w;
+    this.height = h;
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.ortho.left = (-15 * w) / h;
     this.ortho.right = (15 * w) / h;
     this.ortho.updateProjectionMatrix();
     this.renderer.setSize(w, h);
+    this.invalidate();
   }
   quality(low: boolean) {
-    this.renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio, low ? 1 : 1.5),
-    );
+    const ratio = Math.min(window.devicePixelRatio || 1, low ? 1 : 1.5);
+    if (
+      this.renderer.getPixelRatio() === ratio &&
+      this.renderer.shadowMap.enabled === !low
+    )
+      return;
+    this.renderer.setPixelRatio(ratio);
     this.renderer.shadowMap.enabled = !low;
     this.sun.castShadow = !low;
     this.scene.traverse((n) => {
@@ -117,6 +140,14 @@ export class Surface {
           m.needsUpdate = true;
         });
     });
+    this.invalidate();
+  }
+  invalidate() {
+    this.renderVersion++;
+  }
+  /** Exclude time spent idle, hidden or outside the viewport from frame timings. */
+  pause() {
+    this.last = 0;
   }
   record(now: number) {
     if (this.last && !document.hidden) {

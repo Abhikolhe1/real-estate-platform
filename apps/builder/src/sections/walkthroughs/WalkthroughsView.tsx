@@ -1,6 +1,6 @@
 'use client';
 
-import { API_URL } from '@/config/api';
+import { API_URL, getAssetUrl } from '@/config/api';
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { Icon } from '@iconify/react';
@@ -8,8 +8,9 @@ import gsap from 'gsap';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { SceneCompiler } from '@/components/scene-compiler/SceneCompiler';
-import { AmenityFactory } from '@/components/scene-compiler/AmenityFactory';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { SceneCompiler, AmenityFactory } from '@repo/scene-compiler';
 
 interface Project {
   id: string;
@@ -187,7 +188,7 @@ export default function WalkthroughsPage() {
   // Model Upload Form
   const [newModelName, setNewModelName] = useState('');
   const [newModelType, setNewModelType] = useState<'exterior' | 'interior'>('exterior');
-  const [newModelUrl, setNewModelUrl] = useState('/building.glb');
+  const [newModelUrl, setNewModelUrl] = useState(getAssetUrl('/building.glb'));
 
   // Hotspot Drawer Form
   const [hotspotName, setHotspotName] = useState('');
@@ -514,6 +515,10 @@ export default function WalkthroughsPage() {
     if (!localLayout || !localLayout.rooms || localLayout.rooms.length === 0) {
       // Fallback: Load GLTF model
       const loader = new GLTFLoader();
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+      loader.setDRACOLoader(dracoLoader);
+      loader.setMeshoptDecoder(MeshoptDecoder);
       loader.load(
         selectedModel.modelUrl,
         (gltf) => {

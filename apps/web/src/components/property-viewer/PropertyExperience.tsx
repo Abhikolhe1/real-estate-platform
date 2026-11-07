@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Runtime, ViewerState } from "./Runtime";
+import { Runtime, type ViewerState } from "./Runtime";
 import { ModelSource, sampleSource } from "./model";
 import { getBuilder, publicJson } from "@/lib/public-data";
 import { useSearchParams } from "next/navigation";
@@ -30,6 +30,7 @@ export default function PropertyExperience({
 }) {
   const params = useSearchParams();
   const builderSlug = params.get("builder") || "aethelgard";
+  const viewer = useRef<HTMLElement>(null);
   const container = useRef<HTMLDivElement>(null),
     runtime = useRef<Runtime>();
   const [state, setState] = useState<ViewerState | null>(null),
@@ -49,12 +50,18 @@ export default function PropertyExperience({
   const [projectModels, setProjectModels] = useState<ModelSource[]>([]);
   const [fixture, setFixture] = useState<ModelSource | null>(null);
   useEffect(() => {
+    const compact = window.matchMedia("(max-width: 640px)").matches;
+    setControlsOpen(!compact);
+    setLow(window.matchMedia("(pointer: coarse)").matches);
+  }, []);
+  useEffect(() => {
     const test = new URLSearchParams(location.search).get("fixture");
     if (!["dxf-single", "dxf-tower"].includes(test || "")) return;
-    const abort = new AbortController();
-    fetch("/models/dxf-fixture.json", { signal: abort.signal })
-      .then((r) => r.json())
+    let active = true;
+    import("../../../../../__fixtures__/dxf-fixture.json")
+      .then((mod) => (mod.default ? mod.default : mod))
       .then((data) => {
+        if (!active) return;
         const source: ModelSource = {
           id: test!,
           name:
@@ -77,7 +84,9 @@ export default function PropertyExperience({
         setSourceId(source.id);
       })
       .catch(() => {});
-    return () => abort.abort();
+    return () => {
+      active = false;
+    };
   }, []);
   const sources = useMemo(
     () => [
@@ -193,18 +202,30 @@ export default function PropertyExperience({
   }, [low]);
   const floor = state?.manifest?.floors.find((f) => f.id === state?.floorId),
     flat = floor?.flats.find((f) => f.id === state?.flatId);
+  const rooms = flat?.rooms || [];
+  const roomIndex = rooms.findIndex((room) => room.id === state?.roomId);
+  const visitRoom = (offset: number) => {
+    const room = rooms[roomIndex + offset];
+    if (!room) return;
+    runtime.current?.selectRoom(room.id);
+    if (state?.mode !== "walkthrough") runtime.current?.view("walkthrough");
+  };
+  const stopMoving = () => {
+    if (runtime.current) runtime.current.touch = { forward: 0, side: 0 };
+  };
   const selectClass =
-    "w-full rounded-lg border border-white/15 bg-[#202a2d] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-300";
+    "min-h-11 w-full rounded-lg border border-[#D1C8BD]/30 bg-[#3A2E29] px-3 py-2 text-sm text-[#F1EDE7] focus:outline-none focus:ring-2 focus:ring-[#CAAD8E]";
   const buttonClass =
-    "rounded-lg border border-white/15 px-3 py-2 text-xs text-white hover:bg-white/10 disabled:opacity-35 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-teal-300";
+    "min-h-11 rounded-lg border border-[#D1C8BD]/30 px-3 py-2 text-xs text-[#F1EDE7] transition-colors hover:bg-[#A58376]/25 disabled:opacity-35 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#CAAD8E]";
   return (
     <section
+      ref={viewer}
       aria-label="Property exploration"
-      className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#d9e1e4] shadow-2xl text-white"
+      className="property-experience relative overflow-hidden rounded-2xl border border-[#D1C8BD] bg-[#EBE3DA] shadow-xl text-[#F1EDE7] fullscreen:flex fullscreen:h-dvh fullscreen:flex-col"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#172124] px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#3A2E29] px-5 py-4">
         <div>
-          <span className="text-[10px] uppercase tracking-[.25em] text-teal-300">
+          <span className="text-[10px] uppercase tracking-[.25em] text-[#CAAD8E]">
             Aether / Property explorer
           </span>
           <h2 className="mt-1 text-lg font-medium">
@@ -229,22 +250,34 @@ export default function PropertyExperience({
           <button
             className={buttonClass}
             onClick={() => {
-              const el = container.current?.parentElement;
-              if (document.fullscreenElement) void document.exitFullscreen();
-              else
-                void el?.requestFullscreen().catch(() =>
+              const el = viewer.current;
+              const action = document.fullscreenElement
+                ? document.exitFullscreen?.()
+                : el?.requestFullscreen?.();
+              if (action) void action.catch(() =>
                   runtime.current?.patch({
                     notice: "Fullscreen is unavailable in this browser.",
                   }),
                 );
+              else runtime.current?.patch({ notice: "Fullscreen is unavailable in this browser." });
             }}
           >
             Fullscreen
           </button>
         </div>
+        {rooms.length > 0 && (
+          <div className="flex w-full items-center gap-3 border-t border-[#D1C8BD]/20 pt-3" aria-label="Room navigation">
+            <button className={buttonClass} disabled={roomIndex <= 0 || !!state?.loading} onClick={() => visitRoom(-1)} aria-label="Previous room">←</button>
+            <p className="min-w-0 flex-1 text-center text-xs" aria-live="polite">
+              <span className="block truncate text-[#F1EDE7]">{rooms[roomIndex]?.name || "Choose a room"}</span>
+              <span className="mt-1 block text-[#D1C8BD]">{roomIndex + 1} / {rooms.length} rooms</span>
+            </p>
+            <button className={buttonClass} disabled={roomIndex < 0 || roomIndex >= rooms.length - 1 || !!state?.loading} onClick={() => visitRoom(1)} aria-label="Next room">→</button>
+          </div>
+        )}
       </div>
       <div
-        className="relative h-[calc(100dvh-185px)] min-h-[480px] max-h-[1000px]"
+        className="relative h-[70dvh] min-h-[480px] max-h-[1000px] flex-1"
         data-testid="property-viewport"
       >
         <div
@@ -254,10 +287,10 @@ export default function PropertyExperience({
         />
         <aside
           hidden={!controlsOpen}
-          className="absolute left-4 top-4 z-10 w-56 max-h-[520px] overflow-y-auto rounded-xl bg-[#172124]/95 p-4 shadow-xl backdrop-blur-md max-sm:w-44 max-sm:p-3"
+          className="absolute bottom-44 left-4 top-4 z-10 w-56 overflow-y-auto overscroll-contain rounded-xl bg-[#3A2E29]/95 p-4 shadow-xl backdrop-blur-md max-sm:w-48 max-sm:p-3"
         >
           <label
-            className="mb-1 block text-[10px] uppercase tracking-widest text-white/60"
+            className="mb-1 block text-[10px] uppercase tracking-widest text-[#D1C8BD]"
             htmlFor="property-model"
           >
             Building / source
@@ -275,7 +308,7 @@ export default function PropertyExperience({
             ))}
           </select>
           <label
-            className="mb-1 mt-4 block text-[10px] uppercase tracking-widest text-white/60"
+            className="mb-1 mt-4 block text-[10px] uppercase tracking-widest text-[#D1C8BD]"
             htmlFor="property-floor"
           >
             Floor
@@ -297,7 +330,7 @@ export default function PropertyExperience({
           {floor && (
             <>
               <label
-                className="mb-1 mt-4 block text-[10px] uppercase tracking-widest text-white/60"
+                className="mb-1 mt-4 block text-[10px] uppercase tracking-widest text-[#D1C8BD]"
                 htmlFor="property-flat"
               >
                 Unit / room group
@@ -317,7 +350,7 @@ export default function PropertyExperience({
                 ))}
               </select>
               <label
-                className="mb-1 mt-4 block text-[10px] uppercase tracking-widest text-white/60"
+                className="mb-1 mt-4 block text-[10px] uppercase tracking-widest text-[#D1C8BD]"
                 htmlFor="property-room"
               >
                 Room
@@ -337,7 +370,7 @@ export default function PropertyExperience({
                 ))}
               </select>
               <button
-                className="mt-4 w-full rounded-lg bg-teal-300 px-3 py-2 text-sm font-semibold text-[#172124] disabled:opacity-30"
+                className="mt-4 w-full rounded-lg bg-[#CAAD8E] px-3 py-2 text-sm font-semibold text-[#3A2E29] disabled:opacity-30"
                 disabled={!state?.roomId || !!state.loading}
                 onClick={() => runtime.current?.view("walkthrough")}
               >
@@ -346,7 +379,7 @@ export default function PropertyExperience({
             </>
           )}
           <details className="mt-4 border-t border-white/10 pt-3 text-xs">
-            <summary className="cursor-pointer text-white/65">
+            <summary className="cursor-pointer text-[#D1C8BD]">
               Load another asset
             </summary>
             <label className="mt-3 block">
@@ -365,6 +398,7 @@ export default function PropertyExperience({
                     35 * Math.sin(angle),
                     12,
                   );
+                  runtime.current?.surface.invalidate();
                 }}
               />
             </label>
@@ -420,15 +454,15 @@ export default function PropertyExperience({
             </button>
           </details>
         </aside>
-        <div className="absolute bottom-24 left-4 right-4 z-10 flex justify-between gap-4 pointer-events-none">
+        <div className="absolute bottom-36 left-4 right-4 z-10 flex justify-between gap-4 pointer-events-none sm:bottom-24">
           <p
             role="status"
-            className="max-w-lg rounded-lg bg-[#172124]/90 px-3 py-2 text-xs leading-relaxed text-white/80"
+            className="max-w-lg rounded-lg bg-[#3A2E29]/90 px-3 py-2 text-xs leading-relaxed text-[#EBE3DA]"
           >
             {state?.notice || "Preparing your property…"}
           </p>
           <button
-            className={`${buttonClass} pointer-events-auto self-end bg-[#172124]/95`}
+            className={`${buttonClass} pointer-events-auto self-end bg-[#3A2E29]/95`}
             aria-expanded={furnitureOpen}
             onClick={() => setFurnitureOpen(!furnitureOpen)}
           >
@@ -438,7 +472,7 @@ export default function PropertyExperience({
         {furnitureOpen && (
           <aside
             aria-label="Furniture panel"
-            className="absolute right-4 top-4 z-20 w-60 rounded-xl bg-[#172124]/95 p-4 shadow-xl"
+            className="absolute right-4 top-4 z-20 w-60 rounded-xl bg-[#3A2E29]/95 p-4 shadow-xl"
           >
             <div className="mb-3 flex justify-between">
               <h3 className="text-sm font-semibold">Make it your space</h3>
@@ -449,7 +483,7 @@ export default function PropertyExperience({
                 ×
               </button>
             </div>
-            <p className="mb-3 text-xs text-white/60">
+            <p className="mb-3 text-xs text-[#D1C8BD]">
               Choose a room, then add a piece.
             </p>
             <div className="flex flex-wrap gap-2">
@@ -497,24 +531,24 @@ export default function PropertyExperience({
               )}
             </div>
             <button
-              className="mt-4 w-full rounded-lg bg-teal-300 py-2 text-xs font-semibold text-[#172124]"
+              className="mt-4 w-full rounded-lg bg-[#CAAD8E] py-2 text-xs font-semibold text-[#3A2E29]"
               onClick={() => runtime.current?.furnitureAction("save")}
             >
               Save configuration
             </button>
-            <p className="mt-2 text-[10px] text-white/50">
+            <p className="mt-2 text-[10px] text-[#D1C8BD]">
               Stored in this browser for this project and model.
             </p>
           </aside>
         )}
         <nav
           aria-label="Viewer modes"
-          className="absolute bottom-4 left-4 right-4 z-10 flex flex-wrap items-center justify-center gap-2 rounded-xl bg-[#172124]/95 p-3 shadow-xl"
+          className="absolute bottom-4 left-4 right-4 z-10 flex flex-wrap items-center justify-center gap-2 rounded-xl bg-[#3A2E29]/95 p-3 shadow-xl"
         >
           {(["exterior", "floor", "walkthrough"] as const).map((mode) => (
             <button
               key={mode}
-              className={`${buttonClass} ${state?.mode === mode ? "bg-teal-300/20 border-teal-300/50" : ""}`}
+              className={`${buttonClass} ${state?.mode === mode ? "bg-[#CAAD8E]/20 border-[#CAAD8E]/50" : ""}`}
               aria-pressed={state?.mode === mode}
               disabled={
                 !state?.manifest || (mode === "walkthrough" && !state.roomId)
@@ -552,31 +586,33 @@ export default function PropertyExperience({
         </nav>
         {state?.mode === "walkthrough" && (
           <div
-            className="absolute right-5 top-5 z-10 flex gap-1 rounded-xl bg-[#172124]/90 p-2"
+            className="absolute right-4 top-4 z-10 grid grid-cols-2 gap-1 rounded-xl bg-[#3A2E29]/90 p-2 sm:flex"
             aria-label="Touch movement"
           >
             {[
-              { text: "←", forward: 0, side: -1 },
-              { text: "↑", forward: 1, side: 0 },
-              { text: "↓", forward: -1, side: 0 },
-              { text: "→", forward: 0, side: 1 },
+              { text: "←", label: "left", forward: 0, side: -1 },
+              { text: "↑", label: "forward", forward: 1, side: 0 },
+              { text: "↓", label: "backward", forward: -1, side: 0 },
+              { text: "→", label: "right", forward: 0, side: 1 },
             ].map((k) => (
               <button
                 key={k.text}
-                aria-label={`Move ${k.text}`}
+                aria-label={`Move ${k.label}`}
                 className={`${buttonClass} touch-none`}
                 onPointerDown={(e) => {
                   e.currentTarget.setPointerCapture(e.pointerId);
                   if (runtime.current) runtime.current.touch = k;
                 }}
-                onPointerUp={() => {
-                  if (runtime.current)
-                    runtime.current.touch = { forward: 0, side: 0 };
+                onPointerUp={stopMoving}
+                onPointerCancel={stopMoving}
+                onLostPointerCapture={stopMoving}
+                onBlur={stopMoving}
+                onKeyDown={(e) => {
+                  if (e.key !== " " && e.key !== "Enter") return;
+                  e.preventDefault();
+                  if (runtime.current) runtime.current.touch = k;
                 }}
-                onPointerCancel={() => {
-                  if (runtime.current)
-                    runtime.current.touch = { forward: 0, side: 0 };
-                }}
+                onKeyUp={stopMoving}
               >
                 {k.text}
               </button>
@@ -584,7 +620,7 @@ export default function PropertyExperience({
           </div>
         )}
         {diagnostics && state?.stats && (
-          <output className="absolute right-4 top-20 z-10 rounded-lg bg-black/80 p-3 font-mono text-[11px]">
+          <output className="absolute right-4 top-20 z-10 rounded-lg bg-[#3A2E29]/95 p-3 font-mono text-[11px]">
             {state.stats.fps.toFixed(1)} FPS · p95{" "}
             {state.stats.p95Ms.toFixed(1)} ms
             <br />
@@ -599,9 +635,9 @@ export default function PropertyExperience({
           </output>
         )}
         {(state?.loading || state?.error || startupError) && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#172124]/70 p-6 backdrop-blur-sm">
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#3A2E29]/70 p-6 backdrop-blur-sm">
             <div
-              className="max-w-lg rounded-xl bg-[#172124] p-6"
+              className="max-w-lg rounded-xl bg-[#3A2E29] p-6"
               role={state?.error || startupError ? "alert" : "status"}
             >
               <p>{state?.error || startupError || state?.loading}</p>
@@ -625,7 +661,7 @@ export default function PropertyExperience({
           </div>
         )}
       </div>
-      <footer className="flex flex-wrap justify-between gap-2 bg-[#172124] px-5 py-3 text-[10px] text-white/50">
+      <footer className="flex flex-wrap justify-between gap-2 bg-[#3A2E29] px-5 py-3 text-[10px] text-[#D1C8BD]">
         <span>
           {state?.manifest?.attribution ||
             "Aether real-time property exploration"}

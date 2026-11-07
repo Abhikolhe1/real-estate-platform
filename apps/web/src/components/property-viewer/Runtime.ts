@@ -5,7 +5,6 @@ import {
   disposeTree,
   Manifest,
   ModelSource,
-  Room,
   SceneIndex,
   Vec3,
   visible,
@@ -59,11 +58,19 @@ export class Runtime {
   private last = 0;
   private lastUi = 0;
   private keys = new Set<string>();
+  private forward = new THREE.Vector3();
+  private right = new THREE.Vector3();
+  private lookRotation = new THREE.Euler(0, 0, 0, "YXZ");
+  private renderedPosition = new THREE.Vector3();
+  private renderedRotation = new THREE.Quaternion();
+  private renderedVersion = -1;
   private transition?: {
     start: THREE.Vector3;
     target: THREE.Vector3;
-    look: THREE.Vector3;
+    startRotation: THREE.Quaternion;
+    targetRotation: THREE.Quaternion;
     startTime: number;
+    duration: number;
   };
   private moveId: string | null = null;
   private highlight?: THREE.BoxHelper;
@@ -76,6 +83,9 @@ export class Runtime {
   ) {
     this.surface = new Surface(container, true);
     const { renderer, pointer, orbit } = this.surface;
+    // Camera movement does not change architectural shadows. Refresh them only
+    // when geometry, lighting, visibility or rendering quality changes.
+    renderer.shadowMap.autoUpdate = false;
     const listen = (target: EventTarget, event: string, fn: EventListener) => {
       target.addEventListener(event, fn);
       this.handlers.push(() => target.removeEventListener(event, fn));
@@ -83,12 +93,13 @@ export class Runtime {
     listen(window, "keydown", ((e: KeyboardEvent) => {
       if (e.key === "Escape") {
         pointer.unlock();
-        this.keys.clear();
+        this.resetInput();
         this.cancelMove();
         return;
       }
       if (
         /INPUT|SELECT|TEXTAREA/.test((e.target as HTMLElement)?.tagName) ||
+        (e.target as HTMLElement)?.isContentEditable ||
         this.state.mode !== "walkthrough"
       )
         return;
@@ -98,11 +109,11 @@ export class Runtime {
           "a",
           "s",
           "d",
-          "ArrowUp",
-          "ArrowDown",
-          "ArrowLeft",
-          "ArrowRight",
-        ].includes(e.key)
+          "arrowup",
+          "arrowdown",
+          "arrowleft",
+          "arrowright",
+        ].includes(e.key.toLowerCase())
       ) {
         e.preventDefault();
         this.keys.add(e.key.toLowerCase());
@@ -112,12 +123,15 @@ export class Runtime {
       this.keys.delete(e.key.toLowerCase());
     }) as EventListener);
     listen(window, "blur", () => {
-      this.keys.clear();
-      this.touch = { forward: 0, side: 0 };
+      this.resetInput();
+      look = null;
     });
     listen(document, "visibilitychange", () => {
-      this.keys.clear();
+      this.resetInput();
+      look = null;
       this.last = performance.now();
+      this.surface.pause();
+      this.surface.invalidate();
     });
     listen(renderer.domElement, "click", ((e: MouseEvent) => {
       if (this.state.mode === "walkthrough") {
@@ -172,9 +186,16 @@ export class Runtime {
     listen(renderer.domElement, "pointerup", () => {
       look = null;
     });
+    listen(renderer.domElement, "pointercancel", () => {
+      look = null;
+      this.resetInput();
+    });
+    listen(renderer.domElement, "lostpointercapture", () => {
+      look = null;
+    });
     listen(renderer.domElement, "pointermove", ((e: PointerEvent) => {
       if (look && this.state.mode === "walkthrough" && !pointer.isLocked) {
-        const rotation = new THREE.Euler().setFromQuaternion(
+        const rotation = this.lookRotation.setFromQuaternion(
           this.surface.camera.quaternion,
           "YXZ",
         );
@@ -204,24 +225,37 @@ export class Runtime {
       orbit.enabled = false;
     });
     pointer.addEventListener("unlock", () => {
-      this.keys.clear();
+      this.resetInput();
     });
     const animate = (now: number) => {
       if (this.disposed) return;
       this.raf = requestAnimationFrame(animate);
       const dt = Math.min(Math.max((now - this.last) / 1000, 0), 0.05);
       this.last = now;
-      if (document.hidden || !this.surface.inViewport) return;
+      if (document.hidden || !this.surface.inViewport) {
+        this.surface.pause();
+        this.resetInput();
+        return;
+      }
       const { camera, scene } = this.surface;
       if (this.transition) {
-        const t = Math.min(1, (now - this.transition.startTime) / 650),
+        const t = this.transition.duration
+            ? Math.min(
+                1,
+                (now - this.transition.startTime) / this.transition.duration,
+              )
+            : 1,
           ease = t * t * (3 - 2 * t);
         camera.position.lerpVectors(
           this.transition.start,
           this.transition.target,
           ease,
         );
-        camera.lookAt(this.transition.look);
+        camera.quaternion.slerpQuaternions(
+          this.transition.startRotation,
+          this.transition.targetRotation,
+          ease,
+        );
         if (t === 1) this.transition = undefined;
       } else if (this.state.mode === "walkthrough" && this.nav) {
         let f =
@@ -236,12 +270,10 @@ export class Runtime {
         f /= length;
         s /= length;
         if (f || s) {
-          const forward = camera.getWorldDirection(new THREE.Vector3());
+          const forward = camera.getWorldDirection(this.forward);
           forward.y = 0;
           forward.normalize();
-          const right = new THREE.Vector3()
-            .crossVectors(forward, camera.up)
-            .normalize();
+          const right = this.right.crossVectors(forward, camera.up).normalize();
           this.nav.move(
             camera.position,
             forward
@@ -250,10 +282,25 @@ export class Runtime {
             this.floor?.elevation || 0,
           );
         }
-      } else if (orbit.enabled) orbit.update();
-      this.highlight?.update();
-      renderer.render(scene, camera);
-      this.surface.record(now);
+      } else if (orbit.enabled) {
+        orbit.dampingFactor = 1 - Math.pow(1 - 0.08, dt * 60);
+        orbit.update(dt);
+      }
+      // Render only changed frames; keep the cheap input loop responsive while idle.
+      const changed =
+        this.renderedVersion !== this.surface.renderVersion ||
+        this.renderedPosition.distanceToSquared(camera.position) > 1e-10 ||
+        1 - Math.abs(this.renderedRotation.dot(camera.quaternion)) > 1e-10;
+      if (changed) {
+        if (this.renderedVersion !== this.surface.renderVersion)
+          renderer.shadowMap.needsUpdate = true;
+        this.highlight?.update();
+        renderer.render(scene, camera);
+        this.surface.record(now);
+        this.renderedPosition.copy(camera.position);
+        this.renderedRotation.copy(camera.quaternion);
+        this.renderedVersion = this.surface.renderVersion;
+      } else this.surface.pause();
       if (now - this.lastUi > 1000) {
         this.lastUi = now;
         this.patch({ stats: this.surface.stats() });
@@ -267,7 +314,13 @@ export class Runtime {
   }
   patch(next: Partial<ViewerState>) {
     this.state = { ...this.state, ...next };
+    if (Object.keys(next).some((key) => key !== "stats"))
+      this.surface.invalidate();
     if (!this.disposed) this.publish(this.state);
+  }
+  private resetInput() {
+    this.keys.clear();
+    this.touch = { forward: 0, side: 0 };
   }
   get floor() {
     return this.state.manifest?.floors.find((f) => f.id === this.state.floorId);
@@ -352,7 +405,7 @@ export class Runtime {
   selectFloor(id: string) {
     this.surface.pointer.unlock();
     this.transition = undefined;
-    this.keys.clear();
+    this.resetInput();
     this.cancelMove();
     this.surface.camera.fov = 45;
     this.surface.camera.updateProjectionMatrix();
@@ -369,15 +422,21 @@ export class Runtime {
   }
   selectFlat(id: string) {
     const flat = this.floor?.flats.find((f) => f.id === id);
+    if (!flat) return;
     this.patch({
       flatId: id,
       roomId: flat?.rooms[0]?.id || "",
       notice:
         "Unit selection shows its IFC rooms. Shared walls and slabs remain visible.",
     });
+    if (this.state.mode === "walkthrough") this.enter();
   }
   selectRoom(id: string) {
-    this.patch({ roomId: id });
+    const flat = this.floor?.flats.find((f) =>
+      f.rooms.some((room) => room.id === id),
+    );
+    if (!flat) return;
+    this.patch({ roomId: id, flatId: flat.id });
     if (this.state.mode === "walkthrough") this.enter();
   }
   view(mode: View) {
@@ -387,8 +446,8 @@ export class Runtime {
     }
     this.surface.pointer.unlock();
     this.transition = undefined;
-    this.keys.clear();
-    this.moveId = null;
+    this.resetInput();
+    this.cancelMove();
     this.surface.orbit.enabled = true;
     this.surface.camera.fov = 45;
     this.surface.camera.updateProjectionMatrix();
@@ -445,18 +504,27 @@ export class Runtime {
     // Fit both camera axes so portrait screens show the whole building.
     let distance = Math.max(size.x, size.y, size.z) * 0.95 * direction.length();
     direction.normalize();
-    const rotation = new THREE.Quaternion().setFromRotationMatrix(
-      new THREE.Matrix4().lookAt(direction, new THREE.Vector3(), camera.up),
-    ).invert();
+    const rotation = new THREE.Quaternion()
+      .setFromRotationMatrix(
+        new THREE.Matrix4().lookAt(direction, new THREE.Vector3(), camera.up),
+      )
+      .invert();
     const vertical = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)),
       horizontal = vertical * camera.aspect;
     for (const x of [bounds.min.x, bounds.max.x])
       for (const y of [bounds.min.y, bounds.max.y])
         for (const z of [bounds.min.z, bounds.max.z]) {
-          const corner = new THREE.Vector3(x, y, z).sub(center).applyQuaternion(rotation);
+          const corner = new THREE.Vector3(x, y, z)
+            .sub(center)
+            .applyQuaternion(rotation);
           distance = Math.max(
             distance,
-            corner.z + 1.08 * Math.max(Math.abs(corner.x) / horizontal, Math.abs(corner.y) / vertical),
+            corner.z +
+              1.08 *
+                Math.max(
+                  Math.abs(corner.x) / horizontal,
+                  Math.abs(corner.y) / vertical,
+                ),
           );
         }
     orbit.enabled = true;
@@ -464,9 +532,7 @@ export class Runtime {
     orbit.maxDistance = Math.max(200, distance * 3);
     orbit.maxPolarAngle = Math.PI * 0.49;
     orbit.target.copy(center);
-    camera.position
-      .copy(center)
-      .addScaledVector(direction, distance);
+    camera.position.copy(center).addScaledVector(direction, distance);
     camera.lookAt(center);
     orbit.update();
   }
@@ -505,6 +571,7 @@ export class Runtime {
     }
     target.y = this.nav.ground(target.x, target.z, elevation)! + 1.65;
     this.surface.pointer.unlock();
+    this.resetInput();
     this.surface.orbit.enabled = false;
     this.surface.camera.fov = 65;
     this.surface.camera.updateProjectionMatrix();
@@ -533,8 +600,18 @@ export class Runtime {
     this.transition = {
       start: this.surface.camera.position.clone(),
       target,
-      look: target.clone().add(lookDirection),
+      startRotation: this.surface.camera.quaternion.clone(),
+      targetRotation: new THREE.Quaternion().setFromRotationMatrix(
+        new THREE.Matrix4().lookAt(
+          target,
+          target.clone().add(lookDirection),
+          this.surface.camera.up,
+        ),
+      ),
       startTime: performance.now(),
+      duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? 0
+        : 650,
     };
     this.patch({
       mode: "walkthrough",
@@ -614,7 +691,7 @@ export class Runtime {
     if (f?.selected) {
       const object = f.objects.get(f.selected);
       if (object && object.visible) {
-        this.highlight = new THREE.BoxHelper(object, 0x00aa99);
+        this.highlight = new THREE.BoxHelper(object, 0xa58376);
         this.surface.scene.add(this.highlight);
       }
     }

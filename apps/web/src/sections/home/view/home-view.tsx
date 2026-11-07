@@ -1,10 +1,9 @@
 'use client';
 
-import { API_URL } from '@/config/api';
+import { API_URL, getAssetUrl } from '@/config/api';
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PremiumButton from '@/components/premium-button';
-import { gsap } from 'gsap';
 
 interface Flat {
   id: string;
@@ -46,6 +45,7 @@ function HomeViewContent() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const pageRef = useRef<HTMLDivElement>(null);
   const towerGridRef = useRef<HTMLDivElement>(null);
 
   // Fetch Builder Theme & Details
@@ -78,21 +78,24 @@ function HomeViewContent() {
   }, [builderSlug]);
 
   useEffect(() => {
-    // Initial entrance animation
-    gsap.fromTo('.anim-fade-up', 
-      { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 1.2, stagger: 0.15, ease: 'power3.out' }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const animations = Array.from(pageRef.current?.querySelectorAll<HTMLElement>('.anim-fade-up') || []).map((element, index) =>
+      element.animate([{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], {
+        duration: 600, delay: index * 70, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'backwards',
+      }),
     );
+    return () => animations.forEach(animation => animation.cancel());
   }, []);
 
   // Animate inventory changes smoothly
   useEffect(() => {
-    if (towerGridRef.current) {
-      gsap.fromTo(towerGridRef.current.children,
-        { opacity: 0, y: 15 },
-        { opacity: 1, y: 0, duration: 0.5, stagger: 0.05, ease: 'power2.out' }
-      );
-    }
+    if (!towerGridRef.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // One composite animation keeps large inventories responsive.
+    const animation = towerGridRef.current.animate(
+      [{ opacity: .45, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }],
+      { duration: 260, easing: 'cubic-bezier(.22, 1, .36, 1)' },
+    );
+    return () => animation.cancel();
   }, [activeTowerId]);
 
   // Handle lead submission
@@ -133,8 +136,8 @@ function HomeViewContent() {
   // Fallback default variables
   const theme = builderData?.themeSettings || {};
   const themeStyles = {
-    '--primary-color': theme.primaryColor || '#d4af37',
-    '--secondary-color': theme.secondaryColor || '#131313',
+    '--primary-color': '#3A2E29',
+    '--secondary-color': '#F1EDE7',
     '--font-header': theme.fontHeader || 'Bodoni Moda',
     '--font-body': theme.fontBody || 'Hanken Grotesk',
   } as React.CSSProperties;
@@ -152,44 +155,38 @@ function HomeViewContent() {
   }
 
   return (
-    <div style={themeStyles} className="min-h-screen bg-neutral-950 text-stone-100 font-sans antialiased">
-      {/* Dynamic Font Loader */}
-      {theme.fontHeader && (
-        <link
-          href={`https://fonts.googleapis.com/css2?family=${theme.fontHeader.replace(/\s+/g, '+')}&family=${(theme.fontBody || 'Inter').replace(/\s+/g, '+')}&display=swap`}
-          rel="stylesheet"
-        />
-      )}
+    <div ref={pageRef} style={themeStyles} className="min-h-screen bg-background text-on-surface font-body antialiased">
 
       {/* Cinematic Hero Section */}
-      <section id="gallery" className="relative h-screen w-full flex items-center justify-center overflow-hidden">
+      <section id="gallery" className="relative min-h-[540px] h-[calc(100svh-80px)] max-h-[960px] w-full flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img 
-            className="w-full h-full object-cover grayscale-[20%] brightness-[35%] transition-all duration-1000 hover:scale-105" 
+          <img
+            fetchPriority="high"
+            className="w-full h-full object-cover brightness-[80%]"
             alt="Cinematic Skyscraper Architecture"
-            src="/images/hero-skyline.jpg"
+            src={getAssetUrl('/images/hero-skyline.jpg')}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/40 via-transparent to-neutral-950"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-warm-brown/25 via-warm-brown/20 to-warm-brown/75"></div>
         </div>
 
         {/* Content Area */}
-        <div className="relative z-10 text-center px-6 max-w-5xl">
+        <div className="relative z-10 text-center px-6 max-w-5xl [--primary-color:#CAAD8E]">
           <p className="font-semibold text-xs text-[var(--primary-color)] mb-6 tracking-[0.3em] uppercase anim-fade-up">
             {builderData?.name || 'RESIDENTIAL EXCELLENCE'}
           </p>
-          <h1 className="text-[44px] md:text-6xl leading-tight mb-8 text-stone-100 font-light anim-fade-up" style={{ fontFamily: 'var(--font-header), serif' }}>
+          <h1 className="text-[44px] md:text-6xl leading-tight mb-8 text-warm-cream font-light anim-fade-up" style={{ fontFamily: 'var(--font-header), serif' }}>
             The Pinnacle of <br/><span className="italic font-normal text-[var(--primary-color)]">Luxury Living</span>
           </h1>
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center anim-fade-up">
             <PremiumButton variant="primary" onClick={() => {
               const el = document.getElementById('inventory');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
+              if (el) el.scrollIntoView({ block: 'start' });
             }}>
               Explore Units
             </PremiumButton>
-            <PremiumButton variant="outline" onClick={() => {
+            <PremiumButton variant="outline" className="!border-warm-cream/60 !text-warm-cream hover:!bg-warm-cream/10" onClick={() => {
               const el = document.getElementById('inquiry');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
+              if (el) el.scrollIntoView({ block: 'start' });
             }}>
               Request Showing
             </PremiumButton>
@@ -198,40 +195,40 @@ function HomeViewContent() {
       </section>
 
       {/* Concept / Overview */}
-      <section id="concept" className="bg-neutral-900 py-24 px-6 border-t border-white/5">
+      <section id="concept" className="bg-surface-container py-24 px-6 border-t border-outline-variant/70">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-5 space-y-6">
             <p className="text-xs font-bold text-[var(--primary-color)] tracking-widest uppercase">THE CONCEPT</p>
-            <h2 className="text-3xl md:text-4xl text-stone-100 font-light leading-tight" style={{ fontFamily: 'var(--font-header), serif' }}>
+            <h2 className="text-3xl md:text-4xl text-on-surface font-light leading-tight" style={{ fontFamily: 'var(--font-header), serif' }}>
               A New Paradigm of <br/><span className="italic font-normal text-[var(--primary-color)]">Architectural Artistry</span>
             </h2>
-            <p className="text-stone-400 text-sm leading-relaxed">
+            <p className="text-on-surface-variant text-sm leading-relaxed">
               Designed by the visionaries at {builderData?.name || 'Aether'}, this residence is more than a home; it is a meticulously crafted gallery for life. Every slab of marble, every brushed brass fitting, and every panoramic glass pane is curated to provide a sensory experience that redefines urban luxury.
             </p>
           </div>
-          
+
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <div className="group overflow-hidden relative aspect-[4/5] bg-neutral-800 rounded border border-white/5">
-              <img 
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+            <div className="group overflow-hidden relative aspect-[4/5] bg-warm-stone rounded border border-outline-variant/70">
+              <img loading="lazy" decoding="async"
+                className="w-full h-full object-cover transition-transform duration-700 motion-safe:group-hover:scale-[1.035]"
                 alt="Private Terraces Penthouse View"
-                src="/images/suite-terrace.jpg"
+                src={getAssetUrl('/images/suite-terrace.jpg')}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 to-transparent opacity-60"></div>
-              <div className="absolute bottom-8 left-8">
-                <h3 className="text-stone-100 text-xl font-light">Private Terraces</h3>
+              <div className="absolute inset-0 bg-gradient-to-t from-warm-brown/90 to-transparent opacity-60"></div>
+              <div className="absolute bottom-8 left-8 [--primary-color:#CAAD8E]">
+                <h3 className="text-warm-cream text-xl font-light">Private Terraces</h3>
                 <p className="text-[var(--primary-color)] uppercase tracking-widest text-[9px] font-bold">Luxury Sky Suites</p>
               </div>
             </div>
-            <div className="group overflow-hidden relative aspect-[4/5] bg-neutral-800 rounded border border-white/5 mt-0 sm:mt-16">
-              <img 
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+            <div className="group overflow-hidden relative aspect-[4/5] bg-warm-stone rounded border border-outline-variant/70 mt-0 sm:mt-16">
+              <img loading="lazy" decoding="async"
+                className="w-full h-full object-cover transition-transform duration-700 motion-safe:group-hover:scale-[1.035]"
                 alt="Infinity Oasis Luxury Pool"
-                src="/images/infinity-pool.jpg"
+                src={getAssetUrl('/images/infinity-pool.jpg')}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 to-transparent opacity-60"></div>
-              <div className="absolute bottom-8 left-8">
-                <h3 className="text-stone-100 text-xl font-light">Infinity Oasis</h3>
+              <div className="absolute inset-0 bg-gradient-to-t from-warm-brown/90 to-transparent opacity-60"></div>
+              <div className="absolute bottom-8 left-8 [--primary-color:#CAAD8E]">
+                <h3 className="text-warm-cream text-xl font-light">Infinity Oasis</h3>
                 <p className="text-[var(--primary-color)] uppercase tracking-widest text-[9px] font-bold">Panoramic Rooftop Pool</p>
               </div>
             </div>
@@ -240,21 +237,21 @@ function HomeViewContent() {
       </section>
 
       {/* Interactive Inventory */}
-      <section id="inventory" className="py-24 px-6 bg-neutral-950 border-t border-white/5 relative">
+      <section id="inventory" className="py-24 px-6 bg-background border-t border-outline-variant/70 relative">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <span className="text-xs font-bold text-[var(--primary-color)] tracking-widest uppercase block mb-2">LIVE AVAILABILITY</span>
-            <h2 className="text-3xl md:text-4xl font-light text-stone-100" style={{ fontFamily: 'var(--font-header), serif' }}>Interactive Tower Explorer</h2>
-            <p className="text-stone-400 text-sm mt-3 max-w-md mx-auto">Review current availability, pricing models, and layout specs in real-time.</p>
+            <h2 className="text-3xl md:text-4xl font-light text-on-surface" style={{ fontFamily: 'var(--font-header), serif' }}>Interactive Tower Explorer</h2>
+            <p className="text-on-surface-variant text-sm mt-3 max-w-md mx-auto">Review current availability, pricing models, and layout specs in real-time.</p>
           </div>
 
           {towers.length === 0 ? (
-            <p className="text-stone-400 text-center py-10 text-xs">No tower units synchronized currently.</p>
+            <p className="text-on-surface-variant text-center py-10 text-xs">No tower units synchronized currently.</p>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
               {/* Towers list */}
               <div className="lg:col-span-4 space-y-4">
-                <h3 className="text-xs font-bold text-stone-400 tracking-widest uppercase mb-4">SELECT RESIDENCE TOWER</h3>
+                <h3 className="text-xs font-bold text-on-surface-variant tracking-widest uppercase mb-4">SELECT RESIDENCE TOWER</h3>
                 {towers.map((tower) => (
                   <div
                     key={tower.id}
@@ -263,56 +260,56 @@ function HomeViewContent() {
                       const firstFlat = tower.floors?.[0]?.flats?.[0];
                       if (firstFlat) setFlatSelection(firstFlat);
                     }}
-                    className={`p-6 border rounded cursor-pointer transition-all duration-300 ${
+                    className={`p-6 border rounded cursor-pointer transition-colors duration-300 ${
                       activeTowerId === tower.id
-                        ? 'bg-neutral-900 border-[var(--primary-color)]'
-                        : 'bg-neutral-900/40 border-white/5 hover:border-white/20'
+                        ? 'bg-surface-container border-[var(--primary-color)]'
+                        : 'bg-surface-container/40 border-outline-variant/70 hover:border-warm-taupe/60'
                     }`}
                   >
-                    <h4 className={`text-lg font-medium ${activeTowerId === tower.id ? 'text-[var(--primary-color)]' : 'text-stone-100'}`} style={{ fontFamily: 'var(--font-header), serif' }}>
+                    <h4 className={`text-lg font-medium ${activeTowerId === tower.id ? 'text-[var(--primary-color)]' : 'text-on-surface'}`} style={{ fontFamily: 'var(--font-header), serif' }}>
                       {tower.name}
                     </h4>
-                    <p className="text-xs text-stone-400 mt-2 leading-relaxed">{tower.description || 'Luxury residence unit.'}</p>
+                    <p className="text-xs text-on-surface-variant mt-2 leading-relaxed">{tower.description || 'Luxury residence unit.'}</p>
                   </div>
                 ))}
 
                 {flatSelection && (
-                  <div className="bg-neutral-900/60 border border-white/10 p-6 rounded-2xl mt-6">
+                  <div className="bg-surface-container/60 border border-outline-variant p-6 rounded-2xl mt-6">
                     <h4 className="text-xs font-bold text-[var(--primary-color)] mb-4 tracking-widest uppercase">UNIT #{flatSelection.flatNumber} SPECIFICATIONS</h4>
                     <div className="space-y-3 text-xs">
-                      <div className="flex justify-between border-b border-white/5 pb-2">
-                        <span className="text-stone-400">Configuration</span>
-                        <span className="text-stone-100 font-semibold">{flatSelection.type}</span>
+                      <div className="flex justify-between border-b border-outline-variant/70 pb-2">
+                        <span className="text-on-surface-variant">Configuration</span>
+                        <span className="text-on-surface font-semibold">{flatSelection.type}</span>
                       </div>
-                      <div className="flex justify-between border-b border-white/5 pb-2">
-                        <span className="text-stone-400">SBA Size</span>
-                        <span className="text-stone-100 font-semibold">{flatSelection.sizeSqFt} sqft</span>
+                      <div className="flex justify-between border-b border-outline-variant/70 pb-2">
+                        <span className="text-on-surface-variant">SBA Size</span>
+                        <span className="text-on-surface font-semibold">{flatSelection.sizeSqFt} sqft</span>
                       </div>
-                      <div className="flex justify-between border-b border-white/5 pb-2">
-                        <span className="text-stone-400">Value Model</span>
+                      <div className="flex justify-between border-b border-outline-variant/70 pb-2">
+                        <span className="text-on-surface-variant">Value Model</span>
                         <span className="text-[var(--primary-color)] font-bold">₹{(flatSelection.price / 10000000).toFixed(2)} Cr</span>
                       </div>
                       {flatSelection.orientation && (
-                        <div className="flex justify-between border-b border-white/5 pb-2">
-                          <span className="text-stone-400">Orientation</span>
-                          <span className="text-stone-100 font-semibold">{flatSelection.orientation}</span>
+                        <div className="flex justify-between border-b border-outline-variant/70 pb-2">
+                          <span className="text-on-surface-variant">Orientation</span>
+                          <span className="text-on-surface font-semibold">{flatSelection.orientation}</span>
                         </div>
                       )}
                       <div className="flex justify-between pb-2">
-                        <span className="text-stone-400">Unit Status</span>
+                        <span className="text-on-surface-variant">Unit Status</span>
                         <span className={`font-bold px-2 py-0.5 rounded text-[9px] uppercase ${
-                          flatSelection.status === 'AVAILABLE' ? 'bg-green-500/15 text-green-400' : flatSelection.status === 'HOLD' ? 'bg-amber-500/15 text-amber-400' : 'bg-red-500/15 text-red-400'
+                          flatSelection.status === 'AVAILABLE' ? 'bg-green-500/15 text-emerald-800' : flatSelection.status === 'HOLD' ? 'bg-amber-500/15 text-amber-800' : 'bg-red-500/15 text-red-800'
                         }`}>{flatSelection.status}</span>
                       </div>
                     </div>
 
                     {flatSelection.status === 'AVAILABLE' && (
-                      <button 
+                      <button
                         onClick={() => {
                           const el = document.getElementById('inquiry');
-                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          if (el) el.scrollIntoView({ block: 'start' });
                         }}
-                        className="w-full mt-6 py-3 bg-[var(--primary-color)] hover:opacity-90 text-neutral-950 font-bold text-xs rounded-xl tracking-wider uppercase transition-all"
+                        className="w-full mt-6 py-3 bg-primary hover:opacity-90 text-on-primary font-bold text-xs rounded-xl tracking-wider uppercase transition-colors"
                       >
                         Request Private Tour
                       </button>
@@ -322,38 +319,38 @@ function HomeViewContent() {
               </div>
 
               {/* Flats list */}
-              <div className="lg:col-span-8 bg-neutral-900/30 border border-white/5 p-8 rounded-2xl">
-                <h3 className="text-xs font-bold text-stone-400 tracking-widest uppercase mb-6">INVENTORY GRID FOR {activeTower?.name.toUpperCase()}</h3>
-                
+              <div className="lg:col-span-8 bg-surface-container/30 border border-outline-variant/70 p-8 rounded-2xl">
+                <h3 className="text-xs font-bold text-on-surface-variant tracking-widest uppercase mb-6">INVENTORY GRID FOR {activeTower?.name.toUpperCase()}</h3>
+
                 <div ref={towerGridRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {activeTowerFlats.length === 0 ? (
-                    <p className="text-stone-400 col-span-2 text-center py-10 text-xs">No flats available in this tower.</p>
+                    <p className="text-on-surface-variant col-span-2 text-center py-10 text-xs">No flats available in this tower.</p>
                   ) : (
                     activeTowerFlats.map((unit) => (
                       <div
                         key={unit.id}
                         onClick={() => setFlatSelection(unit)}
-                        className={`p-6 rounded-2xl border bg-neutral-900/20 hover:bg-neutral-900/50 transition-all duration-300 cursor-pointer ${
+                        className={`p-6 rounded-2xl border bg-surface-container/20 hover:bg-surface-container/50 transition-colors duration-300 cursor-pointer ${
                           flatSelection?.id === unit.id
                             ? 'border-[var(--primary-color)]'
-                            : 'border-white/5'
+                            : 'border-outline-variant/70'
                         }`}
                       >
                         <div className="flex justify-between items-center">
-                          <h4 className="text-lg text-stone-100 font-medium" style={{ fontFamily: 'var(--font-header), serif' }}>Suite {unit.flatNumber}</h4>
+                          <h4 className="text-lg text-on-surface font-medium" style={{ fontFamily: 'var(--font-header), serif' }}>Suite {unit.flatNumber}</h4>
                           <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded tracking-wider ${
-                            unit.status === 'AVAILABLE' ? 'bg-green-500/10 text-green-400' : unit.status === 'HOLD' ? 'bg-amber-500/10 text-amber-400' : 'bg-red-500/10 text-red-400'
+                            unit.status === 'AVAILABLE' ? 'bg-green-500/10 text-emerald-800' : unit.status === 'HOLD' ? 'bg-amber-500/10 text-amber-800' : 'bg-red-500/10 text-red-800'
                           }`}>{unit.status}</span>
                         </div>
-                        
-                        <div className="flex items-center gap-2 mt-4 text-xs text-stone-400">
+
+                        <div className="flex items-center gap-2 mt-4 text-xs text-on-surface-variant">
                           <span>{unit.type}</span>
                           <span>•</span>
                           <span>{unit.sizeSqFt} sqft</span>
                         </div>
-                        
+
                         <div className="flex justify-between items-end mt-6">
-                          <span className="text-[9px] text-stone-500 font-bold uppercase tracking-wider">Invest Model</span>
+                          <span className="text-[9px] text-on-surface-variant font-bold uppercase tracking-wider">Invest Model</span>
                           <span className="text-[var(--primary-color)] font-bold text-lg font-serif">₹{(unit.price / 10000000).toFixed(2)} Cr</span>
                         </div>
                       </div>
@@ -367,60 +364,60 @@ function HomeViewContent() {
       </section>
 
       {/* Inquiry Form Section */}
-      <section id="inquiry" className="py-24 px-6 bg-neutral-900 border-t border-white/5">
-        <div className="max-w-md mx-auto bg-neutral-950/60 border border-white/5 rounded-3xl p-8 shadow-2xl">
+      <section id="inquiry" className="py-24 px-6 bg-surface-container border-t border-outline-variant/70">
+        <div className="max-w-md mx-auto bg-background/60 border border-outline-variant/70 rounded-3xl p-8 shadow-[0_16px_48px_-24px_rgba(58,46,41,0.22)]">
           <div className="text-center mb-8">
             <span className="text-xs font-bold text-[var(--primary-color)] tracking-widest uppercase">REQUEST PRIVACY EXCELLENCE</span>
-            <h3 className="text-2xl text-stone-100 font-light mt-2" style={{ fontFamily: 'var(--font-header), serif' }}>Schedule Private Viewing</h3>
-            <p className="text-[10px] text-stone-500 mt-1 leading-relaxed">Submit your details to experience Aether Reality firsthand.</p>
+            <h3 className="text-2xl text-on-surface font-light mt-2" style={{ fontFamily: 'var(--font-header), serif' }}>Schedule Private Viewing</h3>
+            <p className="text-[10px] text-on-surface-variant mt-1 leading-relaxed">Submit your details to experience Aether Reality firsthand.</p>
           </div>
 
           {submitSuccess ? (
-            <div className="p-6 bg-green-950/30 border border-green-500/20 text-green-400 rounded-2xl text-xs font-semibold text-center animate-pulse">
+            <div className="p-6 bg-emerald-50 border border-green-500/20 text-emerald-800 rounded-2xl text-xs font-semibold text-center">
               🎉 Thank you! Our executive will contact you shortly to coordinate your private tour.
             </div>
           ) : (
             <form onSubmit={handleLeadSubmit} className="space-y-4">
               <div>
-                <label className="text-[9px] font-bold text-stone-400 uppercase tracking-widest block mb-1.5">Full Name</label>
+                <label className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest block mb-1.5">Full Name</label>
                 <input
                   type="text"
                   required
                   value={leadName}
                   onChange={(e) => setLeadName(e.target.value)}
                   placeholder="e.g. John Doe"
-                  className="w-full px-4 py-3 bg-neutral-950 border border-white/10 focus:border-[var(--primary-color)] focus:outline-none text-stone-100 rounded-xl text-xs transition-colors"
+                  className="w-full px-4 py-3 bg-background border border-outline-variant focus:border-[var(--primary-color)] focus:outline-none text-on-surface rounded-xl text-xs transition-colors"
                 />
               </div>
 
               <div>
-                <label className="text-[9px] font-bold text-stone-400 uppercase tracking-widest block mb-1.5">Email Address</label>
+                <label className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest block mb-1.5">Email Address</label>
                 <input
                   type="email"
                   required
                   value={leadEmail}
                   onChange={(e) => setLeadEmail(e.target.value)}
                   placeholder="e.g. john@domain.com"
-                  className="w-full px-4 py-3 bg-neutral-950 border border-white/10 focus:border-[var(--primary-color)] focus:outline-none text-stone-100 rounded-xl text-xs transition-colors"
+                  className="w-full px-4 py-3 bg-background border border-outline-variant focus:border-[var(--primary-color)] focus:outline-none text-on-surface rounded-xl text-xs transition-colors"
                 />
               </div>
 
               <div>
-                <label className="text-[9px] font-bold text-stone-400 uppercase tracking-widest block mb-1.5">Phone Number</label>
+                <label className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest block mb-1.5">Phone Number</label>
                 <input
                   type="tel"
                   required
                   value={leadPhone}
                   onChange={(e) => setLeadPhone(e.target.value)}
                   placeholder="e.g. +91 99999 88888"
-                  className="w-full px-4 py-3 bg-neutral-950 border border-white/10 focus:border-[var(--primary-color)] focus:outline-none text-stone-100 rounded-xl text-xs transition-colors"
+                  className="w-full px-4 py-3 bg-background border border-outline-variant focus:border-[var(--primary-color)] focus:outline-none text-on-surface rounded-xl text-xs transition-colors"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3.5 mt-2 bg-[var(--primary-color)] hover:opacity-90 text-neutral-950 font-bold text-xs rounded-xl tracking-wider uppercase transition-all duration-300 disabled:opacity-50"
+                className="w-full py-3.5 mt-2 bg-primary hover:opacity-90 text-on-primary font-bold text-xs rounded-xl tracking-wider uppercase transition-colors duration-300 disabled:opacity-50"
               >
                 {submitting ? 'Submitting Inquiry...' : 'Submit Inquiry'}
               </button>
@@ -430,19 +427,19 @@ function HomeViewContent() {
       </section>
 
       {/* Footer Section */}
-      <footer className="bg-neutral-950 border-t border-white/5 w-full py-16 px-6">
+      <footer className="bg-background border-t border-outline-variant/70 w-full py-16 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
           <div className="flex flex-col items-center md:items-start gap-3">
             <div className="text-[var(--primary-color)] text-2xl font-bold font-serif" style={{ fontFamily: 'var(--font-header), serif' }}>
               {builderData?.name || 'Aether'}
             </div>
-            <p className="text-xs text-stone-500">© 2026 {builderData?.name || 'Aether'} Luxury Real Estate. All rights reserved.</p>
+            <p className="text-xs text-on-surface-variant">© 2026 {builderData?.name || 'Aether'} Luxury Real Estate. All rights reserved.</p>
           </div>
-          
+
           <div className="flex flex-wrap justify-center gap-8 text-[11px] font-bold tracking-widest uppercase">
-            <a className="text-stone-400 hover:text-[var(--primary-color)] transition-colors" href="#">Privacy Policy</a>
-            <a className="text-stone-400 hover:text-[var(--primary-color)] transition-colors" href="#">Terms of Service</a>
-            <a className="text-stone-400 hover:text-[var(--primary-color)] transition-colors" href="#">Contact Us</a>
+            <a className="text-on-surface-variant hover:text-[var(--primary-color)] transition-colors" href="#">Privacy Policy</a>
+            <a className="text-on-surface-variant hover:text-[var(--primary-color)] transition-colors" href="#">Terms of Service</a>
+            <a className="text-on-surface-variant hover:text-[var(--primary-color)] transition-colors" href="#">Contact Us</a>
           </div>
         </div>
       </footer>
@@ -453,10 +450,10 @@ function HomeViewContent() {
 export default function HomeView() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen bg-neutral-950 text-stone-100">
+      <div className="flex items-center justify-center min-h-screen bg-background text-on-surface">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
-          <p className="text-xs font-bold text-stone-500 tracking-wider uppercase">Loading Premium Experience...</p>
+          <p className="text-xs font-bold text-on-surface-variant tracking-wider uppercase">Loading Premium Experience...</p>
         </div>
       </div>
     }>

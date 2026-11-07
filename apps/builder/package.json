@@ -24,7 +24,10 @@
     "tailwind-merge": "^2.2.2",
     "three": "^0.184.0",
     "zustand": "^4.5.2",
-    "@aether/ui": "*"
+    "@aether/ui": "*",
+    "@repo/ui": "*",
+    "@repo/config": "*",
+    "@repo/scene-compiler": "*"
   },
   "devDependencies": {
     "@types/node": "^20.11.16",

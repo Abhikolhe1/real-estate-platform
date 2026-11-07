@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import {
   assetUrl,
   Manifest,
@@ -15,19 +17,19 @@ export async function loadModel(
   progress: (text: string) => void,
 ): Promise<{ root: THREE.Group; manifest: Manifest }> {
   if (source.canonical) {
-    progress('Compiling approved canonical revision…');
-    const { canonicalScene } = await import('./CanonicalSceneAdapter');
-    if (signal.aborted) throw new DOMException('Cancelled', 'AbortError');
+    progress("Compiling approved canonical revision…");
+    const { canonicalScene } = await import("./CanonicalSceneAdapter");
+    if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
     return canonicalScene(source.canonical);
   }
   if (source.proceduralDemo) {
-    const { defaultLayoutData } = await import('../default-layout');
+    const { defaultLayoutData } = await import("../default-layout");
     source = { ...source, layout: defaultLayoutData };
   }
   if (source.layout || source.floors) {
-    progress('Preparing floor geometry…');
-    const { TowerCompiler } = await import('../scene-compiler/TowerCompiler');
-    if (signal.aborted) throw new DOMException('Cancelled', 'AbortError');
+    progress("Preparing floor geometry…");
+    const { TowerCompiler } = await import("@repo/scene-compiler");
+    if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
     const input =
       source.floors ||
       Array.from(
@@ -102,11 +104,17 @@ export async function loadModel(
   };
   // Fetch both assets together rather than waiting for the manifest before downloading geometry.
   const [response, manifestResponse] = await Promise.all([
-    fetch(url, { signal, credentials: 'omit' }),
-    source.manifestUrl ? fetch(assetUrl(source.manifestUrl, /\.json$/i), { signal, credentials: 'omit' }) : null,
+    fetch(url, { signal, credentials: "omit" }),
+    source.manifestUrl
+      ? fetch(assetUrl(source.manifestUrl, /\.json$/i), {
+          signal,
+          credentials: "omit",
+        })
+      : null,
   ]);
   if (manifestResponse) {
-    if (!manifestResponse.ok) throw new Error(`Manifest HTTP ${manifestResponse.status}`);
+    if (!manifestResponse.ok)
+      throw new Error(`Manifest HTTP ${manifestResponse.status}`);
     manifest = validateManifest(await manifestResponse.json());
   }
   if (!response.ok)
@@ -114,25 +122,40 @@ export async function loadModel(
       `Model HTTP ${response.status}: ${response.status === 404 ? "file not found" : "download failed"}`,
     );
   const total = Number(response.headers.get("content-length"));
+  const maxBytes = 150 * 1024 * 1024;
+  if (total > maxBytes) {
+    await response.body?.cancel();
+    throw new Error("Model exceeds the 150 MB MVP limit.");
+  }
   const reader = response.body?.getReader();
   let data: ArrayBuffer;
   if (reader) {
     const chunks: Uint8Array[] = [];
     let length = 0;
-    while (true) {
-      const part = await reader.read();
-      if (part.done) break;
-      length += part.value.byteLength;
-      if (length > 150 * 1024 * 1024) {
-        await reader.cancel();
-        throw new Error("Model exceeds the 150 MB MVP limit.");
+    let lastProgress = 0;
+    try {
+      while (true) {
+        const part = await reader.read();
+        if (part.done) break;
+        length += part.value.byteLength;
+        if (length > maxBytes) {
+          await reader.cancel();
+          throw new Error("Model exceeds the 150 MB MVP limit.");
+        }
+        chunks.push(part.value);
+        const now = performance.now();
+        // Streaming chunks can arrive much faster than React needs loading updates.
+        if (now - lastProgress >= 100 || length === total) {
+          lastProgress = now;
+          progress(
+            total
+              ? `Loading model ${Math.min(100, Math.round((length / total) * 100))}%`
+              : `Loading model ${(length / 1024).toFixed(0)} KB`,
+          );
+        }
       }
-      chunks.push(part.value);
-      progress(
-        total
-          ? `Loading model ${Math.round((length / total) * 100)}%`
-          : `Loading model ${(length / 1024).toFixed(0)} KB`,
-      );
+    } finally {
+      reader.releaseLock();
     }
     const bytes = new Uint8Array(length);
     let offset = 0;
@@ -141,7 +164,11 @@ export async function loadModel(
       offset += c.length;
     });
     data = bytes.buffer;
-  } else data = await response.arrayBuffer();
+  } else {
+    data = await response.arrayBuffer();
+    if (data.byteLength > maxBytes)
+      throw new Error("Model exceeds the 150 MB MVP limit.");
+  }
   if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
   progress("Preparing architectural geometry…");
   const manager = new THREE.LoadingManager();
@@ -152,15 +179,21 @@ export async function loadModel(
       ? resource
       : assetUrl(resource, /\.(bin|png|jpe?g|webp|ktx2)$/i),
   );
-  // GLTFLoader supports standard uncompressed GLB and glTF. Unsupported compression produces a clear error.
   const loader = new GLTFLoader(manager);
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.7/");
+  loader.setDRACOLoader(dracoLoader);
+  loader.setMeshoptDecoder(MeshoptDecoder);
+
   let root: THREE.Group;
   try {
     root = (await loader.parseAsync(data, new URL(".", url).href)).scene;
   } catch (e) {
     throw new Error(
-      `Invalid or unsupported GLB/GLTF: ${e instanceof Error ? e.message : String(e)}. Export uncompressed GLB; Draco/KTX2 decoders are not bundled.`,
+      `Invalid or unsupported GLB/GLTF: ${e instanceof Error ? e.message : String(e)}.`,
     );
+  } finally {
+    dracoLoader.dispose();
   }
   if (signal.aborted) {
     disposeTree(root);

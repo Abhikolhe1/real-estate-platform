@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { pointInPolygon } from '@aether/twin-schema';
-import { FurnitureFactory } from "../scene-compiler/FurnitureFactory";
+import { FurnitureFactory } from "@repo/scene-compiler";
 import { disposeTree, Manifest, Room, Vec3 } from "./model";
 import { Navigation } from "./Navigation";
 

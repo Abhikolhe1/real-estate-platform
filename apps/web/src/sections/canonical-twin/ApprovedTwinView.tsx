@@ -3,7 +3,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { assertCanonicalTwin, CanonicalTwinV1 } from "@aether/twin-schema";
 import { API_URL } from "@/config/api";
-import PropertyExperience from "@/components/property-viewer/PropertyExperience";
+import dynamic from "next/dynamic";
+import { ExplorerSkeleton } from "@/components/page-skeleton";
+
+const PropertyExperience = dynamic(
+  () => import("@/components/property-viewer/PropertyExperience"),
+  { ssr: false, loading: ExplorerSkeleton },
+);
 
 /** A private consumer obtains only the floorplan's explicit approved pointer. */
 export default function ApprovedTwinView() {
@@ -77,8 +83,8 @@ export default function ApprovedTwinView() {
   );
   if (twin)
     return (
-      <main className="h-screen flex flex-col bg-slate-950">
-        <div className="px-4 py-2 text-xs text-white flex justify-between">
+      <main className="h-screen flex flex-col bg-background">
+        <div className="px-4 py-2 text-xs text-on-surface flex justify-between">
           <span>Approved floor · Revision {twin.revision.id}</span>
           <button
             onClick={() => {
@@ -96,8 +102,8 @@ export default function ApprovedTwinView() {
       </main>
     );
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <section className="max-w-md w-full rounded-xl bg-white border p-6 space-y-4">
+    <main className="min-h-screen bg-background flex items-center justify-center p-6">
+      <section className="max-w-md w-full rounded-xl bg-surface-container border border-outline-variant p-6 space-y-4">
         <h1 className="text-2xl font-semibold">Approved floor viewer</h1>
         {!projectId || !floorplanId ? (
           <p>Open an approved floor from Validation Studio.</p>
@@ -149,7 +155,7 @@ export default function ApprovedTwinView() {
                   required
                   type="email"
                   autoComplete="username"
-                  className="block border p-2 w-full"
+                  className="block rounded-lg border border-outline-variant bg-surface p-2 w-full"
                 />
               </label>
               <label className="block">
@@ -160,11 +166,11 @@ export default function ApprovedTwinView() {
                   required
                   type="password"
                   autoComplete="current-password"
-                  className="block border p-2 w-full"
+                  className="block rounded-lg border border-outline-variant bg-surface p-2 w-full"
                 />
               </label>
               <button
-                className="rounded bg-slate-900 text-white p-2 w-full"
+                className="rounded-lg bg-primary text-on-primary p-2 w-full disabled:opacity-50"
                 disabled={loading}
               >
                 Sign in

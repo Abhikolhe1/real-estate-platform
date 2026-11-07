@@ -8,8 +8,8 @@ export function PageSkeleton({ label = 'Loading page' }: { label?: string }) {
 }
 
 export function ExplorerSkeleton() {
-  return <div role="status" aria-label="Loading 3D explorer" className="explorer-placeholder relative overflow-hidden rounded-2xl border border-white/10 bg-[#172124] p-5">
+  return <div role="status" aria-label="Loading 3D explorer" className="explorer-placeholder relative overflow-hidden rounded-2xl border border-outline-variant bg-surface-container p-5">
     <div className="skeleton h-5 w-44 rounded" /><div className="skeleton mt-3 h-3 w-64 max-w-full rounded" />
-    <div className="mt-7 flex h-[65vh] min-h-[350px] gap-5"><div className="hidden w-52 space-y-5 sm:block">{[0, 1, 2, 3].map(i => <div key={i} className="skeleton h-14 rounded-lg" />)}</div><div className="skeleton flex flex-1 items-center justify-center rounded-xl text-sm text-white/70">Preparing your property view…</div></div>
+    <div className="mt-7 flex h-[65vh] min-h-[350px] gap-5"><div className="hidden w-52 space-y-5 sm:block">{[0, 1, 2, 3].map(i => <div key={i} className="skeleton h-14 rounded-lg" />)}</div><div className="skeleton flex flex-1 items-center justify-center rounded-xl text-sm text-on-surface-variant">Preparing your property view…</div></div>
   </div>;
 }

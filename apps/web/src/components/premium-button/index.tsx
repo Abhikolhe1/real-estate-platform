@@ -1,10 +1,4 @@
-import React from 'react';
-import { PremiumButton } from '@aether/ui';
-
-interface LocalPremiumButtonProps extends React.ComponentProps<typeof PremiumButton> {}
-
-export const ForwardedPremiumButton: React.FC<LocalPremiumButtonProps> = (props) => {
-  return <PremiumButton themeContext="web" {...props} />;
-};
-
-export default ForwardedPremiumButton;
+import { PremiumButton, ForwardedPremiumButton } from '@repo/ui';
+export type { PremiumButtonProps } from '@repo/ui';
+export { ForwardedPremiumButton, PremiumButton };
+export default PremiumButton;

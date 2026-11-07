@@ -4,7 +4,7 @@ import { API_URL } from '@/config/api';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useAuthStore } from '@/store/authStore';
-import { AmenityFactory, AmenityType } from '@/components/scene-compiler/AmenityFactory';
+import { AmenityFactory, AmenityType } from '@repo/scene-compiler';
 
 type Project = { id: string; name: string };
 type Amenity = {

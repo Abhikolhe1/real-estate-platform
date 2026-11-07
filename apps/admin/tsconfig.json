@@ -21,7 +21,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@aether/ui": ["../../packages/ui/src/index.ts"]
+      "@aether/ui": ["../../packages/ui/src/index.ts"],
+      "@repo/ui": ["../../packages/ui/src/index.ts"],
+      "@repo/config": ["../../packages/config/src/index.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

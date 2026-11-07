@@ -1,1 +1,2 @@
-export * from './components/PremiumButton';
+export * from './premium-button';
+export { default } from './premium-button';

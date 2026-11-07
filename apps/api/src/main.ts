@@ -51,13 +51,24 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: (
-      process.env.CORS_ORIGINS ||
-      "http://localhost:3000,http://localhost:3002,http://localhost:3003"
-    )
-      .split(",")
-      .map((s) => s.trim()),
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      const allowedList = (
+        process.env.CORS_ORIGINS ||
+        "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002,http://127.0.0.1:3003"
+      )
+        .split(",")
+        .map((s) => s.trim());
+
+      if (isLocalhost || allowedList.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     credentials: true,
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+    allowedHeaders: "Content-Type,Accept,Authorization,x-tenant-id",
   });
 
   // Morgan request logging middleware
